@@ -1,0 +1,474 @@
+import React, { useState, useEffect } from 'react';
+import { Moon, Sun, Sunrise, Sunset, Lock, MapPin, Bell, Clock, Activity, Target, Check } from 'lucide-react';
+
+/**
+ * المعرض الأسطوري للويدجت (Widgets Mega Universe V13)
+ * تطوير: كرار (تحياتي للسيد وليو الثلجي 🐈❄️)
+ * يضم: أكثر من 12 ويدجت، فيديو شاشة القفل، تأثيرات العمق، وخطوط عربية متنوعة.
+ */
+
+// ==========================================
+// 1. الثوابت والأدوات والتواريخ
+// ==========================================
+const PRAYERS = [
+  { id: 'fajr', label: 'الفجر', icon: Sunrise },
+  { id: 'dhuhr', label: 'الظهر', icon: Sun },
+  { id: 'asr', label: 'العصر', icon: Sun },
+  { id: 'maghrib', label: 'المغرب', icon: Sunset },
+  { id: 'isha', label: 'العشاء', icon: Moon }
+];
+
+const DEMO_TIMES = { fajr: '04:45', dhuhr: '11:48', asr: '15:06', maghrib: '17:35', isha: '19:05' };
+
+const toEn = (n) => String(n).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+const padNum = (num) => String(num).padStart(2, '0');
+const t2s = (ts) => { if(!ts) return 0; const [h,m] = ts.split(':').map(Number); return h*3600 + m*60; };
+
+const getDayNameAR = (dateObj) => dateObj.toLocaleDateString('ar-IQ', { weekday: 'long' });
+
+const LEVANTINE_MONTHS = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"];
+const getLevantineDate = (dateObj) => `${dateObj.getDate()} ${LEVANTINE_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+const getDashDate = (dateObj) => `${dateObj.getDate()}-${dateObj.getMonth() + 1}-${dateObj.getFullYear()}`;
+
+function format12Hour(timeStr) {
+    let [h, m] = timeStr.split(':').map(Number);
+    return `${h % 12 || 12}:${padNum(m)}`;
+}
+
+// ==========================================
+// 2. تصميمات الويدجت (12+ Widgets)
+// ==========================================
+
+// --- 1. ويدجت الفيديو لشاشة القفل (مستوحى من الفيديو) ---
+const VideoLockScreenWidget = ({ now, nextPrayer, diffS }) => {
+    const h = padNum(now.getHours() % 12 || 12);
+    const m = padNum(now.getMinutes());
+    
+    // محاكاة الفيديو باستخدام فيديو سحاب وغروب حقيقي
+    const videoUrl = "https://cdn.pixabay.com/video/2020/05/24/40090-424756575_large.mp4"; 
+
+    return (
+        <div className="relative w-full max-w-[340px] h-[600px] rounded-[45px] overflow-hidden shadow-2xl border-[6px] border-gray-900 bg-black flex flex-col items-center pt-12">
+            {/* خلفية الفيديو */}
+            <video src={videoUrl} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 pointer-events-none"></div>
+
+            {/* محتوى شاشة القفل */}
+            <div className="relative z-10 flex flex-col items-center w-full px-6">
+                <Lock size={16} className="text-white mb-2" />
+                <div className="text-white/90 text-sm font-semibold tracking-wide font-sans mb-1 shadow-black drop-shadow-md flex items-center">
+                    Sat 21 <Moon size={12} className="mx-1 text-yellow-300 fill-yellow-300"/> 3 Ramadan
+                </div>
+                
+                <div className="text-[6.5rem] font-bold text-white leading-none tracking-tighter drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] font-sans mb-4">
+                    {h}<span className="opacity-80 pb-4 inline-block -translate-y-2">:</span>{m}
+                </div>
+
+                {/* قوس الأوقات المصغر والدوائر */}
+                <div className="flex items-center justify-between w-full mt-4 gap-2">
+                    {/* قوس مسار الصلاة */}
+                    <div className="flex-1 flex flex-col items-center bg-black/20 backdrop-blur-md rounded-2xl p-2 border border-white/10">
+                        <svg viewBox="0 0 100 30" className="w-full h-8 overflow-visible">
+                            <path d="M 10 25 Q 50 -5 90 25" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeDasharray="2 4"/>
+                            <circle cx="10" cy="25" r="3" fill="#fff" />
+                            <circle cx="50" cy="8" r="4" fill="#fbbf24" style={{filter: 'drop-shadow(0 0 4px #fbbf24)'}}/>
+                            <circle cx="90" cy="25" r="3" fill="#fff" />
+                        </svg>
+                        <div className="flex justify-between w-full text-[9px] text-white font-bold px-1 mt-1">
+                            <span>العصر</span>
+                            <span>المغرب</span>
+                        </div>
+                    </div>
+
+                    {/* دائرة الصلاة الحالية */}
+                    <div className="w-[50px] h-[50px] rounded-full bg-black/30 backdrop-blur-md flex flex-col items-center justify-center border-2 border-white/20">
+                        <Check size={14} className="text-white mb-0.5" />
+                        <span className="text-[8px] text-white">العصر</span>
+                    </div>
+
+                    {/* دائرة الصلاة القادمة */}
+                    <div className="w-[50px] h-[50px] rounded-full bg-black/30 backdrop-blur-md flex flex-col items-center justify-center border border-white/20 relative">
+                        <svg viewBox="0 0 50 50" className="absolute inset-0 -rotate-90">
+                            <circle cx="25" cy="25" r="23" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2"/>
+                        </svg>
+                        <Sunrise size={12} className="text-yellow-400 mb-0.5" />
+                        <span className="text-[8px] text-white">0:00</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* مساحة الكاميرا / المصباح السفلي لمحاكاة الايفون */}
+            <div className="absolute bottom-6 w-1/3 h-1.5 bg-white/50 rounded-full z-10"></div>
+        </div>
+    );
+};
+
+// --- 2. الساعة المفرغة مع تأثير العمق (صورة 1000023475.png) ---
+const HollowDepthWidget = ({ now, dayName }) => {
+    const h = padNum(now.getHours() % 12 || 12);
+    const m = padNum(now.getMinutes());
+    
+    return (
+        <div className="relative w-full max-w-[340px] h-[250px] rounded-[35px] bg-[#1a1a3a] flex flex-col items-center justify-center overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1b1b40] to-[#0a0a1a]"></div>
+            <div className="absolute top-4 left-5 text-white font-bold text-xs tracking-widest z-20">
+                {padNum(now.getHours())}:{padNum(now.getMinutes())}
+            </div>
+
+            <div className="text-[8rem] font-bold tracking-tighter leading-none flex items-center z-0 opacity-90" 
+                 style={{ WebkitTextStroke: '2px rgba(220, 230, 255, 0.9)', color: 'transparent', fontFamily: "'Oswald', 'Arial', sans-serif" }}>
+                {h}<span className="text-[5rem] mx-[-5px] pb-4 opacity-70">:</span>{m}
+            </div>
+            
+            <div className="absolute top-[62%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-white text-[5.5rem] drop-shadow-[0_8px_10px_rgba(0,0,0,0.8)]" 
+                 style={{ fontFamily: "'Aref Ruqaa', serif", textShadow: '0 2px 15px rgba(255,255,255,0.4)' }}>
+                {dayName}
+            </div>
+
+            <div className="absolute bottom-5 flex items-center justify-center w-full z-10">
+                <span className="text-white/80 font-bold tracking-widest text-xs uppercase" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                    {getLevantineDate(now)}
+                </span>
+            </div>
+        </div>
+    );
+};
+
+// --- 3. الويدجت الأبيض الكلاسيكي (صورة 1000021900.jpg) ---
+const WhiteMasterWidget = ({ hijriDay, diffS }) => {
+    const hLeft = padNum(Math.floor(diffS/3600)); 
+    const mLeft = padNum(Math.floor((diffS%3600)/60)); 
+    const sLeft = padNum(diffS%60);
+
+    return (
+        <div className="relative w-full max-w-[340px] rounded-[30px] bg-[#f9f9fb] shadow-[0_15px_35px_rgba(0,0,0,0.15)] p-5 flex flex-col" dir="rtl">
+            <div className="flex justify-center items-center w-full relative h-[60px] mb-2">
+                <div className="flex items-center text-[4rem] font-bold font-reem leading-none text-[#1a1a1a]">
+                    <span>رمضـ</span>
+                    <div className="relative flex items-center justify-center min-w-[50px] mx-[-8px]">
+                        <span className="text-[#1a1a1a] relative z-0">ـــــ</span>
+                        <span className="absolute text-gray-300 text-[4.8rem] font-sans font-bold z-10 -translate-y-[15px]" 
+                              style={{ textShadow: '0px 2px 4px rgba(0,0,0,0.1)' }}>
+                            {hijriDay}
+                        </span>
+                    </div>
+                    <span>ـان</span>
+                </div>
+            </div>
+
+            <div className="w-full h-[1px] bg-red-800/10 my-2"></div>
+
+            <div className="flex justify-between items-center px-2 py-1">
+                <div className="text-[#d86952] text-[1.5rem] font-bold tracking-widest font-sans tabular-nums flex gap-0.5" dir="ltr">
+                    {hLeft}:{mLeft}:{sLeft}
+                </div>
+                <div className="text-[#d86952] font-bold text-lg" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                    باقي على الإمساك
+                </div>
+            </div>
+
+            <div className="w-full h-[1px] bg-red-800/10 my-2"></div>
+
+            <div className="flex justify-between items-center px-1 pt-1 pb-1">
+                {PRAYERS.map((p, idx) => (
+                    <div key={p.id} className="flex flex-col items-center">
+                        <span className={`text-[11px] font-bold mb-1.5 ${idx === 0 ? 'text-[#d86952]' : 'text-gray-800'}`} style={{ fontFamily: "'Cairo', sans-serif" }}>{p.label}</span>
+                        <span className={`text-[12px] font-bold font-sans ${idx === 0 ? 'text-[#d86952]' : 'text-gray-600'}`}>{format12Hour(DEMO_TIMES[p.id])}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// --- 4. ويدجت الكلاسيكي الأزرق (صورة 1000023473.png) ---
+const AmiriClassicWidget = ({ dayName, hijriDay, monthName, now }) => {
+    return (
+        <div className="relative w-full max-w-[340px] rounded-[35px] bg-[#0c162d] border border-blue-900/30 p-8 flex flex-col items-center justify-center min-h-[220px] shadow-2xl overflow-hidden">
+            <div className="absolute top-0 w-full h-[120px] bg-gradient-to-b from-blue-400/10 to-transparent"></div>
+            
+            <div className="text-[6.5rem] text-[#e2e8f0] leading-none z-10 drop-shadow-[0_5px_10px_rgba(0,0,0,0.5)]" style={{ fontFamily: "'Amiri', serif" }}>
+                {dayName}
+            </div>
+
+            <div className="flex items-center justify-center gap-2 mt-6 z-10 text-blue-200/70 text-[13px] font-bold tracking-wide" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                <span>{now.getDate()} {LEVANTINE_MONTHS[now.getMonth()]}</span>
+                <span className="opacity-40 mx-1">|</span>
+                <span>{hijriDay} {monthName}</span>
+            </div>
+        </div>
+    );
+};
+
+// --- 5. ويدجت القمر والمحرم (صورة 1000023474.png) ---
+const MoonDateWidget = ({ now }) => {
+    const h = padNum(now.getHours());
+    const m = padNum(now.getMinutes());
+
+    return (
+        <div className="relative w-full max-w-[340px] rounded-[35px] bg-gradient-to-b from-[#0f203b] to-[#040814] border border-blue-900/40 p-6 flex flex-col items-center min-h-[280px] shadow-2xl overflow-hidden">
+            <div className="text-white/90 font-bold text-sm tracking-widest z-10 mb-1" style={{ fontFamily: "'Arial', sans-serif" }}>
+                {now.getDate()} {now.toLocaleDateString('en-US', {month: 'long'})} {now.getFullYear()}
+            </div>
+
+            <div className="text-[5.5rem] text-white/90 font-bold leading-none tracking-tight z-10 mb-2 drop-shadow-lg" style={{ fontFamily: "'Arial', sans-serif" }}>
+                {h}<span className="opacity-70">:</span>{m}
+            </div>
+
+            <div className="absolute top-[35%] w-[70px] h-[70px] rounded-full z-10" 
+                 style={{ background: 'radial-gradient(circle at 30% 30%, #ffffff, #d1d5db 60%, #9ca3af 100%)', boxShadow: '0 0 20px rgba(255,255,255,0.3), inset -5px -5px 10px rgba(0,0,0,0.2)' }}>
+            </div>
+
+            <div className="text-[4.5rem] text-white font-bold leading-none z-20 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] mt-2" style={{ fontFamily: "'Reem Kufi', sans-serif" }}>
+                ١٠ <span className="text-[3.5rem]">محـرم</span>
+            </div>
+
+            <div className="flex gap-3 mt-4 z-10 text-white/50 text-xs font-bold" style={{ fontFamily: "'Aref Ruqaa', serif", transform: 'rotate(-5deg)' }}>
+                <span className="drop-shadow-md text-white">السبت</span>
+                <span className="drop-shadow-md">الأحد</span>
+                <span className="drop-shadow-md">الإثنين</span>
+            </div>
+        </div>
+    );
+};
+
+// --- 6. ويدجت الرقم الأصفر (صورة 1000023427) ---
+const YellowNumberWidget = ({ hijriDay, now }) => {
+    return (
+        <div className="relative w-full max-w-[340px] rounded-[30px] bg-gradient-to-br from-[#7782b0] to-[#545e85] shadow-xl p-6 flex flex-col items-center justify-center min-h-[160px]" dir="rtl">
+            <div className="flex items-center text-[4.5rem] font-bold font-reem leading-none text-white mb-2">
+                <span>رمضـ</span>
+                <div className="relative flex items-center justify-center min-w-[50px] mx-[-4px]">
+                    <span className="text-white relative z-0">ـــــ</span>
+                    <span className="absolute text-[#FFD700] text-[4.5rem] font-reem font-extrabold z-10 -translate-y-[8px]" 
+                          style={{ filter: 'drop-shadow(3px 4px 5px rgba(0,0,0,0.6))', WebkitTextStroke: '2px rgba(0,0,0,0.5)' }}>
+                        {hijriDay}
+                    </span>
+                </div>
+                <span>ـان</span>
+            </div>
+
+            <div className="text-white font-bold text-lg tracking-wide drop-shadow-md" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                {getDayNameAR(now)} {getLevantineDate(now)} م <span className="opacity-80 text-sm">(1447 هجرية)</span>
+            </div>
+        </div>
+    );
+};
+
+// --- 7. ويدجت خط الثلث الانجليزي (صورة 1000023472.png) ---
+const ThuluthEnglishDateWidget = () => {
+    return (
+        <div className="relative w-full max-w-[340px] rounded-[35px] bg-[#1a365d] border border-blue-800 p-8 flex flex-col items-center justify-center min-h-[220px] shadow-2xl">
+            <div className="text-[5.5rem] text-white leading-none z-10 drop-shadow-[0_8px_10px_rgba(0,0,0,0.5)]" style={{ fontFamily: "'Aref Ruqaa', serif" }}>
+                الجمعة
+            </div>
+            <div className="mt-4 text-white/80 font-bold tracking-[0.3em] text-sm uppercase font-sans">
+                NOV 8, 2024
+            </div>
+        </div>
+    );
+};
+
+// --- 8. ويدجت الشريط الزجاجي المصغر ---
+const MiniRowWidget = ({ diffS }) => {
+    const hLeft = padNum(Math.floor(diffS/3600)); 
+    const mLeft = padNum(Math.floor((diffS%3600)/60)); 
+    
+    return (
+        <div className="relative w-full max-w-[340px] rounded-[24px] bg-white/5 backdrop-blur-2xl border border-white/20 p-4 shadow-2xl flex flex-col gap-3" dir="rtl">
+            <div className="flex justify-between items-center px-2">
+                <span className="text-white/80 font-bold text-xs" style={{ fontFamily: "'Cairo', sans-serif" }}>الصلاة التالية</span>
+                <div className="flex items-center gap-1.5 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold font-sans border border-yellow-500/30">
+                    <Sunrise size={14}/> -{hLeft}:{mLeft}
+                </div>
+            </div>
+            <div className="flex justify-between items-center bg-black/20 p-3 rounded-2xl">
+                {PRAYERS.slice(0,4).map((p, idx) => {
+                    const Icon = p.icon;
+                    return (
+                        <div key={p.id} className="flex flex-col items-center">
+                            <span className="text-[10px] font-bold text-white/60 mb-1" style={{ fontFamily: "'Cairo', sans-serif" }}>{p.label}</span>
+                            <span className={`text-[12px] font-bold font-sans ${idx === 0 ? 'text-yellow-400' : 'text-white'}`}>{format12Hour(DEMO_TIMES[p.id])}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// --- 9. ويدجت الساعة الدائرية الذكية (Smartwatch) ---
+const CircularWatchWidget = ({ now, nextPrayer, diffS }) => {
+    const hLeft = padNum(Math.floor(diffS/3600)); 
+    const mLeft = padNum(Math.floor((diffS%3600)/60));
+    const progress = Math.max(0, Math.min(100, 100 - (diffS / (4*3600)) * 100));
+    const arcDash = (progress / 100) * 565;
+    const Icon = nextPrayer.icon;
+
+    return (
+        <div className="relative w-[200px] h-[200px] rounded-full bg-gradient-to-br from-gray-900 to-black border-[4px] border-gray-700 shadow-2xl flex flex-col items-center justify-center text-white overflow-hidden">
+            <svg width="200" height="200" viewBox="0 0 200 200" className="absolute -rotate-90 top-0 left-0">
+                <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#eab308" strokeWidth="6" strokeLinecap="round" strokeDasharray="565" strokeDashoffset={565 - arcDash} />
+            </svg>
+            <span className="text-yellow-400 text-[10px] font-bold tracking-widest mb-1 uppercase font-sans">13 RAMADAN</span>
+            <div className="text-[3.2rem] font-light leading-none tracking-tight font-sans mb-1 text-white drop-shadow-md">
+                {padNum(now.getHours() % 12 || 12)}<span className="opacity-50 text-[2.5rem] relative -top-1">:</span>{padNum(now.getMinutes())}
+            </div>
+            <div className="flex items-center gap-1.5 text-white/80 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold font-sans">
+                <Icon size={12} />
+                -{hLeft}:{mLeft}
+            </div>
+        </div>
+    );
+};
+
+// --- 10. ويدجت الجزيرة التفاعلية (Dynamic Pill) ---
+const DynamicPillWidget = ({ nextPrayer, diffS }) => {
+    const mLeft = padNum(Math.floor((diffS%3600)/60)); 
+    const sLeft = padNum(diffS%60);
+    const Icon = nextPrayer.icon;
+
+    return (
+        <div className="w-[300px] h-[60px] bg-black rounded-full shadow-[0_10px_20px_rgba(0,0,0,0.5)] flex items-center justify-between px-6 border border-white/10" dir="rtl">
+            <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center animate-pulse">
+                    <Icon size={16} className="text-white" />
+                </div>
+                <span className="text-white font-bold text-sm" style={{ fontFamily: "'Cairo', sans-serif" }}>يحين {nextPrayer.label}</span>
+            </div>
+            <div className="text-orange-400 font-bold font-sans tracking-widest text-lg">
+                {mLeft}:{sLeft}
+            </div>
+        </div>
+    );
+};
+
+// --- 11. ويدجت الكارت الزجاجي البسيط (Minimal Glass) ---
+const MinimalGlassWidget = ({ now }) => {
+    return (
+        <div className="relative w-[160px] h-[160px] rounded-[30px] bg-white/10 backdrop-blur-2xl border border-white/20 p-5 flex flex-col justify-between shadow-xl">
+            <div className="flex justify-between items-start w-full">
+                <Sun size={24} className="text-yellow-400" />
+                <span className="text-white/60 font-bold text-[10px] uppercase font-sans">NOW</span>
+            </div>
+            <div>
+                <div className="text-4xl font-bold text-white leading-none font-sans mb-1 drop-shadow-md">
+                    {padNum(now.getHours() % 12 || 12)}:{padNum(now.getMinutes())}
+                </div>
+                <div className="text-xs font-bold text-white/80" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                    {getDashDate(now)}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- 12. الويدجت العمودي للمسار (Vertical Journey) ---
+const VerticalJourneyWidget = ({ nextPrayer }) => {
+    return (
+        <div className="relative w-[160px] h-[260px] rounded-[30px] bg-gradient-to-b from-indigo-900 to-black border border-white/10 p-5 flex flex-col shadow-2xl" dir="rtl">
+            <span className="text-yellow-400 text-xs font-bold mb-4" style={{ fontFamily: "'Cairo', sans-serif" }}>مسار اليوم</span>
+            <div className="flex flex-col gap-4 flex-1">
+                {PRAYERS.slice(0,3).map((p, i) => {
+                    const Icon = p.icon;
+                    return (
+                        <div key={p.id} className="flex items-center gap-3 relative">
+                            {i !== 2 && <div className="absolute right-[9px] top-6 w-[2px] h-6 bg-white/20"></div>}
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center z-10 ${nextPrayer.id === p.id ? 'bg-yellow-400 text-black' : 'bg-white/20 text-white'}`}>
+                                <Icon size={10} />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className={`text-[11px] font-bold ${nextPrayer.id === p.id ? 'text-yellow-400' : 'text-white'}`} style={{ fontFamily: "'Cairo', sans-serif" }}>{p.label}</span>
+                                <span className="text-[10px] text-white/60 font-sans">{format12Hour(DEMO_TIMES[p.id])}</span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// ==========================================
+// التطبيق الرئيسي (الحاضن)
+// ==========================================
+export default function App() {
+    const initialDate = new Date("2026-03-13T05:09:33");
+    const [now, setNow] = useState(initialDate);
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const currS = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    
+    let diffS = t2s('17:35') - currS;
+    if (diffS < 0) diffS = (86400 - currS) + t2s('04:45'); 
+
+    const hijriDay = "22";
+    const dayName = getDayNameAR(now);
+    const nextPrayer = PRAYERS[0]; // الفجر كمثال
+
+    return (
+        <div className="relative w-full min-h-screen flex flex-col items-center py-10 px-4 overflow-y-auto font-sans bg-[#020617] gap-12">
+            
+            {/* استيراد الخطوط المذهلة */}
+            <style dangerouslySetInnerHTML={{__html: `
+                @import url('https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;500;600;700&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+                
+                .font-reem { font-family: 'Reem Kufi', sans-serif; }
+                .wallpaper-bg { background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #020617 100%); }
+            `}} />
+
+            <div className="absolute inset-0 wallpaper-bg z-0 fixed"></div>
+
+            <div className="z-10 w-full max-w-md flex flex-col gap-12 items-center">
+                
+                {/* 1. ويدجت شاشة القفل (الفيديو) - الأبرز والأضخم */}
+                <VideoLockScreenWidget now={now} nextPrayer={nextPrayer} diffS={diffS} />
+
+                {/* 2. ويدجت الساعة المفرغة والعمق */}
+                <HollowDepthWidget now={now} dayName={dayName} />
+
+                {/* 3. الويدجت الأبيض الكلاسيكي */}
+                <WhiteMasterWidget hijriDay={hijriDay} diffS={diffS} />
+
+                {/* 4. ويدجت الرقم الأصفر الفاقع */}
+                <YellowNumberWidget hijriDay={hijriDay} now={now} />
+
+                {/* 5. الويدجت الكلاسيكي الأزرق (أميري) */}
+                <AmiriClassicWidget dayName={dayName} hijriDay={13} monthName="رمضان" now={now} />
+
+                {/* 6. ويدجت القمر الضخم */}
+                <MoonDateWidget now={now} />
+
+                {/* 7. ويدجت خط الثلث الإنجليزي */}
+                <ThuluthEnglishDateWidget />
+
+                {/* 8. الجزيرة التفاعلية (Dynamic Pill) */}
+                <DynamicPillWidget nextPrayer={nextPrayer} diffS={diffS} />
+
+                {/* 9. شريط الأوقات الزجاجي */}
+                <MiniRowWidget diffS={diffS} />
+
+                <div className="flex gap-4 justify-center w-full max-w-[340px]">
+                    {/* 10. الساعة الدائرية */}
+                    <CircularWatchWidget now={now} nextPrayer={nextPrayer} diffS={diffS} />
+                </div>
+
+                <div className="flex gap-5 justify-center w-full max-w-[340px]">
+                    {/* 11. المسار العمودي */}
+                    <VerticalJourneyWidget nextPrayer={nextPrayer} />
+                    {/* 12. المربع الزجاجي المصغر */}
+                    <MinimalGlassWidget now={now} />
+                </div>
+            </div>
+        </div>
+    );
+}
