@@ -24,7 +24,7 @@ import com.karrar.amsakiah.ui.screens.*
  * علامات التبويب السبعة الكاملة لتطبيق إمساكية كرار 2026 المنقولة حرفياً من تطبيق React
  */
 enum class BottomBarDestination(val route: AppRoute, val title: String, val icon: ImageVector) {
-    SKY_ARC(AppRoute.SkyArc, "اليوم", Icons.Default.WbTwilight),
+    SKY_ARC(AppRoute.SkyArc, "اليوم", Icons.Default.WbSunny),
     OBSERVATORY(AppRoute.Observatory, "القبلة والأهلة", Icons.Default.Explore),
     MONTHLY(AppRoute.Monthly, "الإمساكية", Icons.Default.CalendarMonth),
     DUAS(AppRoute.Duas, "الأدعية", Icons.Default.Favorite),

@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BookOpen
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -98,7 +98,7 @@ fun ComparisonScreen(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.BookOpen, contentDescription = null, tint = Color(0xFFFFD54F))
+                Icon(Icons.Default.MenuBook, contentDescription = null, tint = Color(0xFFFFD54F))
                 Text(
                     text = "فقه المواقيت والضوابط الفلكية",
                     fontSize = 18.sp,

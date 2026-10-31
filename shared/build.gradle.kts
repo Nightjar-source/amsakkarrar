@@ -45,8 +45,6 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
             implementation(libs.material.kolor)
-            implementation(libs.androidx.navigation3.runtime)
-            implementation(libs.androidx.navigation3.ui)
             implementation(libs.jetbrains.navigation3.ui)
             implementation(libs.jetbrains.lifecycle.viewmodel.navigation3)
             implementation(libs.jetbrains.compose.material3.adaptive)
@@ -54,6 +52,8 @@ kotlin {
             implementation(libs.jetbrains.compose.material3.adaptive.navigation)
         }
         androidMain.dependencies {
+            implementation(libs.androidx.navigation3.runtime)
+            implementation(libs.androidx.navigation3.ui)
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.kotlinx.coroutines.android)

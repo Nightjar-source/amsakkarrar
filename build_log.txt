@@ -1,0 +1,1117 @@
+﻿2026-10-31T18:46:30.6313667Z Current runner version: '2.338.2'
+2026-10-31T18:46:30.6338369Z ##[group]Runner Image Provisioner
+2026-10-31T18:46:30.6339528Z Hosted Compute Agent
+2026-10-31T18:46:30.6340148Z Version: 20261021.618
+2026-10-31T18:46:30.6340872Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-10-31T18:46:30.6341815Z Build Date: 2026-10-21T00:45:21Z
+2026-10-31T18:46:30.6342592Z Worker ID: {d7d7b2c8-5de6-4a5b-916a-a0c76beddc60}
+2026-10-31T18:46:30.6343415Z Region: westus
+2026-10-31T18:46:30.6343965Z Cloud: Azure
+2026-10-31T18:46:30.6344600Z ##[endgroup]
+2026-10-31T18:46:30.6346130Z ##[group]Operating System
+2026-10-31T18:46:30.6346767Z Ubuntu
+2026-10-31T18:46:30.6347375Z 24.04.5
+2026-10-31T18:46:30.6348120Z LTS
+2026-10-31T18:46:30.6348669Z ##[endgroup]
+2026-10-31T18:46:30.6349304Z ##[group]Runner Image
+2026-10-31T18:46:30.6349969Z Image: ubuntu-24.04
+2026-10-31T18:46:30.6350632Z Version: 20261025.353.1
+2026-10-31T18:46:30.6351927Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261025.353/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-31T18:46:30.6353998Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261025.353
+2026-10-31T18:46:30.6354971Z ##[endgroup]
+2026-10-31T18:46:30.6356229Z ##[group]GITHUB_TOKEN Permissions
+2026-10-31T18:46:30.6358615Z Contents: write
+2026-10-31T18:46:30.6359321Z Metadata: read
+2026-10-31T18:46:30.6359896Z ##[endgroup]
+2026-10-31T18:46:30.6362075Z Secret source: Actions
+2026-10-31T18:46:30.6363073Z Cache mode: write
+2026-10-31T18:46:30.6363764Z Prepare workflow directory
+2026-10-31T18:46:30.6737100Z Prepare all required actions
+2026-10-31T18:46:30.6810949Z Getting action download info
+2026-10-31T18:46:31.0854258Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-31T18:46:31.1884444Z Download action repository 'actions/setup-java@v4' (SHA:cf277c60eb25467037889841efdb72551f06f6c3)
+2026-10-31T18:46:31.6265457Z Download action repository 'gradle/actions@v4' (SHA:ed408507eac070d1f99cc633dbcf757c94c7933a)
+2026-10-31T18:46:32.6061069Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-31T18:46:32.7291550Z Download action repository 'softprops/action-gh-release@v2' (SHA:3bb12739c298aeb8a4eeaf626c5b8d85266b0e65)
+2026-10-31T18:46:33.1336537Z Complete job name: Build & Release Signed APK
+2026-10-31T18:46:33.2201250Z ##[group]Run actions/checkout@v4
+2026-10-31T18:46:33.2201948Z with:
+2026-10-31T18:46:33.2202257Z   repository: Nightjar-source/amsakkarrar
+2026-10-31T18:46:33.2205121Z   token: ***
+2026-10-31T18:46:33.2205389Z   ssh-strict: true
+2026-10-31T18:46:33.2205658Z   ssh-user: git
+2026-10-31T18:46:33.2278844Z   persist-credentials: true
+2026-10-31T18:46:33.2279262Z   clean: true
+2026-10-31T18:46:33.2279554Z   sparse-checkout-cone-mode: true
+2026-10-31T18:46:33.2279912Z   fetch-depth: 1
+2026-10-31T18:46:33.2280236Z   fetch-tags: false
+2026-10-31T18:46:33.2280545Z   show-progress: true
+2026-10-31T18:46:33.2280872Z   lfs: false
+2026-10-31T18:46:33.2281154Z   submodules: false
+2026-10-31T18:46:33.2281443Z   set-safe-directory: true
+2026-10-31T18:46:33.2281800Z   allow-unsafe-pr-checkout: false
+2026-10-31T18:46:33.2282819Z ##[endgroup]
+2026-10-31T18:46:33.6077296Z Syncing repository: Nightjar-source/amsakkarrar
+2026-10-31T18:46:33.6079931Z ##[group]Getting Git version info
+2026-10-31T18:46:33.6080577Z Working directory is '/home/runner/work/amsakkarrar/amsakkarrar'
+2026-10-31T18:46:33.6081358Z [command]/usr/bin/git version
+2026-10-31T18:46:33.6219277Z git version 2.56.0
+2026-10-31T18:46:33.6251508Z ##[endgroup]
+2026-10-31T18:46:33.6262210Z Temporarily overriding HOME='/home/runner/work/_temp/836143ed-91d2-4b97-98d4-b1e124a34c77' before making global git config changes
+2026-10-31T18:46:33.6263869Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-31T18:46:33.6269723Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/amsakkarrar/amsakkarrar
+2026-10-31T18:46:33.6340367Z Deleting the contents of '/home/runner/work/amsakkarrar/amsakkarrar'
+2026-10-31T18:46:33.6345640Z ##[group]Initializing the repository
+2026-10-31T18:46:33.6350748Z [command]/usr/bin/git init /home/runner/work/amsakkarrar/amsakkarrar
+2026-10-31T18:46:33.6481311Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-31T18:46:33.6482763Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-31T18:46:33.6483742Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-31T18:46:33.6484638Z hint: call:
+2026-10-31T18:46:33.6485315Z hint:
+2026-10-31T18:46:33.6486217Z hint: 	git config --global init.defaultBranch <name>
+2026-10-31T18:46:33.6486711Z hint:
+2026-10-31T18:46:33.6487106Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-31T18:46:33.6488219Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-31T18:46:33.6488884Z hint:
+2026-10-31T18:46:33.6489155Z hint: 	git branch -m <name>
+2026-10-31T18:46:33.6489474Z hint:
+2026-10-31T18:46:33.6489864Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-31T18:46:33.6509178Z Initialized empty Git repository in /home/runner/work/amsakkarrar/amsakkarrar/.git/
+2026-10-31T18:46:33.6513962Z [command]/usr/bin/git remote add origin https://github.com/Nightjar-source/amsakkarrar
+2026-10-31T18:46:33.6564004Z ##[endgroup]
+2026-10-31T18:46:33.6565043Z ##[group]Disabling automatic garbage collection
+2026-10-31T18:46:33.6569437Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-31T18:46:33.6608584Z ##[endgroup]
+2026-10-31T18:46:33.6609786Z ##[group]Setting up auth
+2026-10-31T18:46:33.6618057Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-31T18:46:33.6661259Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-31T18:46:33.7135491Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-31T18:46:33.7172877Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-31T18:46:33.7456668Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-31T18:46:33.7513313Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-31T18:46:33.7808382Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-31T18:46:33.7861503Z ##[endgroup]
+2026-10-31T18:46:33.7862076Z ##[group]Fetching the repository
+2026-10-31T18:46:33.7874519Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e2e9146e2379b5ccf8028f08be2706362cc3c721:refs/tags/v1.0.2
+2026-10-31T18:46:34.3709121Z From https://github.com/Nightjar-source/amsakkarrar
+2026-10-31T18:46:34.3710404Z  * [new ref]         e2e9146e2379b5ccf8028f08be2706362cc3c721 -> v1.0.2
+2026-10-31T18:46:34.3714459Z ##[endgroup]
+2026-10-31T18:46:34.3715461Z ##[group]Determining the checkout info
+2026-10-31T18:46:34.3718849Z ##[endgroup]
+2026-10-31T18:46:34.3725484Z [command]/usr/bin/git sparse-checkout disable
+2026-10-31T18:46:34.3789193Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-31T18:46:34.3828649Z ##[group]Checking out the ref
+2026-10-31T18:46:34.3841234Z [command]/usr/bin/git checkout --progress --force refs/tags/v1.0.2
+2026-10-31T18:46:34.4182771Z Note: switching to 'refs/tags/v1.0.2'.
+2026-10-31T18:46:34.4183308Z 
+2026-10-31T18:46:34.4183568Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-31T18:46:34.4184151Z changes and commit them, and you can discard any commits you make in this
+2026-10-31T18:46:34.4184975Z state without impacting any branches by switching back to a branch.
+2026-10-31T18:46:34.4185294Z 
+2026-10-31T18:46:34.4185517Z If you want to create a new branch to retain commits you create, you may
+2026-10-31T18:46:34.4186031Z do so (now or later) by using -c with the switch command. Example:
+2026-10-31T18:46:34.4186317Z 
+2026-10-31T18:46:34.4186471Z   git switch -c <new-branch-name>
+2026-10-31T18:46:34.4186674Z 
+2026-10-31T18:46:34.4186810Z Or undo this operation with:
+2026-10-31T18:46:34.4187002Z 
+2026-10-31T18:46:34.4187116Z   git switch -
+2026-10-31T18:46:34.4187286Z 
+2026-10-31T18:46:34.4187526Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-31T18:46:34.4188259Z 
+2026-10-31T18:46:34.4188605Z HEAD is now at e2e9146 feat: complete all 7 screens from React app, fix mipmap icons, and wire Navigation 3
+2026-10-31T18:46:34.4196811Z ##[endgroup]
+2026-10-31T18:46:34.4252316Z [command]/usr/bin/git log -1 --format=%H
+2026-10-31T18:46:34.4287205Z e2e9146e2379b5ccf8028f08be2706362cc3c721
+2026-10-31T18:46:34.4599680Z ##[group]Run actions/setup-java@v4
+2026-10-31T18:46:34.4600039Z with:
+2026-10-31T18:46:34.4600281Z   java-version: 21
+2026-10-31T18:46:34.4600538Z   distribution: zulu
+2026-10-31T18:46:34.4600808Z   java-package: jdk
+2026-10-31T18:46:34.4601070Z   check-latest: false
+2026-10-31T18:46:34.4601329Z   server-id: github
+2026-10-31T18:46:34.4601596Z   server-username: GITHUB_ACTOR
+2026-10-31T18:46:34.4601903Z   server-password: GITHUB_TOKEN
+2026-10-31T18:46:34.4602209Z   overwrite-settings: true
+2026-10-31T18:46:34.4602487Z   job-status: success
+2026-10-31T18:46:34.4605117Z   token: ***
+2026-10-31T18:46:34.4605370Z ##[endgroup]
+2026-10-31T18:46:34.6740136Z ##[warning]setup-java v4 is deprecated and will no longer receive updates. Please migrate to actions/setup-java@v5.
+2026-10-31T18:46:34.6753131Z ##[group]Installed distributions
+2026-10-31T18:46:34.6753946Z Trying to resolve the latest version from remote
+2026-10-31T18:46:34.6893640Z (node:2302) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-31T18:46:34.6894983Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-31T18:46:34.8029522Z Resolved latest version as 21.0.13+9
+2026-10-31T18:46:34.8038838Z Trying to download...
+2026-10-31T18:46:34.8040466Z Downloading Java 21.0.13+9 (Zulu) from https://cdn.azul.com/zulu/bin/zulu21.54.107-ca-jdk21.0.13-linux_x64.tar.gz ...
+2026-10-31T18:46:38.0739511Z Extracting Java archive...
+2026-10-31T18:46:38.0900559Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/f568f0f1-078b-4f77-a59d-01e5278092df -f /home/runner/work/_temp/b6e03111-752b-49a7-acc1-76f720e04cc0
+2026-10-31T18:46:40.8332374Z Java 21.0.13+9 was downloaded
+2026-10-31T18:46:40.8332894Z Setting Java 21.0.13+9 as the default
+2026-10-31T18:46:40.8341952Z Creating toolchains.xml for JDK version 21 from zulu
+2026-10-31T18:46:40.8419746Z Writing to /home/runner/.m2/toolchains.xml
+2026-10-31T18:46:40.8420283Z 
+2026-10-31T18:46:40.8420477Z Java configuration:
+2026-10-31T18:46:40.8420910Z   Distribution: zulu
+2026-10-31T18:46:40.8421347Z   Version: 21.0.13+9
+2026-10-31T18:46:40.8421894Z   Path: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:40.8422404Z 
+2026-10-31T18:46:40.8423135Z ##[endgroup]
+2026-10-31T18:46:40.8442810Z Creating settings.xml with server-id: github
+2026-10-31T18:46:40.8443200Z Writing to /home/runner/.m2/settings.xml
+2026-10-31T18:46:41.0663296Z ##[group]Run gradle/actions/setup-gradle@v4
+2026-10-31T18:46:41.0663638Z with:
+2026-10-31T18:46:41.0663844Z   cache-disabled: false
+2026-10-31T18:46:41.0664081Z   cache-read-only: true
+2026-10-31T18:46:41.0664311Z   cache-write-only: false
+2026-10-31T18:46:41.0664560Z   cache-overwrite-existing: false
+2026-10-31T18:46:41.0664836Z   cache-cleanup: on-success
+2026-10-31T18:46:41.0665132Z   gradle-home-cache-includes: caches
+notifications
+
+2026-10-31T18:46:41.0665461Z   add-job-summary: always
+2026-10-31T18:46:41.0665898Z   add-job-summary-as-pr-comment: never
+2026-10-31T18:46:41.0666183Z   dependency-graph: disabled
+2026-10-31T18:46:41.0666493Z   dependency-graph-report-dir: dependency-graph-reports
+2026-10-31T18:46:41.0666878Z   dependency-graph-continue-on-failure: true
+2026-10-31T18:46:41.0667188Z   build-scan-publish: false
+2026-10-31T18:46:41.0667468Z   validate-wrappers: true
+2026-10-31T18:46:41.0667948Z   allow-snapshot-wrappers: false
+2026-10-31T18:46:41.0668289Z   gradle-home-cache-strict-match: false
+2026-10-31T18:46:41.0668604Z   workflow-job-context: null
+2026-10-31T18:46:41.0671667Z   github-token: ***
+2026-10-31T18:46:41.0671895Z env:
+2026-10-31T18:46:41.0672166Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:41.0672596Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:41.0672937Z ##[endgroup]
+2026-10-31T18:46:41.4314164Z Merged default JDK locations into /home/runner/.m2/toolchains.xml
+2026-10-31T18:46:41.4319227Z ##[group]Restore Gradle state from cache
+2026-10-31T18:46:41.6825501Z Gradle User Home cache not found. Will initialize empty.
+2026-10-31T18:46:41.6826710Z ##[endgroup]
+2026-10-31T18:46:41.8698852Z Fetched 10 of 69 checksums
+2026-10-31T18:46:41.9352470Z Fetched 20 of 69 checksums
+2026-10-31T18:46:41.9964175Z Fetched 30 of 69 checksums
+2026-10-31T18:46:42.0664117Z Fetched 40 of 69 checksums
+2026-10-31T18:46:42.1666594Z Fetched 50 of 69 checksums
+2026-10-31T18:46:42.2257511Z Fetched 60 of 69 checksums
+2026-10-31T18:46:42.2884481Z Fetched 69 of 69 checksums
+2026-10-31T18:46:42.2885664Z ##[group]All Gradle Wrapper jars are valid
+2026-10-31T18:46:42.2899734Z ✓ Found known Gradle Wrapper JAR files:
+2026-10-31T18:46:42.2900737Z   497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7 gradle/wrapper/gradle-wrapper.jar
+2026-10-31T18:46:42.2901971Z ##[endgroup]
+2026-10-31T18:46:42.3021446Z ##[group]Run chmod +x gradlew
+2026-10-31T18:46:42.3021794Z [36;1mchmod +x gradlew[0m
+2026-10-31T18:46:42.3044845Z shell: /usr/bin/bash -e {0}
+2026-10-31T18:46:42.3045126Z env:
+2026-10-31T18:46:42.3045402Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:42.3045827Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:42.3046218Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+2026-10-31T18:46:42.3046532Z   GRADLE_USER_HOME: /home/runner/.gradle
+2026-10-31T18:46:42.3046841Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+2026-10-31T18:46:42.3047147Z   GRADLE_BUILD_ACTION_CACHE_RESTORED: true
+2026-10-31T18:46:42.3047778Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+2026-10-31T18:46:42.3048294Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+2026-10-31T18:46:42.3048627Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+2026-10-31T18:46:42.3048914Z ##[endgroup]
+2026-10-31T18:46:42.3160859Z ##[group]Run mkdir -p androidApp
+2026-10-31T18:46:42.3161201Z [36;1mmkdir -p androidApp[0m
+2026-10-31T18:46:42.3161485Z [36;1mif [ -n "$KEYSTORE_BASE64" ]; then[0m
+2026-10-31T18:46:42.3161931Z [36;1m  echo "$KEYSTORE_BASE64" | base64 -d > androidApp/Nightjar.keystore[0m
+2026-10-31T18:46:42.3162358Z [36;1melif [ -f "keystore_base64.txt" ]; then[0m
+2026-10-31T18:46:42.3162769Z [36;1m  cat keystore_base64.txt | base64 -d > androidApp/Nightjar.keystore[0m
+2026-10-31T18:46:42.3163144Z [36;1mfi[0m
+2026-10-31T18:46:42.3163479Z [36;1mecho "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-19941994}" >> local.properties[0m
+2026-10-31T18:46:42.3163994Z [36;1mecho "KEY_PASSWORD=${KEY_PASSWORD:-19941994}" >> local.properties[0m
+2026-10-31T18:46:42.3183417Z shell: /usr/bin/bash -e {0}
+2026-10-31T18:46:42.3183668Z env:
+2026-10-31T18:46:42.3183942Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:42.3184417Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:42.3184819Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+2026-10-31T18:46:42.3185140Z   GRADLE_USER_HOME: /home/runner/.gradle
+2026-10-31T18:46:42.3185447Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+2026-10-31T18:46:42.3185923Z   GRADLE_BUILD_ACTION_CACHE_RESTORED: true
+2026-10-31T18:46:42.3186383Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+2026-10-31T18:46:42.3186864Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+2026-10-31T18:46:42.3187195Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+2026-10-31T18:46:42.3187475Z   KEYSTORE_BASE64: 
+2026-10-31T18:46:42.3188021Z   KEYSTORE_PASSWORD: 
+2026-10-31T18:46:42.3188285Z   KEY_PASSWORD: 
+2026-10-31T18:46:42.3188489Z ##[endgroup]
+2026-10-31T18:46:42.3290530Z ##[group]Run ./gradlew :androidApp:assembleRelease --no-daemon --stacktrace
+2026-10-31T18:46:42.3291087Z [36;1m./gradlew :androidApp:assembleRelease --no-daemon --stacktrace[0m
+2026-10-31T18:46:42.3309170Z shell: /usr/bin/bash -e {0}
+2026-10-31T18:46:42.3309421Z env:
+2026-10-31T18:46:42.3309695Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:42.3310134Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Zulu_jdk/21.0.13-9/x64
+2026-10-31T18:46:42.3310546Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+2026-10-31T18:46:42.3310864Z   GRADLE_USER_HOME: /home/runner/.gradle
+2026-10-31T18:46:42.3311156Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+2026-10-31T18:46:42.3311454Z   GRADLE_BUILD_ACTION_CACHE_RESTORED: true
+2026-10-31T18:46:42.3311887Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+2026-10-31T18:46:42.3312361Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+2026-10-31T18:46:42.3312709Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+2026-10-31T18:46:42.3312975Z ##[endgroup]
+2026-10-31T18:46:42.4164555Z Fetching distribution.
+2026-10-31T18:46:42.4165546Z Downloading https://services.gradle.org/distributions/gradle-9.4.1-bin.zip
+2026-10-31T18:46:44.5662950Z .............10%.............20%.............30%.............40%.............50%.............60%..............70%.............80%.............90%.............100%
+2026-10-31T18:46:45.7418375Z 
+2026-10-31T18:46:45.7420241Z Welcome to Gradle 9.4.1!
+2026-10-31T18:46:45.7422121Z 
+2026-10-31T18:46:45.7422525Z Here are the highlights of this release:
+2026-10-31T18:46:45.7423077Z  - Java 26 support
+2026-10-31T18:46:45.7423497Z  - Non-class-based JVM tests
+2026-10-31T18:46:45.7424457Z  - Enhanced console progress bar
+2026-10-31T18:46:45.7424959Z 
+2026-10-31T18:46:45.7426030Z For more details see https://docs.gradle.org/9.4.1/release-notes.html
+2026-10-31T18:46:45.7426699Z 
+2026-10-31T18:46:45.8420441Z To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+2026-10-31T18:46:46.8429036Z Daemon will be stopped at the end of the build 
+2026-10-31T18:47:45.0424989Z 
+2026-10-31T18:47:45.0446822Z > Configure project :androidApp
+2026-10-31T18:47:45.0448798Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/androidApp/build.gradle.kts:84:28: 'val material3: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:45.0451033Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/androidApp/build.gradle.kts:85:28: 'val foundation: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1453856Z 
+2026-10-31T18:47:48.1472334Z > Configure project :shared
+2026-10-31T18:47:48.1506366Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:12:5: 'fun KotlinMultiplatformExtension.androidLibrary(configure: Action<DeprecatedKotlinMultiplatformAndroidLibraryTarget>): Unit' is deprecated. The 'androidLibrary' block is deprecated. Please use 'android' instead.
+2026-10-31T18:47:48.1538599Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:34:36: 'val runtime: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1555397Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:35:36: 'val foundation: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1588767Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:36:36: 'val material3: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1612933Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:38:36: 'val materialIconsExtended: String' is deprecated. This artifact is pinned to version 1.7.3 and will not receive updates. Either use this version explicitly or migrate to Material Symbols (vector resources). See https://kotlinlang.org/docs/multiplatform/whats-new-compose-180.html.
+2026-10-31T18:47:48.1619476Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:39:36: 'val ui: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1623066Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:40:36: 'val components: ComposePlugin.CommonComponentsDependencies' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1624564Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:40:47: 'val resources: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1625882Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:41:36: 'val components: ComposePlugin.CommonComponentsDependencies' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1627966Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:41:47: 'val uiToolingPreview: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.1629780Z w: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/build.gradle.kts:57:36: 'val preview: String' is deprecated. Specify dependency directly.
+2026-10-31T18:47:48.7415115Z w: ⚠️ Native task 'iosX64Test' is disabled
+2026-10-31T18:47:48.7419542Z Task 'iosX64Test' for target 'ios_x64' cannot run on the current host (linux-x86_64).
+2026-10-31T18:47:48.7420657Z Reason: simulator tests require macOS
+2026-10-31T18:47:48.7421518Z Solution: To suppress this warning, add 'kotlin.native.ignoreDisabledTargets=true' to gradle.properties.
+2026-10-31T18:47:48.7422339Z 
+2026-10-31T18:47:48.7422878Z w: ⚠️ Native task 'iosSimulatorArm64Test' is disabled
+2026-10-31T18:47:48.7424106Z Task 'iosSimulatorArm64Test' for target 'ios_simulator_arm64' cannot run on the current host (linux-x86_64).
+2026-10-31T18:47:48.7429758Z Reason: simulator tests require macOS
+2026-10-31T18:47:48.7430798Z Solution: To suppress this warning, add 'kotlin.native.ignoreDisabledTargets=true' to gradle.properties.
+2026-10-31T18:47:48.7431657Z 
+2026-10-31T18:47:49.9439893Z WARNING: We recommend using a newer Android Gradle plugin to use compile SDK version 37.0
+2026-10-31T18:47:49.9468059Z 
+2026-10-31T18:47:49.9498413Z This Android Gradle plugin (9.1.0) was tested up to compile SDK version 36.1.
+2026-10-31T18:47:49.9499266Z 
+2026-10-31T18:47:49.9528438Z You are strongly encouraged to update your project to use a newer
+2026-10-31T18:47:49.9558402Z Android Gradle plugin that has been tested with compile SDK version 37.0.
+2026-10-31T18:47:49.9587876Z 
+2026-10-31T18:47:49.9588595Z If you are already using the latest version of the Android Gradle plugin,
+2026-10-31T18:47:49.9598792Z you may need to wait until a newer version with support for compile SDK version 37.0 is available.
+2026-10-31T18:47:49.9599653Z 
+2026-10-31T18:47:49.9600036Z For more information refer to the compatibility table:
+2026-10-31T18:47:49.9600854Z https://d.android.com/r/tools/api-level-support
+2026-10-31T18:47:49.9601357Z 
+2026-10-31T18:47:49.9601652Z To suppress this warning, add/update
+2026-10-31T18:47:49.9602364Z     android.suppressUnsupportedCompileSdk=36,37.0
+2026-10-31T18:47:49.9603087Z to this project's gradle.properties.
+2026-10-31T18:47:50.2416388Z 
+2026-10-31T18:47:50.2417453Z > Task :androidApp:preBuild UP-TO-DATE
+2026-10-31T18:47:50.2418390Z > Task :androidApp:preReleaseBuild UP-TO-DATE
+2026-10-31T18:47:50.3419098Z > Task :androidApp:mergeReleaseJniLibFolders
+2026-10-31T18:47:50.3438293Z > Task :shared:androidPreBuild UP-TO-DATE
+2026-10-31T18:47:50.3439346Z > Task :shared:preAndroidMainBuild UP-TO-DATE
+2026-10-31T18:47:50.3439932Z > Task :shared:mergeAndroidMainJniLibFolders
+2026-10-31T18:47:50.3440564Z > Task :shared:mergeAndroidMainNativeLibs NO-SOURCE
+2026-10-31T18:47:50.3441195Z > Task :shared:copyAndroidMainJniLibsProjectOnly
+2026-10-31T18:48:20.3412956Z > Task :shared:kmpPartiallyResolvedDependenciesChecker
+2026-10-31T18:48:24.6413579Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:24.6415486Z Source set 'appleMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:24.6418133Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6419727Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6421092Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6421933Z 
+2026-10-31T18:48:24.6422158Z 
+2026-10-31T18:48:24.6422930Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6424220Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6425031Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6425378Z 
+2026-10-31T18:48:24.6425386Z 
+2026-10-31T18:48:24.6426257Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6427955Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6428904Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6429252Z 
+2026-10-31T18:48:24.6429260Z 
+2026-10-31T18:48:24.6429901Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6431261Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6432045Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6432345Z 
+2026-10-31T18:48:24.6432367Z 
+2026-10-31T18:48:24.6433195Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6434553Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6435332Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6435641Z 
+2026-10-31T18:48:24.6435649Z 
+2026-10-31T18:48:24.6436528Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6438251Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6439038Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6439328Z 
+2026-10-31T18:48:24.6439335Z 
+2026-10-31T18:48:24.6440020Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6441305Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6442060Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6442362Z 
+2026-10-31T18:48:24.6442369Z 
+2026-10-31T18:48:24.6443149Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6444533Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6445315Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6445606Z 
+2026-10-31T18:48:24.6445613Z 
+2026-10-31T18:48:24.6446472Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6448436Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6449214Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6449530Z 
+2026-10-31T18:48:24.6449537Z 
+2026-10-31T18:48:24.6450269Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6451920Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6452683Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6452984Z 
+2026-10-31T18:48:24.6452992Z 
+2026-10-31T18:48:24.6453803Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6455187Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6456232Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6456586Z 
+2026-10-31T18:48:24.6456594Z 
+2026-10-31T18:48:24.6457442Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:24.6459957Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:24.6462355Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:24.6462893Z 
+2026-10-31T18:48:24.6462902Z 
+2026-10-31T18:48:24.6463168Z Run the build with '--info' for more details.
+2026-10-31T18:48:24.6464775Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:24.6466133Z 
+2026-10-31T18:48:40.0419189Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:40.0420070Z Source set 'commonMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:40.0421243Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0422433Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0423309Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0423741Z 
+2026-10-31T18:48:40.0423748Z 
+2026-10-31T18:48:40.0424387Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0425593Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0426365Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0426646Z 
+2026-10-31T18:48:40.0426653Z 
+2026-10-31T18:48:40.0427313Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0428905Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0429668Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0429940Z 
+2026-10-31T18:48:40.0429946Z 
+2026-10-31T18:48:40.0430489Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0431591Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0432334Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0432618Z 
+2026-10-31T18:48:40.0432624Z 
+2026-10-31T18:48:40.0433353Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0434686Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0435429Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0435695Z 
+2026-10-31T18:48:40.0435701Z 
+2026-10-31T18:48:40.0436504Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0438041Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0438799Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0439076Z 
+2026-10-31T18:48:40.0439083Z 
+2026-10-31T18:48:40.0439728Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0441466Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0442291Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0442588Z 
+2026-10-31T18:48:40.0442594Z 
+2026-10-31T18:48:40.0443366Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0444756Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0445865Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0446213Z 
+2026-10-31T18:48:40.0446221Z 
+2026-10-31T18:48:40.0447089Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0459953Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0460807Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0461106Z 
+2026-10-31T18:48:40.0461129Z 
+2026-10-31T18:48:40.0461916Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0463342Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0464168Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0464479Z 
+2026-10-31T18:48:40.0464486Z 
+2026-10-31T18:48:40.0465298Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0466743Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0467534Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0468088Z 
+2026-10-31T18:48:40.0468095Z 
+2026-10-31T18:48:40.0468932Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:40.0470404Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0471206Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0471484Z 
+2026-10-31T18:48:40.0471491Z 
+2026-10-31T18:48:40.0471696Z Run the build with '--info' for more details.
+2026-10-31T18:48:40.0473301Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:40.0474695Z 
+2026-10-31T18:48:40.0475097Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:40.0475833Z Source set 'iosMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:40.0477029Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0478696Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0479563Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0480068Z 
+2026-10-31T18:48:40.0480076Z 
+2026-10-31T18:48:40.0480729Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0481914Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0482694Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0483006Z 
+2026-10-31T18:48:40.0483014Z 
+2026-10-31T18:48:40.0483767Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0485050Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0485820Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0486128Z 
+2026-10-31T18:48:40.0486135Z 
+2026-10-31T18:48:40.0486698Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0490149Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0493002Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0493321Z 
+2026-10-31T18:48:40.0493329Z 
+2026-10-31T18:48:40.0494114Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0495462Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0496204Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0496523Z 
+2026-10-31T18:48:40.0496530Z 
+2026-10-31T18:48:40.0497572Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0499266Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0500034Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0500344Z 
+2026-10-31T18:48:40.0500351Z 
+2026-10-31T18:48:40.0501020Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0502261Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0502996Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0503302Z 
+2026-10-31T18:48:40.0503310Z 
+2026-10-31T18:48:40.0504070Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0505413Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0506265Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0506604Z 
+2026-10-31T18:48:40.0506610Z 
+2026-10-31T18:48:40.0507447Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0509129Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0509944Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0510262Z 
+2026-10-31T18:48:40.0510269Z 
+2026-10-31T18:48:40.0511022Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0512356Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0513166Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0513465Z 
+2026-10-31T18:48:40.0513472Z 
+2026-10-31T18:48:40.0514271Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0515639Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0516410Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0516714Z 
+2026-10-31T18:48:40.0516721Z 
+2026-10-31T18:48:40.0517543Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:40.0522890Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.0523679Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.0523970Z 
+2026-10-31T18:48:40.0523978Z 
+2026-10-31T18:48:40.0524186Z Run the build with '--info' for more details.
+2026-10-31T18:48:40.0525747Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:40.0527379Z 
+2026-10-31T18:48:40.1414056Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:40.1415475Z Source set 'nativeMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:40.1417302Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1419719Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1421118Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1422756Z 
+2026-10-31T18:48:40.1423060Z 
+2026-10-31T18:48:40.1424192Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1425939Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1427270Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1428036Z 
+2026-10-31T18:48:40.1428234Z 
+2026-10-31T18:48:40.1429634Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1431173Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1431826Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1432140Z 
+2026-10-31T18:48:40.1432277Z 
+2026-10-31T18:48:40.1432743Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1433524Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1434091Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1434389Z 
+2026-10-31T18:48:40.1434528Z 
+2026-10-31T18:48:40.1435087Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1436044Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1436616Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1436919Z 
+2026-10-31T18:48:40.1437056Z 
+2026-10-31T18:48:40.1437985Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1439521Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1440257Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1440542Z 
+2026-10-31T18:48:40.1440549Z 
+2026-10-31T18:48:40.1441207Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1442409Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1443122Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1443366Z 
+2026-10-31T18:48:40.1443370Z 
+2026-10-31T18:48:40.1443797Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1444535Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1444948Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1445111Z 
+2026-10-31T18:48:40.1445115Z 
+2026-10-31T18:48:40.1445603Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1446388Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1446791Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1446952Z 
+2026-10-31T18:48:40.1446956Z 
+2026-10-31T18:48:40.1447361Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1448633Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1449053Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1449220Z 
+2026-10-31T18:48:40.1449224Z 
+2026-10-31T18:48:40.1449659Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1450400Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1450802Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1450956Z 
+2026-10-31T18:48:40.1450972Z 
+2026-10-31T18:48:40.1451422Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:40.1452366Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:40.1452764Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:40.1452930Z 
+2026-10-31T18:48:40.1452933Z 
+2026-10-31T18:48:40.1453056Z Run the build with '--info' for more details.
+2026-10-31T18:48:40.1453907Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:40.1454626Z 
+2026-10-31T18:48:54.5421905Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:54.5466098Z Source set 'appleMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:54.5466661Z 
+2026-10-31T18:48:54.5466948Z > Task :shared:checkKotlinGradlePluginConfigurationErrors
+2026-10-31T18:48:54.5467369Z 
+2026-10-31T18:48:54.5467933Z > Task :shared:convertXmlValueResourcesForAndroidMain NO-SOURCE
+2026-10-31T18:48:54.5468624Z > Task :androidApp:mergeReleaseNativeLibs
+2026-10-31T18:48:54.5469270Z > Task :shared:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+2026-10-31T18:48:54.5470041Z > Task :shared:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+2026-10-31T18:48:54.5470845Z > Task :shared:generateResourceAccessorsForAndroidMain NO-SOURCE
+2026-10-31T18:48:54.5471581Z > Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+2026-10-31T18:48:54.5472335Z > Task :shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+2026-10-31T18:48:54.5473168Z > Task :shared:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+2026-10-31T18:48:54.5474008Z > Task :shared:generateResourceAccessorsForCommonMain NO-SOURCE
+2026-10-31T18:48:54.5474519Z 
+2026-10-31T18:48:54.5474743Z > Task :androidApp:stripReleaseDebugSymbols
+2026-10-31T18:48:54.5476108Z Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+2026-10-31T18:48:54.5477240Z 
+2026-10-31T18:48:54.5477577Z > Task :shared:generateActualResourceCollectorsForAndroidMain
+2026-10-31T18:48:54.5528803Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5558395Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5568504Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5578591Z 
+2026-10-31T18:48:54.5598118Z 
+2026-10-31T18:48:54.5608991Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5610376Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5611298Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5611755Z 
+2026-10-31T18:48:54.5611915Z 
+2026-10-31T18:48:54.5612760Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5614164Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5615140Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5615587Z 
+2026-10-31T18:48:54.5615740Z 
+2026-10-31T18:48:54.5616460Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5617937Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5618867Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5619348Z 
+2026-10-31T18:48:54.5619497Z 
+2026-10-31T18:48:54.5620411Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5621866Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5622779Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5623236Z 
+2026-10-31T18:48:54.5623387Z 
+2026-10-31T18:48:54.5624372Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5626260Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5627156Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5627806Z 
+2026-10-31T18:48:54.5627967Z 
+2026-10-31T18:48:54.5628801Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5630465Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5631416Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5631873Z 
+2026-10-31T18:48:54.5632030Z 
+2026-10-31T18:48:54.5632960Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5634517Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5635355Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5635814Z 
+2026-10-31T18:48:54.5635966Z 
+2026-10-31T18:48:54.5636964Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5638801Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5639714Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5640154Z 
+2026-10-31T18:48:54.5640304Z 
+2026-10-31T18:48:54.5641197Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5642659Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5643548Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5643996Z 
+2026-10-31T18:48:54.5644146Z 
+2026-10-31T18:48:54.5645087Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5646565Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5647463Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5648109Z 
+2026-10-31T18:48:54.5648268Z 
+2026-10-31T18:48:54.5649242Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'appleMain' for all target platforms.
+2026-10-31T18:48:54.5650767Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5651669Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5652116Z 
+2026-10-31T18:48:54.5652278Z 
+2026-10-31T18:48:54.5652639Z Run the build with '--info' for more details.
+2026-10-31T18:48:54.5654329Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:54.5655986Z 
+2026-10-31T18:48:54.5665006Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:54.5665924Z Source set 'commonMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:54.5667328Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5668994Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5670050Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5670656Z 
+2026-10-31T18:48:54.5670805Z 
+2026-10-31T18:48:54.5671593Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5673017Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5673962Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5674401Z 
+2026-10-31T18:48:54.5674550Z 
+2026-10-31T18:48:54.5675395Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5677128Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5678303Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5678754Z 
+2026-10-31T18:48:54.5678903Z 
+2026-10-31T18:48:54.5679617Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5680941Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5681878Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5682510Z 
+2026-10-31T18:48:54.5682672Z 
+2026-10-31T18:48:54.5683607Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5685159Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5686097Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5686530Z 
+2026-10-31T18:48:54.5686679Z 
+2026-10-31T18:48:54.5687866Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5689507Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5690466Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5690926Z 
+2026-10-31T18:48:54.5691071Z 
+2026-10-31T18:48:54.5691887Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5693325Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5694311Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5694761Z 
+2026-10-31T18:48:54.5694906Z 
+2026-10-31T18:48:54.5695795Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5697310Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5698441Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5698876Z 
+2026-10-31T18:48:54.5699033Z 
+2026-10-31T18:48:54.5700027Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5701629Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5702606Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5703065Z 
+2026-10-31T18:48:54.5703213Z 
+2026-10-31T18:48:54.5704114Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5705691Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5706648Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5707096Z 
+2026-10-31T18:48:54.5707244Z 
+2026-10-31T18:48:54.5708343Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5710086Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5711047Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5711486Z 
+2026-10-31T18:48:54.5711645Z 
+2026-10-31T18:48:54.5712639Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'commonMain' for all target platforms.
+2026-10-31T18:48:54.5714241Z The dependency should target platforms: [android, iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5715211Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5715663Z 
+2026-10-31T18:48:54.5715811Z 
+2026-10-31T18:48:54.5716175Z Run the build with '--info' for more details.
+2026-10-31T18:48:54.5718068Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:54.5719770Z 
+2026-10-31T18:48:54.5720233Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:54.5721088Z Source set 'iosMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:54.5722408Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5723738Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5724797Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5725588Z 
+2026-10-31T18:48:54.5725746Z 
+2026-10-31T18:48:54.5726534Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5728095Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5742707Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5743888Z 
+2026-10-31T18:48:54.5744064Z 
+2026-10-31T18:48:54.5744945Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5746456Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5747390Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5748096Z 
+2026-10-31T18:48:54.5748249Z 
+2026-10-31T18:48:54.5748964Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5750262Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5751164Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5751599Z 
+2026-10-31T18:48:54.5751743Z 
+2026-10-31T18:48:54.5752645Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5754100Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5754983Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5755434Z 
+2026-10-31T18:48:54.5755581Z 
+2026-10-31T18:48:54.5756520Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5758234Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5759068Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5759501Z 
+2026-10-31T18:48:54.5759650Z 
+2026-10-31T18:48:54.5760443Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5761787Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5762656Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5763095Z 
+2026-10-31T18:48:54.5763238Z 
+2026-10-31T18:48:54.5764111Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5765534Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5766417Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5766857Z 
+2026-10-31T18:48:54.5767002Z 
+2026-10-31T18:48:54.5768152Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5769704Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5770575Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5771001Z 
+2026-10-31T18:48:54.5771156Z 
+2026-10-31T18:48:54.5772010Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5773422Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5774293Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5774731Z 
+2026-10-31T18:48:54.5774881Z 
+2026-10-31T18:48:54.5775780Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5777498Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5778604Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5779048Z 
+2026-10-31T18:48:54.5779208Z 
+2026-10-31T18:48:54.5780132Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'iosMain' for all target platforms.
+2026-10-31T18:48:54.5781854Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5782735Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5783161Z 
+2026-10-31T18:48:54.5783303Z 
+2026-10-31T18:48:54.5783639Z Run the build with '--info' for more details.
+2026-10-31T18:48:54.5785644Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:54.5787154Z 
+2026-10-31T18:48:54.5787876Z e: ❌ KMP Dependencies Resolution Failure
+2026-10-31T18:48:54.5789004Z Source set 'nativeMain' couldn't resolve dependencies for all target platforms
+2026-10-31T18:48:54.5790343Z Couldn't resolve dependency 'androidx.navigation3:navigation3-ui:1.2.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5791818Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5792815Z Unresolved platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5793470Z 
+2026-10-31T18:48:54.5793628Z 
+2026-10-31T18:48:54.5794444Z Couldn't resolve dependency 'org.jetbrains.compose.runtime:runtime:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5795822Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5796782Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5797242Z 
+2026-10-31T18:48:54.5797391Z 
+2026-10-31T18:48:54.5798444Z Couldn't resolve dependency 'org.jetbrains.compose.foundation:foundation:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5799922Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5800859Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5802226Z 
+2026-10-31T18:48:54.5802393Z 
+2026-10-31T18:48:54.5803158Z Couldn't resolve dependency 'org.jetbrains.compose.ui:ui:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5804559Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5805517Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5806065Z 
+2026-10-31T18:48:54.5806220Z 
+2026-10-31T18:48:54.5807171Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-resources:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5808932Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5809738Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5810197Z 
+2026-10-31T18:48:54.5810347Z 
+2026-10-31T18:48:54.5811289Z Couldn't resolve dependency 'org.jetbrains.compose.components:components-ui-tooling-preview:1.12.1' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5812263Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5812909Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5813222Z 
+2026-10-31T18:48:54.5813337Z 
+2026-10-31T18:48:54.5813842Z Couldn't resolve dependency 'androidx.navigation3:navigation3-runtime:1.2.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5814655Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5815200Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5815471Z 
+2026-10-31T18:48:54.5815584Z 
+2026-10-31T18:48:54.5816121Z Couldn't resolve dependency 'org.jetbrains.androidx.navigation3:navigation3-ui:1.2.0-rc01' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5817191Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5818043Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5818493Z 
+2026-10-31T18:48:54.5818502Z 
+2026-10-31T18:48:54.5819354Z Couldn't resolve dependency 'org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5820385Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5820897Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5821266Z 
+2026-10-31T18:48:54.5821272Z 
+2026-10-31T18:48:54.5821834Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive:1.3.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5822586Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5823006Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5823177Z 
+2026-10-31T18:48:54.5823181Z 
+2026-10-31T18:48:54.5823617Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-layout:1.3.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5824362Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5824782Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5824951Z 
+2026-10-31T18:48:54.5824955Z 
+2026-10-31T18:48:54.5825418Z Couldn't resolve dependency 'org.jetbrains.compose.material3.adaptive:adaptive-navigation:1.3.0' in 'nativeMain' for all target platforms.
+2026-10-31T18:48:54.5826175Z The dependency should target platforms: [iosArm64, iosSimulatorArm64, iosX64]
+2026-10-31T18:48:54.5826579Z Unresolved platforms: [iosX64]
+2026-10-31T18:48:54.5826745Z 
+2026-10-31T18:48:54.5826749Z 
+2026-10-31T18:48:54.5826866Z Run the build with '--info' for more details.
+2026-10-31T18:48:54.5828028Z Solution: Make sure you are using a dependency that targets all required platforms or move your dependency and relevant code to a more applicable source set: https://kotl.in/57b2-source-set-dependencies
+2026-10-31T18:48:54.5828793Z 
+2026-10-31T18:48:54.6459407Z > Task :androidApp:extractReleaseNativeSymbolTables
+2026-10-31T18:48:54.6469384Z > Task :shared:generateComposeResClass
+2026-10-31T18:48:54.6470113Z > Task :androidApp:mergeReleaseNativeDebugMetadata NO-SOURCE
+2026-10-31T18:48:54.6470952Z > Task :shared:generateExpectResourceCollectorsForCommonMain
+2026-10-31T18:49:07.3438955Z > Task :androidApp:generateReleaseBuildConfig
+2026-10-31T18:49:07.3458992Z > Task :androidApp:generateReleaseResources
+2026-10-31T18:49:07.3459943Z > Task :androidApp:checkReleaseDuplicateClasses
+2026-10-31T18:49:07.4419248Z > Task :androidApp:packageReleaseResources
+2026-10-31T18:49:07.4420456Z > Task :shared:generateAndroidMainEmptyResourceFiles
+2026-10-31T18:49:07.6421427Z > Task :androidApp:processReleaseNavigationResources
+2026-10-31T18:49:07.7418948Z > Task :androidApp:javaPreCompileRelease
+2026-10-31T18:49:07.7458410Z > Task :shared:writeAndroidMainAarMetadata
+2026-10-31T18:49:07.7501583Z > Task :androidApp:mapReleaseSourceSetPaths
+2026-10-31T18:49:07.8428776Z > Task :androidApp:parseReleaseLocalResources
+2026-10-31T18:49:07.9412848Z > Task :androidApp:checkReleaseAarMetadata
+2026-10-31T18:49:07.9413568Z > Task :androidApp:generateReleaseRFile
+2026-10-31T18:49:08.4428865Z > Task :androidApp:compileReleaseNavigationResources
+2026-10-31T18:49:09.7428931Z > Task :androidApp:createReleaseCompatibleScreenManifests
+2026-10-31T18:49:09.8488943Z > Task :androidApp:extractDeepLinksRelease
+2026-10-31T18:49:10.5419371Z > Task :androidApp:desugarReleaseFileDependencies
+2026-10-31T18:49:10.5458286Z > Task :androidApp:mergeReleaseStartupProfile
+2026-10-31T18:49:10.7432076Z > Task :androidApp:mergeReleaseResources
+2026-10-31T18:49:24.6428937Z > Task :shared:compileAndroidMain
+2026-10-31T18:49:29.8449917Z e: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/ComparisonScreen.kt:12:47 Unresolved reference 'BookOpen'.
+2026-10-31T18:49:29.8499479Z e: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/ComparisonScreen.kt:101:36 Unresolved reference 'BookOpen' on receiver of type 'Icons.Filled'.
+2026-10-31T18:49:29.8539162Z e: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/MonthlyScreen.kt:99:30 Unresolved reference 'clip'.
+2026-10-31T18:49:29.8579797Z e: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/TasbihScreen.kt:15:47 Unresolved reference 'Sparkles'.
+2026-10-31T18:49:29.8589332Z e: file:///home/runner/work/amsakkarrar/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/TasbihScreen.kt:62:36 Unresolved reference 'Sparkles' on receiver of type 'Icons.Filled'.
+2026-10-31T18:49:29.9438444Z 
+2026-10-31T18:49:29.9468680Z > Task :shared:compileAndroidMain FAILED
+2026-10-31T18:49:39.8419148Z > Task :shared:processAndroidMainManifest
+2026-10-31T18:49:40.5459060Z > Task :androidApp:mergeExtDexRelease
+2026-10-31T18:50:25.9412987Z gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1793472410605.json
+2026-10-31T18:50:26.0418821Z 
+2026-10-31T18:50:26.0433849Z 
+2026-10-31T18:50:26.0435148Z [Incubating] Problems report is available at: file:///home/runner/work/amsakkarrar/amsakkarrar/build/reports/problems/problems-report.html
+2026-10-31T18:50:26.0488320Z FAILURE: Build failed with an exception.
+2026-10-31T18:50:26.0488881Z 32 actionable tasks: 32 executed
+2026-10-31T18:50:26.0517905Z 
+2026-10-31T18:50:26.0548087Z * What went wrong:
+2026-10-31T18:50:26.0578192Z Execution failed for task ':shared:compileAndroidMain'.
+2026-10-31T18:50:26.0608587Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+2026-10-31T18:50:26.0628372Z    > Kotlin compiler: UNRESOLVED_IMPORT
+2026-10-31T18:50:26.0640532Z        Kotlin compiler error
+2026-10-31T18:50:26.0641449Z          Unresolved reference 'BookOpen'.
+2026-10-31T18:50:26.0642801Z          Location: /home/runner/work/amsakkarrar/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/ComparisonScreen.kt line 12
+2026-10-31T18:50:26.0643989Z 
+2026-10-31T18:50:26.0644286Z * Try:
+2026-10-31T18:50:26.0644913Z > Run with --info or --debug option to get more log output.
+2026-10-31T18:50:26.0645866Z > Run with --scan to get full insights from a Build Scan (powered by Develocity).
+2026-10-31T18:50:26.0646796Z > Get more help at https://help.gradle.org.
+2026-10-31T18:50:26.0647315Z 
+2026-10-31T18:50:26.0647903Z * Exception is:
+2026-10-31T18:50:26.0648865Z org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':shared:compileAndroidMain'.
+2026-10-31T18:50:26.0650644Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+2026-10-31T18:50:26.0652158Z 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+2026-10-31T18:50:26.0653598Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+2026-10-31T18:50:26.0655475Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+2026-10-31T18:50:26.0657439Z 	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+2026-10-31T18:50:26.0663730Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+2026-10-31T18:50:26.0665750Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+2026-10-31T18:50:26.0668000Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+2026-10-31T18:50:26.0670216Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+2026-10-31T18:50:26.0672338Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+2026-10-31T18:50:26.0674057Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+2026-10-31T18:50:26.0675702Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+2026-10-31T18:50:26.0677543Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+2026-10-31T18:50:26.0717266Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+2026-10-31T18:50:26.0749028Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+2026-10-31T18:50:26.0778908Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-10-31T18:50:26.0780677Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.0808286Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-10-31T18:50:26.0810067Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.0811713Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+2026-10-31T18:50:26.0813400Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+2026-10-31T18:50:26.0815055Z 	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+2026-10-31T18:50:26.0816458Z 	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+2026-10-31T18:50:26.0818279Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+2026-10-31T18:50:26.0820280Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+2026-10-31T18:50:26.0822371Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+2026-10-31T18:50:26.0824239Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+2026-10-31T18:50:26.0826057Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+2026-10-31T18:50:26.0828488Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+2026-10-31T18:50:26.0830324Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+2026-10-31T18:50:26.0831802Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+2026-10-31T18:50:26.0833286Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+2026-10-31T18:50:26.0834789Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+2026-10-31T18:50:26.0836924Z Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+2026-10-31T18:50:26.0839478Z 	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:289)
+2026-10-31T18:50:26.0841356Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+2026-10-31T18:50:26.0848728Z 	at org.gradle.internal.Factories$1.create(Factories.java:30)
+2026-10-31T18:50:26.0850627Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withoutLocks$2(DefaultWorkerLeaseService.java:350)
+2026-10-31T18:50:26.0852178Z 	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+2026-10-31T18:50:26.0853685Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:348)
+2026-10-31T18:50:26.0855282Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:332)
+2026-10-31T18:50:26.0857060Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:337)
+2026-10-31T18:50:26.0859114Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+2026-10-31T18:50:26.0860970Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+2026-10-31T18:50:26.0862604Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+2026-10-31T18:50:26.0864143Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+2026-10-31T18:50:26.0865568Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:267)
+2026-10-31T18:50:26.0867103Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+2026-10-31T18:50:26.0868995Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+2026-10-31T18:50:26.0870617Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-10-31T18:50:26.0872365Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.0874020Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-10-31T18:50:26.0875668Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.0877284Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+2026-10-31T18:50:26.0879069Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:244)
+2026-10-31T18:50:26.0880591Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:227)
+2026-10-31T18:50:26.0882199Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:210)
+2026-10-31T18:50:26.0883748Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:176)
+2026-10-31T18:50:26.0885066Z 	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:167)
+2026-10-31T18:50:26.0886346Z 	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:47)
+2026-10-31T18:50:26.0887546Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:137)
+2026-10-31T18:50:26.0889032Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:134)
+2026-10-31T18:50:26.0935222Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+2026-10-31T18:50:26.0943542Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+2026-10-31T18:50:26.0945517Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-10-31T18:50:26.0947187Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.0949252Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-10-31T18:50:26.0950925Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.0952966Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+2026-10-31T18:50:26.0954412Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:134)
+2026-10-31T18:50:26.0955676Z 	at org.gradle.internal.execution.steps.ExecuteStep$Mutable.execute(ExecuteStep.java:80)
+2026-10-31T18:50:26.0957040Z 	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+2026-10-31T18:50:26.0959663Z 	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+2026-10-31T18:50:26.0961164Z 	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+2026-10-31T18:50:26.0963947Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:51)
+2026-10-31T18:50:26.0965750Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:29)
+2026-10-31T18:50:26.0967804Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:67)
+2026-10-31T18:50:26.0970129Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:39)
+2026-10-31T18:50:26.0971931Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.0973433Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:42)
+2026-10-31T18:50:26.0975740Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:24)
+2026-10-31T18:50:26.0977785Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+2026-10-31T18:50:26.0980118Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+2026-10-31T18:50:26.0981986Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:39)
+2026-10-31T18:50:26.0983723Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:28)
+2026-10-31T18:50:26.0985202Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.0986568Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+2026-10-31T18:50:26.0988322Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:76)
+2026-10-31T18:50:26.0989643Z 	at org.gradle.internal.Either$Right.fold(Either.java:176)
+2026-10-31T18:50:26.0990827Z 	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+2026-10-31T18:50:26.0992237Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:74)
+2026-10-31T18:50:26.0993637Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:49)
+2026-10-31T18:50:26.0995162Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:46)
+2026-10-31T18:50:26.0996901Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:35)
+2026-10-31T18:50:26.0998598Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.0999980Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+2026-10-31T18:50:26.1001493Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+2026-10-31T18:50:26.1002920Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+2026-10-31T18:50:26.1004272Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+2026-10-31T18:50:26.1006023Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+2026-10-31T18:50:26.1008911Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+2026-10-31T18:50:26.1011001Z 	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:70)
+2026-10-31T18:50:26.1013006Z 	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:32)
+2026-10-31T18:50:26.1015146Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:69)
+2026-10-31T18:50:26.1017054Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:37)
+2026-10-31T18:50:26.1019127Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:63)
+2026-10-31T18:50:26.1026971Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:34)
+2026-10-31T18:50:26.1028680Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.1030034Z 	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:79)
+2026-10-31T18:50:26.1031470Z 	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:65)
+2026-10-31T18:50:26.1032877Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:99)
+2026-10-31T18:50:26.1034262Z 	at org.gradle.internal.execution.steps.ValidateStep$Mutable.execute(ValidateStep.java:65)
+2026-10-31T18:50:26.1036192Z 	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.executeMutable(CaptureMutableStateBeforeExecutionStep.java:86)
+2026-10-31T18:50:26.1038696Z 	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:65)
+2026-10-31T18:50:26.1042180Z 	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:45)
+2026-10-31T18:50:26.1044852Z 	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeWithNonEmptySources(SkipEmptyMutableWorkStep.java:210)
+2026-10-31T18:50:26.1046772Z 	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:90)
+2026-10-31T18:50:26.1048821Z 	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:53)
+2026-10-31T18:50:26.1050323Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.1051969Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+2026-10-31T18:50:26.1053994Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:36)
+2026-10-31T18:50:26.1055965Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:23)
+2026-10-31T18:50:26.1057548Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.1059617Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:77)
+2026-10-31T18:50:26.1070588Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:43)
+2026-10-31T18:50:26.1073469Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.1076223Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$executeMutable$0(AssignMutableWorkspaceStep.java:34)
+2026-10-31T18:50:26.1078189Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:305)
+2026-10-31T18:50:26.1082174Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:30)
+2026-10-31T18:50:26.1084375Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:21)
+2026-10-31T18:50:26.1088969Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-10-31T18:50:26.1093875Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+2026-10-31T18:50:26.1102597Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+2026-10-31T18:50:26.1104697Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+2026-10-31T18:50:26.1106838Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+2026-10-31T18:50:26.1109255Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+2026-10-31T18:50:26.1110984Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+2026-10-31T18:50:26.1112376Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+2026-10-31T18:50:26.1113688Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:56)
+2026-10-31T18:50:26.1114913Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:38)
+2026-10-31T18:50:26.1116290Z 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:68)
+2026-10-31T18:50:26.1118181Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:132)
+2026-10-31T18:50:26.1119660Z 	... 30 more
+2026-10-31T18:50:26.1120771Z Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Unresolved reference 'BookOpen'.
+2026-10-31T18:50:26.1123052Z 	at org.jetbrains.kotlin.gradle.plugin.diagnostics.DefaultCompilerDiagnosticsProblemsReporter.reportCompilerMessage(CompilerDiagnosticsProblemsReporter.kt:63)
+2026-10-31T18:50:26.1125497Z 	at org.jetbrains.kotlin.compilerRunner.btapi.ProblemsApiCompilerMessageRenderer.replayTo(ProblemsApiCompilerMessageRenderer.kt:88)
+2026-10-31T18:50:26.1127509Z 	at org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork.execute(BuildToolsApiCompilationWork.kt:251)
+2026-10-31T18:50:26.1129556Z 	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:68)
+2026-10-31T18:50:26.1137372Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:64)
+2026-10-31T18:50:26.1142832Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:61)
+2026-10-31T18:50:26.1144422Z 	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:102)
+2026-10-31T18:50:26.1148464Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:61)
+2026-10-31T18:50:26.1149935Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+2026-10-31T18:50:26.1151071Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+2026-10-31T18:50:26.1152692Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+2026-10-31T18:50:26.1154783Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+2026-10-31T18:50:26.1156648Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-10-31T18:50:26.1158997Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.1161374Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-10-31T18:50:26.1163320Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-10-31T18:50:26.1164980Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+2026-10-31T18:50:26.1166644Z 	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+2026-10-31T18:50:26.1168389Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:58)
+2026-10-31T18:50:26.1170123Z 	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:176)
+2026-10-31T18:50:26.1172211Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+2026-10-31T18:50:26.1174196Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+2026-10-31T18:50:26.1176111Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+2026-10-31T18:50:26.1177505Z 	at org.gradle.internal.Factories$1.create(Factories.java:30)
+2026-10-31T18:50:26.1179134Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+2026-10-31T18:50:26.1180825Z 	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+2026-10-31T18:50:26.1182415Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+2026-10-31T18:50:26.1184109Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:265)
+2026-10-31T18:50:26.1185945Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+2026-10-31T18:50:26.1188067Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:133)
+2026-10-31T18:50:26.1189999Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+2026-10-31T18:50:26.1191965Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+2026-10-31T18:50:26.1193270Z 	... 2 more
+2026-10-31T18:50:26.1193608Z 
+2026-10-31T18:50:26.1193757Z 
+2026-10-31T18:50:26.1194053Z BUILD FAILED in 3m 43s
+2026-10-31T18:50:26.5604031Z ##[error]Process completed with exit code 1.
+2026-10-31T18:50:26.5762248Z Post job cleanup.
+2026-10-31T18:50:26.8337885Z In post-action step
+2026-10-31T18:50:26.8350272Z Cache is read-only: will not save state for use in subsequent builds.
+2026-10-31T18:50:26.8357170Z Generating Job Summary
+2026-10-31T18:50:26.8375744Z Completed post-action step
+2026-10-31T18:50:26.8712800Z Post job cleanup.
+2026-10-31T18:50:27.0173111Z (node:2677) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-31T18:50:27.0174589Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-31T18:50:27.0428306Z Post job cleanup.
+2026-10-31T18:50:27.1468485Z [command]/usr/bin/git version
+2026-10-31T18:50:27.1525627Z git version 2.56.0
+2026-10-31T18:50:27.1595005Z Temporarily overriding HOME='/home/runner/work/_temp/5577db63-f687-4b81-b2d8-085c0b12728c' before making global git config changes
+2026-10-31T18:50:27.1598439Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-31T18:50:27.1603117Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/amsakkarrar/amsakkarrar
+2026-10-31T18:50:27.1654221Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-31T18:50:27.1698604Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-31T18:50:27.1994417Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-31T18:50:27.2034503Z http.https://github.com/.extraheader
+2026-10-31T18:50:27.2049171Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-31T18:50:27.2091454Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-31T18:50:27.2404165Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-31T18:50:27.2457990Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-31T18:50:27.2862230Z Cleaning up orphan processes
+2026-10-31T18:50:27.3220751Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-java@v4, gradle/actions/setup-gradle@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
