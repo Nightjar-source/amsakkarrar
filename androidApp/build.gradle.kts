@@ -84,6 +84,7 @@ dependencies {
     implementation(compose.material3)
     implementation(compose.foundation)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.compose.material3.adaptive)
