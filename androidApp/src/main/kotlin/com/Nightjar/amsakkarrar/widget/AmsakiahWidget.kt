@@ -13,10 +13,10 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.*
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import com.Nightjar.amsakkarrar.MainActivity
 
@@ -26,22 +26,26 @@ class AmsakiahWidgetReceiver : GlanceAppWidgetReceiver() {
 
 class AmsakiahWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val launchIntent = Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_MAIN
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
         provideContent {
             GlanceTheme {
-                WidgetContent()
+                WidgetContent(launchIntent)
             }
         }
     }
 
     @Composable
-    private fun WidgetContent() {
+    private fun WidgetContent(launchIntent: Intent) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(Color(0xFF141122))
                 .cornerRadius(18.dp)
                 .padding(14.dp)
-                .clickable(actionStartActivity<MainActivity>()),
+                .clickable(actionStartActivity(launchIntent)),
             verticalAlignment = Alignment.Vertical.CenterVertically,
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally
         ) {
@@ -89,7 +93,7 @@ class AmsakiahWidget : GlanceAppWidget() {
                         style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
                     )
                     Text(
-                        text = "05:21 ص",
+                        text = "05:23 ص",
                         style = TextStyle(color = ColorProvider(Color(0xFFFFD54F)), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     )
                 }
@@ -103,11 +107,21 @@ class AmsakiahWidget : GlanceAppWidget() {
                         style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
                     )
                     Text(
-                        text = "06:09 م",
-                        style = TextStyle(color = ColorProvider(Color(0xFF81C784)), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        text = "05:48 م",
+                        style = TextStyle(color = ColorProvider(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     )
                 }
             }
+
+            Spacer(modifier = GlanceModifier.height(6.dp))
+
+            Text(
+                text = "العراق - كربلاء المقدسة",
+                style = TextStyle(
+                    color = ColorProvider(Color.White.copy(alpha = 0.5f)),
+                    fontSize = 10.sp
+                )
+            )
         }
     }
 }
