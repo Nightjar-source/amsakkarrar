@@ -20,6 +20,8 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.Nightjar.amsakkarrar.MainActivity
 
+private fun glanceColor(color: Color): ColorProvider = ColorProvider(day = color, night = color)
+
 class AmsakiahWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AmsakiahWidget()
 }
@@ -57,7 +59,7 @@ class AmsakiahWidget : GlanceAppWidget() {
                 Text(
                     text = "🌙 إمساكية كرار 2026",
                     style = TextStyle(
-                        color = ColorProvider(Color(0xFFFFD54F)),
+                        color = glanceColor(Color(0xFFFFD54F)),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -76,11 +78,11 @@ class AmsakiahWidget : GlanceAppWidget() {
                 ) {
                     Text(
                         text = "الإمساك",
-                        style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
+                        style = TextStyle(color = glanceColor(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
                     )
                     Text(
                         text = "05:11 ص",
-                        style = TextStyle(color = ColorProvider(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = glanceColor(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     )
                 }
 
@@ -90,11 +92,11 @@ class AmsakiahWidget : GlanceAppWidget() {
                 ) {
                     Text(
                         text = "الفجر",
-                        style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
+                        style = TextStyle(color = glanceColor(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
                     )
                     Text(
                         text = "05:23 ص",
-                        style = TextStyle(color = ColorProvider(Color(0xFFFFD54F)), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = glanceColor(Color(0xFFFFD54F)), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     )
                 }
 
@@ -104,11 +106,11 @@ class AmsakiahWidget : GlanceAppWidget() {
                 ) {
                     Text(
                         text = "المغرب",
-                        style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
+                        style = TextStyle(color = glanceColor(Color.White.copy(alpha = 0.7f)), fontSize = 11.sp)
                     )
                     Text(
                         text = "05:48 م",
-                        style = TextStyle(color = ColorProvider(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = glanceColor(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     )
                 }
             }
@@ -118,7 +120,7 @@ class AmsakiahWidget : GlanceAppWidget() {
             Text(
                 text = "العراق - كربلاء المقدسة",
                 style = TextStyle(
-                    color = ColorProvider(Color.White.copy(alpha = 0.5f)),
+                    color = glanceColor(Color.White.copy(alpha = 0.5f)),
                     fontSize = 10.sp
                 )
             )
