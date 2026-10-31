@@ -36,24 +36,24 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          mkdir -p composeApp
+          mkdir -p androidApp
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > composeApp/Nightjar.keystore
+            echo "$KEYSTORE_BASE64" | base64 -d > androidApp/Nightjar.keystore
           elif [ -f "keystore_base64.txt" ]; then
-            cat keystore_base64.txt | base64 -d > composeApp/Nightjar.keystore
+            cat keystore_base64.txt | base64 -d > androidApp/Nightjar.keystore
           fi
           echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-19941994}" >> local.properties
           echo "KEY_PASSWORD=${KEY_PASSWORD:-19941994}" >> local.properties
 
       - name: Build Official Release APK
-        run: ./gradlew :composeApp:assembleRelease --no-daemon --stacktrace
+        run: ./gradlew :androidApp:assembleRelease --no-daemon --stacktrace
 
       - name: Locate APK
         id: find_apk
         run: |
-          APK_PATH=$(find composeApp/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          APK_PATH=$(find androidApp/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           echo "Found APK at: $APK_PATH"
-          NAMED_APK="composeApp/build/outputs/apk/release/amsakkarrar-release.apk"
+          NAMED_APK="androidApp/build/outputs/apk/release/amsakkarrar-release.apk"
           if [ -n "$APK_PATH" ]; then
             cp "$APK_PATH" "$NAMED_APK"
           fi
@@ -77,13 +77,13 @@ jobs:
             ${{ steps.find_apk.outputs.named_apk }}
           name: إمساكية كرار 2026 - النسخة المعتمدة ${{ github.ref_name }}
           body: |
-            # 🌙 إمساكية كرار 2026 - النسخة العراقية الخالصة المتكيفة
-            ### الإصدار المعتمد: ${{ github.ref_name }}
+            # 🌙 إمساكية كرار 2026 - النسخة المعتمدة المتكاملة
+            ### الإصدار: ${{ github.ref_name }}
 
-            تطبيق فلكي إسلامي شامل مبني بأحدث معايير كوتلن كامبوس (Compose Multiplatform 2026) متوافق 100% مع تقويم العتبة العباسية المقدسة وخوارزميات معهد الكفيل.
-            
-            - 🧭 حساب مواقيت الصلاة أوفلاين بدقة متناهية.
-            - 🌌 قبة سماوية ثلاثية الأبعاد تفاعلية تتغير تدرجاتها مع دوران الأرض والشمس.
-            - 📿 مكتبة مفاتيح الجنان للأدعية والزيارات الشيعية مع قارئ صوتي متطور.
-            - 🕋 بوصلة القبلة الدقيقة مع حساب المسافة للكعبة المشرفة وطور القمر الفلكي.
-            - 📱 دعم الشاشات المتكيفة (الهواتف واللوحيات) وفق إرشادات Material 3 الرسمية.
+            - 🚀 مبني بأحدث معايير كوتلن كامبوس 2026 (Compose Multiplatform & Kotlin 2.4.20).
+            - 🧭 محرك ملاحة Navigation 3 الأصلي بكامل كفاءته عبر المنصات.
+            - 📱 ودجيت الشاشة الرئيسية الحية عبر Jetpack Glance.
+            - 🔭 مرصد الكفيل 3D والقبة الفلكية وحسابات كبلر وميل الشمس ومعادلة الوقت.
+            - 🕋 بوصلة القبلة الدقيقة ومسافة الكعبة المشرفة وطور القمر الفلكي.
+            - 📿 مكتبة الأدعية والزيارات المأثورة عن أهل البيت (ع) مع قارئ تفاعلي ومشغل صوتي.
+            - 📊 جدول إمساكية شهر رمضان المبارك الكامل (30 يوماً).
