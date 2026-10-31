@@ -20,7 +20,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.Nightjar.amsakkarrar.MainActivity
 
-private fun glanceColor(color: Color): ColorProvider = ColorProvider(day = color, night = color)
+private fun glanceColor(color: Color): ColorProvider = ColorProvider(color)
 
 class AmsakiahWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AmsakiahWidget()
