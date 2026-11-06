@@ -46,7 +46,13 @@ class AdhanService : Service() {
     private fun playAdhan() {
         stopPlayback()
         runCatching {
-            val mp = MediaPlayer.create(this, R.raw.adhan) ?: return
+            // الملف موجود في الوحدة المشتركة (shared/src/androidMain/res/raw/adhan.mp3)
+            val resId = resources.getIdentifier("adhan", "raw", packageName)
+            if (resId == 0) return
+            val afd = resources.openRawResourceFd(resId) ?: return
+            val mp = MediaPlayer()
+            mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
             mp.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
@@ -57,6 +63,7 @@ class AdhanService : Service() {
             mp.setOnCompletionListener {
                 stopPlayback()
             }
+            mp.prepare()
             mp.start()
             player = mp
         }

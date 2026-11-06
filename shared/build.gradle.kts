@@ -13,6 +13,10 @@ kotlin {
         namespace = "com.Nightjar.amsakkarrar.shared"
         compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()
+        // تفعيل موارد أندرويد في الوحدة المشتركة (الأصوات في res/raw تُدمج في التطبيق)
+        androidResources {
+            enable = true
+        }
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
