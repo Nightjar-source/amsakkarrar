@@ -18,8 +18,8 @@ kotlin {
         }
     }
 
+    // iosX64 غير مدعوم من Compose 1.12 / Navigation3 / Adaptive — أُزيل لتفادي فشل حل الاعتماديات.
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
@@ -34,7 +34,6 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
-            implementation("org.jetbrains.compose.material3:material3-window-size-class:1.7.3")
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
@@ -44,7 +43,6 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.material.kolor)
             implementation(libs.jetbrains.navigation3.ui)
             implementation(libs.jetbrains.lifecycle.viewmodel.navigation3)
             implementation(libs.jetbrains.compose.material3.adaptive)
@@ -65,5 +63,6 @@ kotlin {
 
 compose.resources {
     publicResClass = true
+    packageOfResClass = "com.karrar.amsakiah.resources"
     generateResClass = always
 }

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">إمساكية كرار 2026</string>
+    <string name="widget_today">كرار — اليوم</string>
+    <string name="widget_times">كرار — المواقيت</string>
+    <string name="widget_countdown">كرار — العدّاد</string>
+    <string name="widget_hijri">كرار — التاريخ الهجري</string>
 </resources>

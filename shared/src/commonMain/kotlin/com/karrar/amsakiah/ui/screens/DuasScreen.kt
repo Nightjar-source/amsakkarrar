@@ -1,248 +1,191 @@
 package com.karrar.amsakiah.ui.screens
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.core.data.ShiaDuasLibrary
+import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.components.SectionTitle
+import com.karrar.amsakiah.ui.platform.PlatformBackHandler
+import com.karrar.amsakiah.ui.theme.KararColors
+
+/**
+ * قسم الأدعية:
+ * - فهرس قابل للبحث والتصنيف.
+ * - كل دعاء يُفتح في شاشة مستقلة عبر معرّفه (id) لا في نافذة منبثقة.
+ * - زر/إيماءة الرجوع تعيد إلى الفهرس (مع دعم Predictive Back).
+ */
+@Composable
+fun DuasScreen(contentPadding: PaddingValues) {
+    var selectedId by remember { mutableStateOf<String?>(null) }
+    val selected = ShiaDuasLibrary.byId(selectedId)
+
+    PlatformBackHandler(enabled = selected != null) { selectedId = null }
+
+    Crossfade(
+        targetState = selected,
+        animationSpec = tween(220),
+        label = "dua-navigation"
+    ) { item ->
+        if (item == null) {
+            DuaList(contentPadding = contentPadding, onSelect = { selectedId = it.id })
+        } else {
+            DuaDetailScreen(
+                item = item,
+                contentPadding = contentPadding,
+                onBack = { selectedId = null }
+            )
+        }
+    }
+}
 
 @Composable
-fun DuasScreen(modifier: Modifier = Modifier) {
-    var selectedCategory by remember { mutableStateOf("الكل") }
-    var activeDua by remember { mutableStateOf<ShiaDuaItem?>(null) }
-    var fontSizeSp by remember { mutableStateOf(18) }
-    var isPlaying by remember { mutableStateOf(false) }
+private fun DuaList(contentPadding: PaddingValues, onSelect: (ShiaDuaItem) -> Unit) {
+    val all = remember { ShiaDuasLibrary.duasList }
+    var query by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf<String?>(null) }
 
-    val categories = remember {
-        listOf("الكل", "أدعية الإمام المهدي (عج)", "مناجاة وأدعية الليالي", "تعقيبات الصباح والمساء", "الزيارات المشهورة")
+    val categories = remember { all.map { it.category }.distinct() }
+    val filtered = remember(query, category) {
+        all.filter { item ->
+            (category == null || item.category == category) &&
+                (query.isBlank() || item.title.contains(query) || item.arabicText.contains(query))
+        }
     }
 
-    val filteredDuas = remember(selectedCategory) {
-        if (selectedCategory == "الكل") ShiaDuasLibrary.duasList
-        else ShiaDuasLibrary.duasList.filter { it.category == selectedCategory }
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFF0D0B14))
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = contentPadding.calculateTopPadding() + 8.dp,
+            bottom = contentPadding.calculateBottomPadding() + 8.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (activeDua != null) {
-            val dua = activeDua!!
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = {
-                            activeDua = null
-                            isPlaying = false
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1E1B2E))
-                    ) {
-                        Icon(Icons.Default.ArrowForward, contentDescription = "رجوع", tint = Color.White)
-                    }
+        item {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("ابحث في الأدعية والزيارات...", fontSize = 13.sp) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = KararColors.Gold) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { if (fontSizeSp > 14) fontSizeSp -= 2 },
-                            colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1E1B2E))
-                        ) {
-                            Text("A-", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                        IconButton(
-                            onClick = { if (fontSizeSp < 32) fontSizeSp += 2 },
-                            colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1E1B2E))
-                        ) {
-                            Text("A+", color = Color(0xFFFFD54F), fontWeight = FontWeight.Bold)
-                        }
-                    }
+        item {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    CategoryChip("الكل", category == null) { category = null }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = dua.title,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFD54F),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = dua.subtitle,
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 16.dp)
-                )
-
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF181528),
-                    modifier = Modifier.weight(1f).fillMaxWidth()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(20.dp)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        Text(
-                            text = dua.arabicText,
-                            fontSize = fontSizeSp.sp,
-                            lineHeight = (fontSizeSp * 1.8).sp,
-                            color = Color(0xFFF5F5F5),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFF261D38),
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 60.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = Color(0xFFFFD54F))
-                            Text("صوت قارئ العتبة الحسينية", fontSize = 13.sp, color = Color.White)
-                        }
-
-                        IconButton(
-                            onClick = { isPlaying = !isPlaying },
-                            colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFFFFD54F))
-                        ) {
-                            Icon(
-                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                tint = Color(0xFF261D38)
-                            )
-                        }
-                    }
-                }
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
-            ) {
-                Text(
-                    text = "مفاتيح الجنان والأدعية المباركة",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFD54F)
-                )
-                Text(
-                    text = "أدعية وتعقيبات مأثورة عن أئمة أهل البيت (عليهم السلام)",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.65f),
-                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-                )
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ) {
-                    items(categories) { cat ->
-                        FilterChip(
-                            selected = (selectedCategory == cat),
-                            onClick = { selectedCategory = cat },
-                            label = { Text(cat, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFFFD54F),
-                                selectedLabelColor = Color(0xFF1E1B2E),
-                                containerColor = Color(0xFF1E1B2E),
-                                labelColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                    }
-                }
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(filteredDuas) { item ->
-                        Surface(
-                            onClick = { activeDua = item },
-                            shape = RoundedCornerShape(18.dp),
-                            color = Color(0xFF1A1728),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.title,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFFFD54F)
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = item.subtitle,
-                                        fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.7f),
-                                        maxLines = 1
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "الميقات: ${item.recommendedTime}",
-                                        fontSize = 11.sp,
-                                        color = Color(0xFF81C784)
-                                    )
-                                }
-                                Icon(
-                                    Icons.Default.ChevronLeft,
-                                    contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.5f)
-                                )
-                            }
-                        }
-                    }
+                items(categories) { cat ->
+                    CategoryChip(cat, category == cat) { category = if (category == cat) null else cat }
                 }
             }
         }
+
+        item { SectionTitle("الأدعية والمناجاة (${filtered.size})") }
+
+        items(filtered, key = { it.id }) { item ->
+            DuaCard(item = item, onClick = { onSelect(item) })
+        }
+    }
+}
+
+@Composable
+private fun DuaCard(item: ShiaDuaItem, onClick: () -> Unit) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        corner = 20.dp,
+        contentPadding = PaddingValues(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(item.title, color = KararColors.Gold, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                if (item.subtitle.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(item.subtitle, color = KararColors.TextSecondary, fontSize = 11.sp, maxLines = 2)
+                }
+            }
+            if (item.hasAudio) {
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    Modifier
+                        .size(34.dp)
+                        .background(Color(0x33FFD700), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.PlayArrow,
+                        contentDescription = "يحتوي تسجيل صوتي",
+                        tint = KararColors.Gold,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(item.category, color = KararColors.Purple, fontSize = 10.sp)
+            Text("•", color = KararColors.TextMuted, fontSize = 10.sp)
+            Text(item.recommendedTime, color = KararColors.TextMuted, fontSize = 10.sp)
+        }
+    }
+}
+
+@Composable
+private fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .background(
+                if (selected) KararColors.Gold else Color(0x14FFFFFF),
+                RoundedCornerShape(50)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text,
+            color = if (selected) Color(0xFF241A00) else KararColors.TextSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
