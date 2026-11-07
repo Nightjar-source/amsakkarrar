@@ -30,6 +30,13 @@ data class AppSettings(
     val visiblePrayers: List<String> = listOf(
         "imsak", "fajr", "sunrise", "dhuhr", "asr", "sunset", "maghrib", "isha", "midnight"
     ),
+    /**
+     * وضع إظهار الإمساك (سلوك V7):
+     * - `ramadan_auto`: يظهر تلقائيًا في شهر رمضان فقط.
+     * - `always`: يظهر دائمًا.
+     * - `hidden`: مخفي دائمًا.
+     */
+    val imsakMode: String = "ramadan_auto",
 
     // ---------- الإشعارات ----------
     val adhanEnabled: Boolean = true,

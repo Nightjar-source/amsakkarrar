@@ -10,8 +10,9 @@
 | البند | القيمة |
 | --- | --- |
 | الفرع | `main` |
-| آخر التزام | `568286b` — نسخ احتياطي مشفّر لتلغرام |
-| المرحلة | **المرحلة 1 — شاشة اليوم** (المرحلة 0 مكتملة برمجيًا) |
+| آخر التزام | `8216946` — المرحلة 1 (شاشة اليوم) |
+| المرحلة | **المرحلة 1 — شاشة اليوم** مكتملة برمجيًا، بانتظار Gate بصري على جهاز |
+| المرحلة التالية | **المرحلة 2 — الضبط المدمج + التقويم M3 Expressive** |
 | الخطة | مكتملة ومحفوظة |
 | الجهاز | لا جهاز/محاكي متصل |
 | الإصدار الأخير | `v1.1.0` — `versionCode 10100` |
@@ -27,26 +28,31 @@
 
 ---
 
-## 3. الخطوة التالية فورًا
+## 3. الخطوة التالية فورًا — المرحلة 2
 
-**المرحلة 1 — شاشة اليوم:**
+1. دمج ضبط الكفيل وV7 في `SettingsScreen` واحد بأقسام منسدلة، دون تكرار البحث أو
+   تقويم PDF:
+   - الموقع (GPS/IP/مدن أوفلاين) والتوقيت الصيفي.
+   - الطريقة والزوايا وقواعد خطوط العرض العليا (في شاشة الفقه فقط للتنبيه).
+   - التعديلات اليدوية لكل وقت.
+   - اختيار الأذان/التذكير/العدّ (محدد أو الكل) + `imsakMode`
+     (`ramadan_auto` / `always` / `hidden`).
+2. تحويل «الإمساكية» إلى «التقويم» M3 Expressive: تغيير السنة/الشهر الهجري
+   والميلادي كلًّا على حدة، ماضٍ/قادم، وبطاقات أيام متجاوبة.
+3. **Gate 2**: كل الإعدادات تعمل وتنعكس فورًا على اليوم والودجت والإشعار.
 
-1. إعادة بناء رأس «اليوم» من `amsak3d.tsx`: المدينة + الطقس + كشيدة الشهر في سطر
-   واحد متجاوب.
-2. `SkyArc` مطابق للمرجع: الحجم، الزخارف، القمر/الشمس، بلا وميض.
-3. `PrayerStrip` يمرّر الصلاة التالية إلى المنتصف بسلاسة.
-4. `Countdown` بشكله الأصلي، ويُخفى عند عدم اختيار أي صلاة.
-5. `WeatherEffects` خلف القوس بلا وميض.
+**المرحلة 1 (منجزة برمجيًا — تحتاج Gate جهاز):**
+- `SkyArc.kt` مطابق للمرجع (viewBox `22 2 356 298`، مسار `M 30 260 A 170 240...`،
+  شمس/قمر بطور، هالة mist، طرفا القوس، شارة المرحلة).
+- `WeatherEffects.kt`: سحاب/مطر/ثلج داخل `Canvas` بلا إعادة تركيب.
+- `TodayScreen.kt`: رأس متجاوب (مدينة/طقس + كشيدة/تاريخ)، قوس، عدّاد مشروط
+  بـ`liveIds` مع نقاط وسحب، شريط صلوات موسّط تلقائيًا، زر تقويم واحد.
+- `AppSettings.imsakMode` + `PrayerCalculator.visibleIds/liveIds` + تطبيقها على
+  التقويم و`PrayerSnapshot` (الودجت والإشعار).
+- بناء ناجح: `:shared:compileAndroidMain` ثم `:androidApp:assembleDebug`
+  (4m 28s).
 
-**المرحلة 0 (منجزة برمجيًا):**
-- `KararTokens.kt` و`KararIcons.kt`.
-- `KararTheme` فاتح/داكن + Typography + Shapes.
-- `GlassSurface.kt`.
-- `AppShell.kt` بـNavigation 3 + Adaptive + Edge-to-edge.
-- حذف `AdaptiveAppScaffold.kt` القديم.
-- بناء `:shared:compileAndroidMain` و`:androidApp:assembleDebug` ناجح.
-
-**بوابة المرحلة 0 المتبقي:** اختبار بصري على جهاز/محاكي عند توفره
+**بوابة المرحلة 1 المتبقي:** اختبار بصري على جهاز/محاكي عند توفره
 (320dp / 600dp / 840dp).
 
 ---
@@ -72,12 +78,17 @@
 | الملف | الدور |
 | --- | --- |
 | `docs/MASTER-PLAN-amsak3d.md` | الخطة الكاملة |
-| `shared/src/commonMain/.../ui/navigation/AdaptiveAppScaffold.kt` | الشل الحالي (يُستبدل) |
-| `shared/src/commonMain/.../ui/theme/KararTheme.kt` | الثيم الحالي |
-| `shared/src/commonMain/.../ui/theme/SkyColors.kt` | تدرجات السماء الحالية |
-| `shared/src/commonMain/.../ui/screens/TodayScreen.kt` | شاشة اليوم الحالية |
-| `shared/src/commonMain/.../ui/screens/SettingsScreen.kt` | الضبط الحالي |
-| `shared/src/commonMain/.../core/settings/AppSettings.kt` | نموذج الإعدادات |
+| `shared/.../ui/navigation/AppShell.kt` | الشل الحالي (Navigation 3 + Adaptive + Edge-to-edge) |
+| `shared/.../ui/navigation/AppRoute.kt` | مسارات Navigation 3 |
+| `shared/.../ui/theme/KararTheme.kt` | الثيم الحالي |
+| `shared/.../ui/theme/KararTokens.kt` | رموز التصميم المركزية |
+| `shared/.../ui/theme/SkyColors.kt` | تدرجات السماء الحالية |
+| `shared/.../ui/components/SkyArc.kt` | قوس اليوم |
+| `shared/.../ui/components/WeatherEffects.kt` | تأثيرات الطقس |
+| `shared/.../ui/screens/TodayScreen.kt` | شاشة اليوم الحالية |
+| `shared/.../ui/screens/SettingsScreen.kt` | الضبط الحالي (المرحلة 2) |
+| `shared/.../ui/screens/CalendarScreen.kt` | التقويم الحالي (المرحلة 2) |
+| `shared/.../core/settings/AppSettings.kt` | نموذج الإعدادات |
 | `androidApp/.../widget/KararWidgets.kt` | محرك الودجتات |
 | `androidApp/.../notifications/NotificationDesign.kt` | الإشعارات |
 | `androidApp/.../notifications/AdhanService.kt` | الصوت |
@@ -92,15 +103,21 @@
 - إصلاحات ترجمة الإصدار (WidgetConfigActivity، NotificationDesign، Glance).
 - سكربت نسخة تلغرام المشفّرة + أول نسخة احتياطية.
 - تحليل تفصيلي لـ`amsak3d.tsx` وفحص معماري شامل.
+- **المرحلة 0**: `KararTokens` + `KararIcons` + `KararTheme` + `GlassSurface` +
+  `AppShell` (Navigation 3 + Adaptive + Edge-to-edge) + انتقالات انزلاقية.
+- **المرحلة 1**: `SkyArc` + `WeatherEffects` + `TodayScreen` + فلترة
+  `visibleIds`/`liveIds` الممركزة.
 
 ---
 
 ## 7. القيود الحالية
 
-- لا جهاز/محاكي: لا يمكن التحقق الفعلي من الودجت/الإشعار/الصوت/Edge-to-edge.
+- لا جهاز/محاكي: لا يمكن التحقق الفعلي من الودجت/الإشعار/الصوت/Edge-to-edge
+  ولا بوابات 320/600/840dp.
 - iOS غير قابل للبناء على Windows.
 - الصوت لم يُؤكد سبب فشله على جهاز حقيقي.
-- Navigation 3 وAdaptive موجودان في التبعيات لكن غير مستخدمين فعليًا.
+- `offsetHours` يستخدم `Clock.System.now()` لكل التواريخ؛ DST لكل تاريخ في
+  المرحلة 6.
 
 ---
 

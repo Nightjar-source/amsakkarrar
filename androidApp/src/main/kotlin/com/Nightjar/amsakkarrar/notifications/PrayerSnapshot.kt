@@ -70,11 +70,11 @@ object PrayerSnapshotLoader {
         val tomorrowTimes = PrayerCalculator.adjustedTimes(PrayerCalculator.timesFor(settings, tomorrow), settings)
 
         val nowSeconds = PrayerCalculator.secondsOfDay(now)
-        val ids = PrayerMeta.order.filter { it in settings.visiblePrayers }
+        val ids = PrayerCalculator.visibleIds(settings, today)
         // العدّاد والإشعار الحي يدوران حول الأوقات التي اختارها المستخدم فقط
-        val liveIds = PrayerMeta.order.filter { it in settings.livePrayers }
+        val liveIds = PrayerCalculator.liveIds(settings, today)
         val prayerIds = liveIds.ifEmpty {
-            PrayerMeta.order.filter { it in settings.visiblePrayers }
+            PrayerCalculator.visibleIds(settings, today)
         }.ifEmpty {
             listOf("fajr", "dhuhr", "asr", "maghrib", "isha")
         }

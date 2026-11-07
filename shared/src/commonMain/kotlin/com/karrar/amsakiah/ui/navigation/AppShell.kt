@@ -238,9 +238,8 @@ fun AppShell(
                             TodayScreen(
                                 state = state,
                                 weather = weather,
-                                onOpenCalendar = { selectDestination(AppDestination.CALENDAR) },
-                                onOpenSettings = { selectDestination(AppDestination.SETTINGS) },
-                                onOpenQibla = { selectDestination(AppDestination.QIBLA) },
+                                onOpenCalendar = { push(AppRoute.Calendar) },
+                                onOpenSettings = { push(AppRoute.Settings) },
                                 contentPadding = contentPadding
                             )
                         }

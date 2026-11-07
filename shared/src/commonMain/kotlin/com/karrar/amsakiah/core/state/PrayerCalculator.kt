@@ -108,16 +108,37 @@ object PrayerCalculator {
     fun formatHour(rawHour: Double): Triple<String, String, String> =
         AstronomicalEngine.formatArcHour(rawHour)
 
-    /** الأوقات الظاهرة فقط حسب الإعدادات */
-    fun visibleIds(settings: AppSettings): List<String> {
-        val visible = settings.visiblePrayers
-        return PrayerMeta.order.filter { it in visible }
+    /** هل الإمساك ظاهر في هذا التاريخ وفق وضع العرض المختار؟ */
+    fun imsakVisible(settings: AppSettings, date: LocalDate = todayDate(settings)): Boolean =
+        when (settings.imsakMode) {
+            "always" -> true
+            "hidden" -> false
+            // السلوك الافتراضي (V7): رمضان فقط
+            else -> hijriFor(settings, date).monthNum == 9
+        }
+
+    /**
+     * الأوقات الظاهرة فقط حسب الإعدادات، مع تطبيق قواعد المذهب:
+     * - «الغروب» يظهر في المعايير الشيعية فقط.
+     * - «الإمساك» يتبع `imsakMode` (رمضان تلقائيًا / دائمًا / مخفي).
+     */
+    fun visibleIds(settings: AppSettings, date: LocalDate = todayDate(settings)): List<String> {
+        val isShia = methodFor(settings.methodCode).isShia
+        return PrayerMeta.order.filter { id ->
+            id in settings.visiblePrayers &&
+                (id != "sunset" || isShia) &&
+                (id != "imsak" || imsakVisible(settings, date))
+        }
     }
+
+    /** الأوقات التي يدور حولها العدّاد والإشعار الحي = الظاهرة ∩ المختارة للعد. */
+    fun liveIds(settings: AppSettings, date: LocalDate = todayDate(settings)): List<String> =
+        visibleIds(settings, date).filter { it in settings.livePrayers }
 
     fun slots(settings: AppSettings, date: LocalDate, nowSeconds: Int): List<PrayerSlot> {
         val times = timesFor(settings, date)
         val adjusted = adjustedTimes(times, settings)
-        val ids = visibleIds(settings)
+        val ids = visibleIds(settings, date)
         val nextId = nextPrayerId(settings, date, nowSeconds)?.first
         return ids.map { id ->
             val raw = adjusted[id] ?: 0.0
@@ -128,7 +149,7 @@ object PrayerCalculator {
 
     /** يعيد (معرّف الصلاة القادمة، الوقت بالثواني من منتصف الليل، هل هي غدًا) */
     fun nextPrayerId(settings: AppSettings, date: LocalDate, nowSeconds: Int): Pair<String, Int>? {
-        val ids = visibleIds(settings).filter { it != "sunrise" && it != "sunset" }
+        val ids = visibleIds(settings, date).filter { it != "sunrise" && it != "sunset" }
         val today = adjustedTimes(timesFor(settings, date), settings)
         for (id in ids) {
             val raw = today[id] ?: continue

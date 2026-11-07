@@ -129,6 +129,8 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
 
         items(days, key = { it.date.toString() }) { day ->
             val isToday = monthShift == 0 && day.hijriDay == todayHijriDay
+            // نفس فلترة الشاشة الرئيسية: الغروب شيعي فقط، والإمساك حسب وضعه.
+            val dayVisible = PrayerCalculator.visibleIds(settings, day.date)
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 corner = 18.dp,
@@ -167,7 +169,7 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
                         )
                         Text(
                             day.times.entries
-                                .filter { it.key in settings.visiblePrayers && PrayerMeta.fixed(it.key) }
+                                .filter { it.key in dayVisible && PrayerMeta.fixed(it.key) }
                                 .joinToString("  ") { (id, value) ->
                                     "${PrayerCalculator.formatHour(value).first} ${shortLabel(id)}"
                                 },
