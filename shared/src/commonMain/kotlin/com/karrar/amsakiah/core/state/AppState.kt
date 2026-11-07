@@ -7,6 +7,7 @@ import com.karrar.amsakiah.core.astronomy.CityDatabase
 import com.karrar.amsakiah.core.astronomy.NearbyCity
 import com.karrar.amsakiah.core.astronomy.OfflineCity
 import com.karrar.amsakiah.core.location.createLocationProvider
+import com.karrar.amsakiah.core.location.fetchIpLocation
 import com.karrar.amsakiah.core.settings.AppSettings
 import com.karrar.amsakiah.core.settings.SettingsStorage
 import kotlinx.datetime.Clock
@@ -42,6 +43,23 @@ class AppState {
     var lastLocationError: String? by mutableStateOf(null)
         private set
 
+    /**
+     * مزامنة التغييرات القادمة من خارج الواجهة (ودجت المسبحة، الإجراءات السريعة).
+     * عند تعديل الإعدادات من الودجت تُحدَّث حالة التطبيق فورًا دون إعادة تشغيل.
+     */
+    private val externalSync: () -> Unit = {
+        val stored = loadSettings()
+        if (stored != settings) settings = stored
+    }
+
+    init {
+        SettingsChangeBus.addListener(externalSync)
+    }
+
+    fun dispose() {
+        SettingsChangeBus.removeListener(externalSync)
+    }
+
     private fun loadSettings(): AppSettings = runCatching {
         SettingsStorage.read()?.let { json.decodeFromString<AppSettings>(it) }
     }.getOrNull() ?: AppSettings()
@@ -54,11 +72,13 @@ class AppState {
     fun update(transform: (AppSettings) -> AppSettings) {
         settings = transform(settings)
         persist()
+        SettingsChangeBus.notifyChanged()
     }
 
     fun reset() {
         settings = AppSettings()
         persist()
+        SettingsChangeBus.notifyChanged()
     }
 
     private fun persist() {
@@ -80,13 +100,15 @@ class AppState {
                 latitude = city.lat,
                 longitude = city.lon,
                 timeZoneId = city.timeZoneId,
-                useGps = false
+                useGps = false,
+                locationSource = "manual"
             )
         }
     }
 
     /** تحديد الموقع عبر GPS ثم مطابقة أقرب مدينة من القاعدة الأوفلاين */
     suspend fun detectLocation() {
+        if (locating) return
         locating = true
         lastLocationError = null
         try {
@@ -114,9 +136,47 @@ class AppState {
                         latitude = point.lat,
                         longitude = point.lon,
                         timeZoneId = nearest.city.timeZoneId,
-                        useGps = true
+                        useGps = true,
+                        locationSource = "gps"
                     )
                 }
+            }
+        } finally {
+            locating = false
+        }
+    }
+
+    /**
+     * استشعار الموقع عبر الشبكة (IP) — كما في تطبيق الكفيل.
+     * يستخدم إحداثيات IP الدقيقة، ويستعير الاسم العربي والمنطقة الزمنية
+     * من أقرب مدينة أوفلاين إن كانت قريبة (≤ 80 كم).
+     */
+    suspend fun detectLocationByIp() {
+        if (locating) return
+        locating = true
+        lastLocationError = null
+        try {
+            val ip = fetchIpLocation()
+            if (ip == null) {
+                lastLocationError = "تعذّر استشعار الموقع عبر IP — تحقق من اتصال الإنترنت"
+                return
+            }
+            val nearest = CityDatabase.nearest(ip.latitude, ip.longitude)
+            nearby = nearest
+            val close = nearest?.takeIf { it.distanceKm <= 80.0 }
+            val cityName = close?.city?.name ?: ip.city.ifBlank { settings.cityName }
+            val countryName = close?.city?.country ?: ip.country.ifBlank { settings.countryName }
+            val zone = ip.timeZoneId ?: close?.city?.timeZoneId ?: settings.timeZoneId
+            update {
+                it.copy(
+                    cityName = cityName,
+                    countryName = countryName,
+                    latitude = ip.latitude,
+                    longitude = ip.longitude,
+                    timeZoneId = zone,
+                    useGps = false,
+                    locationSource = "ip"
+                )
             }
         } finally {
             locating = false

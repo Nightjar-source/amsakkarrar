@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- عدّاد ودجت المواقيت المدمج — Chronometer أصلي -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layoutDirection="rtl"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/widget_chrono_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:maxLines="1"
+        android:text="باقي على الفجر"
+        android:textColor="#B3B9C0D4"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <Chronometer
+        android:id="@+id/widget_chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layoutDirection="ltr"
+        android:textColor="#FFFFD700"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+</LinearLayout>

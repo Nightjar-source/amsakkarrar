@@ -11,6 +11,8 @@
 
     <!-- الإشعارات والأذان -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Android 16: الإشعارات الحية المروَّجة (Live Updates / Now Bar) -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -136,6 +138,52 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/karar_widget_hijri" />
         </receiver>
+
+        <receiver
+            android:name=".widget.TasbihWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_tasbih">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_tasbih" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.ClockWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_clock">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_clock" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.JourneyWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_journey">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_journey" />
+        </receiver>
+
+        <!-- إعدادات خلفية الودجتات (Material / Blur / شفاف) — تُفتح من ⚙ أو الضغط المطوّل -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Caliq">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
 
     </application>
 

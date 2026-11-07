@@ -1,9 +1,11 @@
 package com.Nightjar.amsakkarrar.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -11,8 +13,12 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.AndroidRemoteViews
+import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -41,10 +47,9 @@ import com.Nightjar.amsakkarrar.notifications.PrayerSnapshot
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshotLoader
 import com.Nightjar.amsakkarrar.notifications.SettingsLoader
 import com.karrar.amsakiah.ui.theme.SkyTheme
+import kotlin.math.roundToInt
 
 // ---------- ألوان الويدجت (مطابقة لـ widgetsnotifications.html) ----------
-private val WidgetBg = Color(0xF2050A15)
-private val WidgetBgSoft = Color(0xE60F1524)
 private val WidgetCard = Color(0x33000000)
 private val WidgetActive = Color(0x26FFB432)
 private val Gold = Color(0xFFFFD700)
@@ -55,6 +60,25 @@ private val TextMuted = Color(0x99B9C0D4)
 private val DayGradient = Color(0xFFFF9F1C)
 private val NightGradient = Color(0xFF80A1D4)
 
+/**
+ * ثلاث درجات تكيّف، تُحسب من حجم الودجت الفعلي على الشاشة:
+ * - COMPACT: 2×2 (يُخفى غير الأساسي)
+ * - MEDIUM : 4×3
+ * - LARGE  : 4×4 و4×5 (كل العناصر)
+ */
+internal enum class WidgetTier { COMPACT, MEDIUM, LARGE }
+
+@Composable
+private fun rememberWidgetTier(): WidgetTier {
+    val size = LocalSize.current
+    // العرض هو الفيصل: 2 أعمدة = مصغّر، 4 أعمدة = كامل. الارتفاع يكمّل الحالة.
+    return when {
+        size.width < 200.dp || size.height < 120.dp -> WidgetTier.COMPACT
+        size.width < 300.dp || size.height < 250.dp -> WidgetTier.MEDIUM
+        else -> WidgetTier.LARGE
+    }
+}
+
 private fun color(value: Color): ColorProvider = ColorProvider(value)
 
 private fun launchIntent(context: Context): Intent =
@@ -63,7 +87,13 @@ private fun launchIntent(context: Context): Intent =
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
 
-private fun two(value: Int): String = value.toString().padStart(2, '0')
+private fun configIntent(context: Context, appWidgetId: Int): Intent =
+    Intent(context, WidgetConfigActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+    }
 
 /** الصلوات الست الظاهرة في الودجت (نفس مربعات HTML). */
 private val WIDGET_PRAYERS = listOf("imsak", "fajr", "dhuhr", "asr", "maghrib", "isha")
@@ -73,26 +103,74 @@ private fun PrayerSnapshot.widgetEntries(): List<PrayerEntry> {
     return WIDGET_PRAYERS.mapNotNull { byId[it] }
 }
 
+private fun tierPadding(tier: WidgetTier): Dp = when (tier) {
+    WidgetTier.COMPACT -> 9.dp
+    WidgetTier.MEDIUM -> 13.dp
+    WidgetTier.LARGE -> 17.dp
+}
+
+private fun tierCorner(tier: WidgetTier): Dp = when (tier) {
+    WidgetTier.COMPACT -> 22.dp
+    WidgetTier.MEDIUM -> 28.dp
+    WidgetTier.LARGE -> 32.dp
+}
+
 // ============================================================================
-//  مكوّنات مشتركة
+//  الإطار المتكيّف — خلفية + حدود + زر إعدادات + فتح التطبيق
 // ============================================================================
 
 @Composable
 private fun WidgetFrame(
     context: Context,
+    appWidgetId: Int,
+    tier: WidgetTier,
+    center: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
+    val background = Color(WidgetStyleStore.backgroundArgb(context, appWidgetId))
+    val border = Color(WidgetStyleStore.borderArgb(context, appWidgetId))
+    val radius = tierCorner(tier)
+    val pad = tierPadding(tier)
+
+    Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(WidgetBg)
-            .cornerRadius(32.dp)
-            .padding(18.dp)
-            .clickable(actionStartActivity(launchIntent(context))),
-        verticalAlignment = Alignment.Vertical.Top,
-        horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
-        content = content
-    )
+            .background(border)
+            .cornerRadius(radius),
+        contentAlignment = Alignment.TopEnd
+    ) {
+        Column(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .padding(1.dp)
+                .background(background)
+                .cornerRadius(radius - 1.dp)
+                .padding(pad)
+                .clickable(actionStartActivity(launchIntent(context))),
+            verticalAlignment = if (center) Alignment.Vertical.CenterVertically else Alignment.Vertical.Top,
+            horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+            content = content
+        )
+        // زر إعدادات الخلفية داخل كل ودجت — مادة / زجاجي / Blur / شفاف / ليلي
+        Box(
+            modifier = GlanceModifier
+                .padding(if (tier == WidgetTier.COMPACT) 4.dp else 6.dp)
+                .width(if (tier == WidgetTier.COMPACT) 18.dp else 22.dp)
+                .height(if (tier == WidgetTier.COMPACT) 18.dp else 22.dp)
+                .background(Color(0x40000000))
+                .cornerRadius(50.dp)
+                .clickable(actionStartActivity(configIntent(context, appWidgetId))),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "⚙",
+                style = TextStyle(
+                    color = color(TextSecondary),
+                    fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp
+                )
+            )
+        }
+    }
 }
 
 /** كشيدة الشهر: «رمضـ 16 ـان» — الحروف ذهبية والرقم أبيض. */
@@ -123,14 +201,13 @@ private fun WidgetKashida(snapshot: PrayerSnapshot, fontSize: Int = 26) {
 @Composable
 private fun PillProgress(fraction: Float, isDaytime: Boolean) {
     val f = fraction.coerceIn(0f, 1f)
-    // Glance لا يدعم defaultWeight(fraction) ولا fillMaxWidth(fraction)؛
-    // نحسب العرض الفعلي من LocalSize (حجم الودجت) مطروحًا منه حشوة الإطار 18dp لكل جهة.
+    // Glance لا يدعم defaultWeight(fraction)؛ نحسب العرض الفعلي من LocalSize.
     val available = (LocalSize.current.width - 36.dp).coerceAtLeast(1.dp)
     val fillWidth = (available * f).coerceAtLeast(0.dp)
     Box(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .height(10.dp)
+            .height(8.dp)
             .background(Color(0x66000000))
             .cornerRadius(50.dp),
         contentAlignment = Alignment.CenterStart
@@ -147,47 +224,20 @@ private fun PillProgress(fraction: Float, isDaytime: Boolean) {
     }
 }
 
-/** عمود رقم مع تسميته (ساعة / دقيقة / ثانية). */
 @Composable
-private fun DigitColumn(value: String, label: String) {
-    Column(
-        modifier = GlanceModifier.width(52.dp),
-        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
-    ) {
-        Text(
-            text = value,
-            style = TextStyle(color = color(TextPrimary), fontSize = 26.sp, fontWeight = FontWeight.Normal)
-        )
-        Text(
-            text = label,
-            style = TextStyle(color = color(TextMuted), fontSize = 6.sp, fontWeight = FontWeight.Bold)
-        )
-    }
-}
-
-@Composable
-private fun Colon() {
-    Text(
-        text = ":",
-        modifier = GlanceModifier.padding(start = 2.dp, end = 2.dp),
-        style = TextStyle(color = color(TextSecondary), fontSize = 18.sp)
-    )
-}
-
-@Composable
-private fun PrayerBoxCell(entry: PrayerEntry, active: Boolean, modifier: GlanceModifier) {
+private fun PrayerBoxCell(entry: PrayerEntry, active: Boolean, modifier: GlanceModifier, compact: Boolean) {
     Column(
         modifier = modifier
             .background(if (active) WidgetActive else WidgetCard)
-            .cornerRadius(14.dp)
-            .padding(vertical = 6.dp, horizontal = 3.dp),
+            .cornerRadius(if (compact) 9.dp else 14.dp)
+            .padding(vertical = if (compact) 3.dp else 6.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.Horizontal.CenterHorizontally
     ) {
         Text(
             text = entry.label,
             style = TextStyle(
                 color = color(if (active) Gold else TextSecondary),
-                fontSize = 7.sp,
+                fontSize = if (compact) 6.sp else 7.sp,
                 fontWeight = FontWeight.Bold
             )
         )
@@ -195,124 +245,146 @@ private fun PrayerBoxCell(entry: PrayerEntry, active: Boolean, modifier: GlanceM
             text = entry.time.substringBefore(" "),
             style = TextStyle(
                 color = color(if (active) GoldSoft else TextPrimary),
-                fontSize = 11.sp,
+                fontSize = if (compact) 9.sp else 11.sp,
                 fontWeight = FontWeight.Bold
             )
         )
-        Text(
-            text = entry.time.substringAfter(" ", ""),
-            style = TextStyle(color = color(TextMuted), fontSize = 6.sp)
-        )
+        if (!compact) {
+            Text(
+                text = entry.time.substringAfter(" ", ""),
+                style = TextStyle(color = color(TextMuted), fontSize = 6.sp)
+            )
+        }
     }
 }
 
 /** شبكة 3×2 لمربعات الصلوات الست. */
 @Composable
-private fun PrayerGridRow(entries: List<PrayerEntry>, activeLabel: String) {
+private fun PrayerGridRow(entries: List<PrayerEntry>, activeLabel: String, compact: Boolean = false) {
     if (entries.isEmpty()) return
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Horizontal.CenterHorizontally
     ) {
         entries.forEachIndexed { index, entry ->
-            if (index > 0) Spacer(modifier = GlanceModifier.width(6.dp))
+            if (index > 0) Spacer(modifier = GlanceModifier.width(if (compact) 3.dp else 6.dp))
             PrayerBoxCell(
                 entry = entry,
                 active = entry.label == activeLabel,
-                modifier = GlanceModifier.defaultWeight()
+                modifier = GlanceModifier.defaultWeight(),
+                compact = compact
             )
         }
-        // موازنة الصف إذا كان أقل من 3 مربعات
         repeat((3 - entries.size).coerceAtLeast(0)) {
             Spacer(modifier = GlanceModifier.defaultWeight())
         }
     }
 }
 
+private fun appWidgetIdFor(context: Context, id: GlanceId): Int =
+    runCatching { GlanceAppWidgetManager(context).getAppWidgetId(id) }
+        .getOrDefault(AppWidgetManager.INVALID_APPWIDGET_ID)
+
 // ============================================================================
-//  1) ويدجت «اليوم» — التصميم الكامل
+//  1) ويدجت «اليوم» — التصميم الكامل المتكيّف
 // ============================================================================
 class TodayWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = TodayWidget()
 }
 
 class TodayWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode get() = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
+        val widgetId = appWidgetIdFor(context, id)
         provideContent {
-            GlanceTheme {
-                TodayWidgetContent(context, snapshot)
-            }
+            GlanceTheme { TodayWidgetContent(context, snapshot, widgetId) }
         }
     }
 }
 
+@OptIn(ExperimentalGlanceRemoteViewsApi::class)
 @Composable
-private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot) {
+private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
+    val tier = rememberWidgetTier()
     val gridEntries = snapshot.widgetEntries()
-    WidgetFrame(context) {
-        WidgetKashida(snapshot, fontSize = 26)
-        Spacer(GlanceModifier.height(2.dp))
+    WidgetFrame(context, appWidgetId, tier) {
+        WidgetKashida(
+            snapshot,
+            fontSize = when (tier) {
+                WidgetTier.COMPACT -> 17
+                WidgetTier.MEDIUM -> 22
+                else -> 27
+            }
+        )
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 1.dp else 2.dp))
         Text(
             text = snapshot.gregorianText,
-            style = TextStyle(color = color(TextMuted), fontSize = 8.sp, textAlign = TextAlign.Center)
+            style = TextStyle(
+                color = color(TextMuted),
+                fontSize = if (tier == WidgetTier.COMPACT) 6.sp else 8.sp,
+                textAlign = TextAlign.Center
+            )
+        )
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 7.dp))
+
+        Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+            Box(
+                modifier = GlanceModifier
+                    .background(Color(0x14FFFFFF))
+                    .cornerRadius(50.dp)
+                    .padding(horizontal = if (tier == WidgetTier.COMPACT) 7.dp else 13.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = "باقي على ${snapshot.nextLabel}",
+                    style = TextStyle(
+                        color = color(Gold),
+                        fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+            Spacer(GlanceModifier.width(4.dp))
+            Text(
+                text = "• ${snapshot.nextTime}",
+                style = TextStyle(color = color(TextSecondary), fontSize = if (tier == WidgetTier.COMPACT) 6.sp else 8.sp)
+            )
+        }
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 2.dp else 4.dp))
+
+        // العدّاد — Chronometer أصلي يدقّ كل ثانية من ساعة الجهاز
+        AndroidRemoteViews(
+            remoteViews = countdownRemoteViews(context, snapshot, compact = tier == WidgetTier.COMPACT),
+            modifier = GlanceModifier.fillMaxWidth()
         )
 
-        Spacer(GlanceModifier.height(8.dp))
-
-        // شريحة «باقي على …»
-        Box(
-            modifier = GlanceModifier
-                .background(Color(0x14FFFFFF))
-                .cornerRadius(50.dp)
-                .padding(horizontal = 14.dp, vertical = 4.dp)
-        ) {
-            Text(
-                text = "باقي على ${snapshot.nextLabel}",
-                style = TextStyle(color = color(Gold), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            )
+        if (tier != WidgetTier.COMPACT) {
+            // شريط التقدم داخل RemoteViews أعلاه (ProgressBar أصلي) — لا نكرّره هنا.
+            Row(
+                modifier = GlanceModifier.fillMaxWidth().padding(top = 3.dp),
+                verticalAlignment = Alignment.Vertical.CenterVertically
+            ) {
+                Text(
+                    text = snapshot.periodStartLabel,
+                    modifier = GlanceModifier.defaultWeight(),
+                    style = TextStyle(color = color(TextMuted), fontSize = 7.sp)
+                )
+                Text(
+                    text = snapshot.periodEndLabel,
+                    style = TextStyle(color = color(TextMuted), fontSize = 7.sp)
+                )
+            }
+            Spacer(GlanceModifier.height(7.dp))
+            PrayerGridRow(gridEntries.take(3), snapshot.nextLabel)
+            Spacer(GlanceModifier.height(5.dp))
+            PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel)
+        } else {
+            Spacer(GlanceModifier.height(3.dp))
+            PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+            Spacer(GlanceModifier.height(6.dp))
+            PrayerGridRow(gridEntries.filter { it.id == "fajr" || it.id == "maghrib" || it.id == "isha" }, snapshot.nextLabel, compact = true)
         }
-
-        Spacer(GlanceModifier.height(6.dp))
-
-        // العدّاد
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Vertical.CenterVertically,
-            horizontalAlignment = Alignment.Horizontal.CenterHorizontally
-        ) {
-            DigitColumn(two(snapshot.remainingHours), "ساعة")
-            Colon()
-            DigitColumn(two(snapshot.remainingMinutes), "دقيقة")
-            Colon()
-            DigitColumn(two(snapshot.remainingSecondsPart), "ثانية")
-        }
-
-        Spacer(GlanceModifier.height(6.dp))
-
-        // شريط التقدم
-        PillProgress(snapshot.periodProgress, snapshot.isDaytime)
-        Row(
-            modifier = GlanceModifier.fillMaxWidth().padding(top = 2.dp),
-            verticalAlignment = Alignment.Vertical.CenterVertically
-        ) {
-            Text(
-                text = snapshot.periodStartLabel,
-                modifier = GlanceModifier.defaultWeight(),
-                style = TextStyle(color = color(TextMuted), fontSize = 7.sp)
-            )
-            Text(
-                text = snapshot.periodEndLabel,
-                style = TextStyle(color = color(TextMuted), fontSize = 7.sp)
-            )
-        }
-
-        Spacer(GlanceModifier.height(8.dp))
-
-        // مربعات الصلوات
-        PrayerGridRow(gridEntries.take(3), snapshot.nextLabel)
-        Spacer(GlanceModifier.height(6.dp))
-        PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel)
     }
 }
 
@@ -324,90 +396,120 @@ class TimesWidgetReceiver : GlanceAppWidgetReceiver() {
 }
 
 class TimesWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode get() = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
+        val widgetId = appWidgetIdFor(context, id)
         provideContent {
-            GlanceTheme {
-                TimesWidgetContent(context, snapshot)
-            }
+            GlanceTheme { TimesWidgetContent(context, snapshot, widgetId) }
         }
     }
 }
 
+@OptIn(ExperimentalGlanceRemoteViewsApi::class)
 @Composable
-private fun TimesWidgetContent(context: Context, snapshot: PrayerSnapshot) {
+private fun TimesWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
+    val tier = rememberWidgetTier()
     val gridEntries = snapshot.widgetEntries()
-    WidgetFrame(context) {
-        WidgetKashida(snapshot, fontSize = 20)
-        Spacer(GlanceModifier.height(2.dp))
+    WidgetFrame(context, appWidgetId, tier) {
+        if (tier != WidgetTier.COMPACT) {
+            WidgetKashida(snapshot, fontSize = if (tier == WidgetTier.MEDIUM) 18 else 22)
+            Spacer(GlanceModifier.height(2.dp))
+        }
         Text(
-            text = "${snapshot.city} • ${snapshot.gregorianText}",
-            style = TextStyle(color = color(TextMuted), fontSize = 8.sp, textAlign = TextAlign.Center)
+            text = if (tier == WidgetTier.COMPACT) snapshot.city else "${snapshot.city} • ${snapshot.gregorianText}",
+            style = TextStyle(
+                color = color(if (tier == WidgetTier.COMPACT) Gold else TextMuted),
+                fontSize = if (tier == WidgetTier.COMPACT) 9.sp else 8.sp,
+                fontWeight = if (tier == WidgetTier.COMPACT) FontWeight.Bold else FontWeight.Normal,
+                textAlign = TextAlign.Center
+            )
         )
-        Spacer(GlanceModifier.height(8.dp))
-        PrayerGridRow(gridEntries.take(3), snapshot.nextLabel)
-        Spacer(GlanceModifier.height(6.dp))
-        PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel)
-        Spacer(GlanceModifier.height(6.dp))
-        Text(
-            text = "باقي على ${snapshot.nextLabel} • ${two(snapshot.remainingHours)}:${two(snapshot.remainingMinutes)}:${two(snapshot.remainingSecondsPart)}",
-            style = TextStyle(color = color(Gold), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 7.dp))
+        PrayerGridRow(gridEntries.take(3), snapshot.nextLabel, compact = tier == WidgetTier.COMPACT)
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
+        PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel, compact = tier == WidgetTier.COMPACT)
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
+        AndroidRemoteViews(
+            remoteViews = countdownRemoteViews(context, snapshot, compact = tier != WidgetTier.LARGE),
+            modifier = GlanceModifier.fillMaxWidth()
         )
     }
 }
 
 // ============================================================================
-//  3) ويدجت «العدّاد» — الوقت المتبقي بخط كبير
+//  3) ويدجت «العدّاد» — الوقت المتبقي + وضع الجزيرة العريض
 // ============================================================================
 class CountdownWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CountdownWidget()
 }
 
 class CountdownWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode get() = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
+        val widgetId = appWidgetIdFor(context, id)
         provideContent {
-            GlanceTheme {
-                CountdownWidgetContent(context, snapshot)
-            }
+            GlanceTheme { CountdownWidgetContent(context, snapshot, widgetId) }
         }
     }
 }
 
+@OptIn(ExperimentalGlanceRemoteViewsApi::class)
 @Composable
-private fun CountdownWidgetContent(context: Context, snapshot: PrayerSnapshot) {
-    Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(WidgetBgSoft)
-            .cornerRadius(28.dp)
-            .padding(14.dp)
-            .clickable(actionStartActivity(launchIntent(context))),
-        verticalAlignment = Alignment.Vertical.CenterVertically,
-        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
-    ) {
-        WidgetKashida(snapshot, fontSize = 18)
-        Spacer(GlanceModifier.height(6.dp))
-        Text(
-            text = "باقي على ${snapshot.nextLabel}",
-            style = TextStyle(color = color(TextSecondary), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-        )
-        Spacer(GlanceModifier.height(2.dp))
-        Text(
-            text = "${two(snapshot.remainingHours)}:${two(snapshot.remainingMinutes)}:${two(snapshot.remainingSecondsPart)}",
-            style = TextStyle(color = color(Gold), fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        )
-        Text(
-            text = "موعد ${snapshot.nextTime}",
-            style = TextStyle(color = color(TextPrimary), fontSize = 9.sp)
-        )
-        Spacer(GlanceModifier.height(6.dp))
-        PillProgress(snapshot.periodProgress, snapshot.isDaytime)
-        Spacer(GlanceModifier.height(4.dp))
-        Text(
-            text = snapshot.city,
-            style = TextStyle(color = color(TextMuted), fontSize = 7.sp)
-        )
+private fun CountdownWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
+    val size = LocalSize.current
+    val tier = rememberWidgetTier()
+    // وضع «الجزيرة»: عريض وقصير — يُعرض أفقياً كشريط حالة
+    val island = size.width > 230.dp && size.height < 135.dp
+    WidgetFrame(context, appWidgetId, tier, center = !island) {
+        if (island) {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Vertical.CenterVertically
+            ) {
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    Text(
+                        text = "باقي على ${snapshot.nextLabel}",
+                        style = TextStyle(color = color(Gold), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    )
+                    Text(
+                        text = "${snapshot.city} • ${snapshot.nextTime}",
+                        style = TextStyle(color = color(TextMuted), fontSize = 8.sp)
+                    )
+                }
+                AndroidRemoteViews(
+                    remoteViews = countdownRemoteViews(context, snapshot, compact = true),
+                    modifier = GlanceModifier.width(150.dp)
+                )
+            }
+            Spacer(GlanceModifier.height(5.dp))
+            PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+        } else {
+            if (tier != WidgetTier.COMPACT) {
+                WidgetKashida(snapshot, fontSize = if (tier == WidgetTier.MEDIUM) 16 else 19)
+                Spacer(GlanceModifier.height(4.dp))
+            }
+            AndroidRemoteViews(
+                remoteViews = countdownRemoteViews(context, snapshot, compact = tier == WidgetTier.COMPACT),
+                modifier = GlanceModifier.fillMaxWidth()
+            )
+            if (tier == WidgetTier.COMPACT) {
+                Spacer(GlanceModifier.height(3.dp))
+                PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+            }
+            Spacer(GlanceModifier.height(4.dp))
+            Text(
+                text = "${snapshot.periodStartLabel} ← ${snapshot.periodEndLabel} • ${snapshot.city}",
+                style = TextStyle(
+                    color = color(TextMuted),
+                    fontSize = if (tier == WidgetTier.COMPACT) 6.sp else 7.sp,
+                    textAlign = TextAlign.Center
+                )
+            )
+        }
     }
 }
 
@@ -419,51 +521,186 @@ class HijriWidgetReceiver : GlanceAppWidgetReceiver() {
 }
 
 class HijriWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode get() = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
+        val widgetId = appWidgetIdFor(context, id)
         provideContent {
-            GlanceTheme {
-                HijriWidgetContent(context, snapshot)
-            }
+            GlanceTheme { HijriWidgetContent(context, snapshot, widgetId) }
         }
     }
 }
 
 @Composable
-private fun HijriWidgetContent(context: Context, snapshot: PrayerSnapshot) {
-    Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(WidgetBgSoft)
-            .cornerRadius(28.dp)
-            .padding(14.dp)
-            .clickable(actionStartActivity(launchIntent(context))),
-        verticalAlignment = Alignment.Vertical.CenterVertically,
-        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
-    ) {
-        WidgetKashida(snapshot, fontSize = 20)
+private fun HijriWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
+    val tier = rememberWidgetTier()
+    WidgetFrame(context, appWidgetId, tier, center = true) {
+        WidgetKashida(snapshot, fontSize = if (tier == WidgetTier.COMPACT) 16 else 20)
         Spacer(GlanceModifier.height(2.dp))
         Text(
             text = "${snapshot.hijriMonth} ${snapshot.hijriYear} هـ",
-            style = TextStyle(color = color(TextPrimary), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            style = TextStyle(
+                color = color(TextPrimary),
+                fontSize = if (tier == WidgetTier.COMPACT) 9.sp else 11.sp,
+                fontWeight = FontWeight.Bold
+            )
         )
         Spacer(GlanceModifier.height(2.dp))
         Text(
             text = snapshot.gregorianText,
-            style = TextStyle(color = color(TextMuted), fontSize = 8.sp, textAlign = TextAlign.Center)
+            style = TextStyle(
+                color = color(TextMuted),
+                fontSize = if (tier == WidgetTier.COMPACT) 6.sp else 8.sp,
+                textAlign = TextAlign.Center
+            )
         )
-        Spacer(GlanceModifier.height(4.dp))
-        Text(
-            text = "${snapshot.city} • ${snapshot.dayProgressPercent()}٪ من النهار",
-            style = TextStyle(color = color(TextSecondary), fontSize = 8.sp)
-        )
+        if (tier != WidgetTier.COMPACT) {
+            Spacer(GlanceModifier.height(5.dp))
+            Text(
+                text = "${snapshot.city} • ${snapshot.dayProgressPercent()}٪ من النهار",
+                style = TextStyle(color = color(TextSecondary), fontSize = 8.sp)
+            )
+            Spacer(GlanceModifier.height(5.dp))
+            PillProgress(snapshot.dayProgress, snapshot.isDaytime)
+        }
     }
 }
 
-private fun PrayerSnapshot.dayProgressPercent(): Int = (dayProgress * 100).toInt().coerceIn(0, 100)
+private fun PrayerSnapshot.dayProgressPercent(): Int = (dayProgress * 100).roundToInt().coerceIn(0, 100)
 
 // ============================================================================
-//  محدّث كل الويدجت
+//  5) ويدجت «الساعة» — TextClock أصلي + التاريخ
+// ============================================================================
+class ClockWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = ClockWidget()
+}
+
+class ClockWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode get() = SizeMode.Exact
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val snapshot = PrayerSnapshotLoader.load(context)
+        val widgetId = appWidgetIdFor(context, id)
+        provideContent {
+            GlanceTheme { ClockWidgetContent(context, snapshot, widgetId) }
+        }
+    }
+}
+
+@OptIn(ExperimentalGlanceRemoteViewsApi::class)
+@Composable
+private fun ClockWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
+    val tier = rememberWidgetTier()
+    WidgetFrame(context, appWidgetId, tier, center = true) {
+        AndroidRemoteViews(
+            remoteViews = clockRemoteViews(context, snapshot, compact = tier == WidgetTier.COMPACT),
+            modifier = GlanceModifier.fillMaxWidth()
+        )
+        if (tier != WidgetTier.COMPACT) {
+            Spacer(GlanceModifier.height(5.dp))
+            Text(
+                text = "باقي على ${snapshot.nextLabel} • ${snapshot.nextTime}",
+                style = TextStyle(
+                    color = color(Gold),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            )
+        }
+    }
+}
+
+// ============================================================================
+//  6) ويدجت «المسار» — خط زمني عمودي للصلوات
+// ============================================================================
+class JourneyWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = JourneyWidget()
+}
+
+class JourneyWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode get() = SizeMode.Exact
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val snapshot = PrayerSnapshotLoader.load(context)
+        val widgetId = appWidgetIdFor(context, id)
+        provideContent {
+            GlanceTheme { JourneyWidgetContent(context, snapshot, widgetId) }
+        }
+    }
+}
+
+@Composable
+private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
+    val tier = rememberWidgetTier()
+    val entries = snapshot.widgetEntries()
+    val visible = when (tier) {
+        WidgetTier.COMPACT -> entries.take(4)
+        WidgetTier.MEDIUM -> entries.take(5)
+        WidgetTier.LARGE -> entries
+    }
+    WidgetFrame(context, appWidgetId, tier) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically
+        ) {
+            Text(
+                text = "مسار اليوم",
+                style = TextStyle(
+                    color = color(Color(0xFFF472B6)),
+                    fontSize = if (tier == WidgetTier.COMPACT) 9.sp else 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            Spacer(GlanceModifier.defaultWeight())
+            Text(
+                text = "باقي ${snapshot.remainingHours}:${snapshot.remainingMinutes.toString().padStart(2, '0')}",
+                style = TextStyle(color = color(Gold), fontSize = if (tier == WidgetTier.COMPACT) 8.sp else 10.sp, fontWeight = FontWeight.Bold)
+            )
+        }
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
+        visible.forEach { entry ->
+            val active = entry.isNext
+            Row(
+                modifier = GlanceModifier.fillMaxWidth().padding(vertical = if (tier == WidgetTier.COMPACT) 1.dp else 2.dp),
+                verticalAlignment = Alignment.Vertical.CenterVertically
+            ) {
+                Box(
+                    modifier = GlanceModifier
+                        .width(if (tier == WidgetTier.COMPACT) 5.dp else 7.dp)
+                        .height(if (tier == WidgetTier.COMPACT) 5.dp else 7.dp)
+                        .background(if (active) Color(0xFFF472B6) else Color(0x33FFFFFF))
+                        .cornerRadius(50.dp)
+                ) {}
+                Spacer(GlanceModifier.width(6.dp))
+                Text(
+                    text = entry.label,
+                    modifier = GlanceModifier.defaultWeight(),
+                    style = TextStyle(
+                        color = color(if (active) Color(0xFFF472B6) else Color(0xFFE2E8F0)),
+                        fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp,
+                        fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
+                    )
+                )
+                Text(
+                    text = entry.time,
+                    style = TextStyle(
+                        color = color(if (active) Gold else TextMuted),
+                        fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp
+                    )
+                )
+            }
+        }
+        if (tier == WidgetTier.LARGE) {
+            Spacer(GlanceModifier.height(4.dp))
+            PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+        }
+    }
+}
+
+// ============================================================================
+//  محدّث كل الودجت
 // ============================================================================
 object WidgetUpdater {
 
@@ -471,17 +708,27 @@ object WidgetUpdater {
         TodayWidget(),
         TimesWidget(),
         CountdownWidget(),
-        HijriWidget()
+        HijriWidget(),
+        TasbihWidget(),
+        ClockWidget(),
+        JourneyWidget()
     )
 
     fun updateAll(context: Context) {
         val appContext = context.applicationContext
         // تهيئة سياق الويدجت (تحميل الإعدادات يحتاجه)
         SettingsLoader.load(appContext)
+        val snapshot = runCatching { PrayerSnapshotLoader.load(appContext) }.getOrNull()
         runCatching {
             kotlinx.coroutines.runBlocking {
                 widgets.forEach { runCatching { it.updateAll(appContext) } }
             }
+        }
+        // WorkManager: تحديث دوري مضمون في الخلفية + تحديث عند وقت الصلاة القادمة.
+        // العدّاد نفسه يعمل عبر Chronometer/TextClock أصلي داخل الودجت فلا يتوقف بين التحديثات.
+        WidgetRefreshWorker.ensurePeriodic(appContext)
+        snapshot?.let {
+            WidgetRefreshWorker.scheduleBoundary(appContext, it.remainingSeconds * 1000L + 3_000L)
         }
     }
 }

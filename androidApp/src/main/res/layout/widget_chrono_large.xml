@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- عدّاد الودجت الكبير — Chronometer + ProgressBar أصليان يعملان بوقت الجهاز -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layoutDirection="rtl"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
+
+    <TextView
+        android:id="@+id/widget_chrono_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="باقي على الفجر"
+        android:textColor="#B3B9C0D4"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <Chronometer
+        android:id="@+id/widget_chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layoutDirection="ltr"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp"
+        android:textColor="#FFFFD700"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_chrono_target"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="موعد 5:18 ص"
+        android:textColor="#99B9C0D4"
+        android:textSize="8sp" />
+
+    <ProgressBar
+        android:id="@+id/widget_chrono_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="5dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_progress" />
+</LinearLayout>

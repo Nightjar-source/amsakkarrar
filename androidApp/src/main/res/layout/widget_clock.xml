@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ساعة الودجت — TextClock أصلي يتحدّث من نظام الوقت مباشرة -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layoutDirection="rtl"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
+
+    <TextClock
+        android:id="@+id/widget_clock_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:format12Hour="hh:mm a"
+        android:format24Hour="HH:mm"
+        android:textColor="#FFFFFFFF"
+        android:textSize="46sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_clock_day"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="السبت"
+        android:textColor="#FFFFD700"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_clock_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="7 - 11 - 2026 م"
+        android:textColor="#B3B9C0D4"
+        android:textSize="9sp" />
+
+    <TextView
+        android:id="@+id/widget_clock_city"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="كربلاء"
+        android:textColor="#99B9C0D4"
+        android:textSize="8sp" />
+</LinearLayout>

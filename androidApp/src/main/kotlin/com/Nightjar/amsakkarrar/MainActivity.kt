@@ -1,6 +1,7 @@
 package com.Nightjar.amsakkarrar
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -12,13 +13,39 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.karrar.amsakiah.App
 import com.karrar.amsakiah.core.AndroidAppContext
+import com.karrar.amsakiah.core.audio.SoundTestBridge
+import com.karrar.amsakiah.core.state.SettingsChangeBus
+import com.Nightjar.amsakkarrar.notifications.AdhanService
 import com.Nightjar.amsakkarrar.notifications.LiveNotificationManager
 import com.Nightjar.amsakkarrar.notifications.LiveUpdateScheduler
 import com.Nightjar.amsakkarrar.notifications.NotificationChannels
 import com.Nightjar.amsakkarrar.notifications.PrayerAlarmScheduler
+import com.Nightjar.amsakkarrar.widget.WidgetPinHelper
+import com.Nightjar.amsakkarrar.widget.WidgetRefreshWorker
 import com.Nightjar.amsakkarrar.widget.WidgetUpdater
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    private val settingsSyncScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * مزامنة فورية: أي تغيير في الإعدادات داخل التطبيق (المدينة، الطريقة،
+     * التعديلات، الودجت، الإشعار الحي...) يحدّث الودجت الأربعة والإشعار
+     * والمنبهات مباشرة دون انتظار إعادة فتح التطبيق.
+     */
+    private val settingsChangeListener: () -> Unit = {
+        val appContext = applicationContext
+        settingsSyncScope.launch {
+            runCatching { WidgetUpdater.updateAll(appContext) }
+            runCatching { LiveNotificationManager.update(appContext) }
+            runCatching { PrayerAlarmScheduler(appContext).rescheduleAll() }
+        }
+    }
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -34,9 +61,13 @@ class MainActivity : ComponentActivity() {
 
         AndroidAppContext.init(this)
         NotificationChannels.createAll(this)
+        WidgetPinHelper.install(this)
+        installSoundTestBridge()
         PrayerAlarmScheduler(this).rescheduleAll()
         LiveUpdateScheduler(this).schedule()
         WidgetUpdater.updateAll(this)
+        WidgetRefreshWorker.ensurePeriodic(this)
+        SettingsChangeBus.addListener(settingsChangeListener)
 
         requestNotificationPermissionIfNeeded()
 
@@ -45,10 +76,41 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        SettingsChangeBus.removeListener(settingsChangeListener)
+        settingsSyncScope.cancel()
+        super.onDestroy()
+    }
+
     override fun onResume() {
         super.onResume()
         WidgetUpdater.updateAll(this)
         LiveNotificationManager.update(this)
+    }
+
+    /** زر «تجربة صوت الأذان» في الإعدادات يشغّل نفس خدمة الأذان الحقيقية. */
+    private fun installSoundTestBridge() {
+        SoundTestBridge.install(
+            play = {
+                runCatching {
+                    val intent = Intent(this, AdhanService::class.java).apply {
+                        action = AdhanService.ACTION_PREVIEW
+                        putExtra(AdhanService.EXTRA_PRAYER, "تجربة")
+                        putExtra(AdhanService.EXTRA_VIBRATE, false)
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(intent)
+                    } else {
+                        startService(intent)
+                    }
+                }.isSuccess
+            },
+            showLive = {
+                LiveNotificationManager.update(this)
+                true
+            },
+            isSupported = true
+        )
     }
 
     private fun requestNotificationPermissionIfNeeded() {

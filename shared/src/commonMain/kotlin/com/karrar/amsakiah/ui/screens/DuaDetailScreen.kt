@@ -21,16 +21,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -39,12 +33,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.karrar.amsakiah.core.audio.AudioPlayer
-import com.karrar.amsakiah.core.audio.createAudioPlayer
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.components.formatPlayerTime
+import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.theme.KararColors
-import kotlinx.coroutines.delay
 
 /**
  * شاشة دعاء مستقلة — تُفتح لكل دعاء عبر معرّفه (id).
@@ -56,6 +49,7 @@ import kotlinx.coroutines.delay
 fun DuaDetailScreen(
     item: ShiaDuaItem,
     contentPadding: PaddingValues,
+    player: DuaPlayerController,
     onBack: () -> Unit
 ) {
     Column(
@@ -70,17 +64,16 @@ fun DuaDetailScreen(
 
         androidx.compose.foundation.lazy.LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 28.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 4.dp,
+                bottom = if (player.hasTrack) 150.dp else 28.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
-                DuaHeaderCard(item)
-            }
-
-            if (item.hasAudio) {
-                item {
-                    DuaAudioPlayer(item = item)
-                }
+                DuaHeaderCard(item = item, player = player)
             }
 
             item {
@@ -127,7 +120,15 @@ private fun DuaTopBar(item: ShiaDuaItem, onBack: () -> Unit) {
 }
 
 @Composable
-private fun DuaHeaderCard(item: ShiaDuaItem) {
+private fun DuaHeaderCard(item: ShiaDuaItem, player: DuaPlayerController) {
+    val isCurrent = player.currentId == item.id
+    val isPlaying = isCurrent && player.playing
+    val fraction = if (isCurrent && player.durationMs > 0L) {
+        (player.positionMs.toFloat() / player.durationMs.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         corner = 22.dp,
@@ -143,6 +144,80 @@ private fun DuaHeaderCard(item: ShiaDuaItem) {
             DuaPill(item.category, KararColors.Purple)
             DuaPill(item.recommendedTime, KararColors.TextMuted)
         }
+
+        if (item.hasAudio) {
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .background(
+                            Brush.linearGradient(listOf(KararColors.Gold, KararColors.Pink)),
+                            CircleShape
+                        )
+                        .clickable { player.play(item) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "إيقاف مؤقت" else "تشغيل",
+                        tint = Color(0xFF241A00),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = if (isPlaying) {
+                            "يعمل الآن — من المشغّل الأصلي"
+                        } else if (isCurrent) {
+                            "متوقف مؤقتًا — اضغط للمتابعة"
+                        } else {
+                            item.audioTitle ?: "تشغيل التسجيل الصوتي"
+                        },
+                        color = if (isCurrent) KararColors.Gold else KararColors.TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        maxLines = 1
+                    )
+
+                    if (isCurrent) {
+                        Spacer(Modifier.height(6.dp))
+                        LinearProgressIndicator(
+                            progress = { fraction },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(5.dp)
+                                .background(Color(0x22FFFFFF), RoundedCornerShape(50)),
+                            color = KararColors.Gold,
+                            trackColor = Color(0x22FFFFFF)
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                formatPlayerTime(player.positionMs),
+                                color = KararColors.TextMuted,
+                                fontSize = 9.sp
+                            )
+                            Text(
+                                formatPlayerTime(player.durationMs),
+                                color = KararColors.TextMuted,
+                                fontSize = 9.sp
+                            )
+                        }
+                    } else {
+                        Text(
+                            "تسجيل صوتي أوفلاين — بدون إنترنت",
+                            color = KararColors.TextMuted,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -156,94 +231,6 @@ private fun DuaPill(text: String, color: Color) {
             .background(Color(0x14FFFFFF), RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     )
-}
-
-@Composable
-private fun DuaAudioPlayer(item: ShiaDuaItem) {
-    val resource = item.audioResource ?: return
-    val player: AudioPlayer = remember(item.id) { createAudioPlayer() }
-    var playing by remember(item.id) { mutableStateOf(false) }
-    var position by remember(item.id) { mutableStateOf(0L) }
-    var duration by remember(item.id) { mutableStateOf(0L) }
-
-    DisposableEffect(item.id) {
-        onDispose { player.stop() }
-    }
-
-    LaunchedEffect(playing) {
-        while (playing) {
-            position = player.positionMs()
-            duration = player.durationMs()
-            delay(350)
-        }
-    }
-
-    fun toggle() {
-        if (playing) {
-            player.pause()
-            playing = false
-        } else {
-            if (!player.isPlaying()) player.play(resource)
-            playing = true
-        }
-    }
-
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        corner = 24.dp,
-        color = Color(0x1AFFD700),
-        borderColor = Color(0x33FFD700),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .background(Brush.linearGradient(listOf(KararColors.Gold, KararColors.Pink)), CircleShape)
-                    .clickable { toggle() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (playing) "إيقاف مؤقت" else "تشغيل",
-                    tint = Color(0xFF241A00),
-                    modifier = Modifier.size(26.dp)
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    item.audioTitle ?: "استماع",
-                    color = KararColors.Gold,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-                Text(
-                    if (playing) "يُشغّل الآن — أوفلاين" else "اضغط للاستماع (بدون إنترنت)",
-                    color = KararColors.TextSecondary,
-                    fontSize = 10.sp
-                )
-                val fraction = if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
-                Slider(
-                    value = fraction,
-                    onValueChange = { f ->
-                        val target = (f * duration).toLong()
-                        player.seekTo(target)
-                        position = target
-                    },
-                    colors = SliderDefaults.colors(
-                        thumbColor = KararColors.Gold,
-                        activeTrackColor = KararColors.Gold,
-                        inactiveTrackColor = Color(0x33FFFFFF)
-                    )
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(formatDuration(position), color = KararColors.TextMuted, fontSize = 9.sp)
-                    Text(formatDuration(duration), color = KararColors.TextMuted, fontSize = 9.sp)
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -269,18 +256,5 @@ private fun DuaTextCard(item: ShiaDuaItem) {
             )
             if (index != paragraphs.lastIndex) Spacer(Modifier.height(if (isPoetry) 10.dp else 12.dp))
         }
-    }
-}
-
-internal fun formatDuration(ms: Long): String {
-    if (ms <= 0) return "00:00"
-    val total = ms / 1000
-    val hours = total / 3600
-    val minutes = (total % 3600) / 60
-    val seconds = total % 60
-    return if (hours > 0) {
-        "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
-    } else {
-        "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
     }
 }

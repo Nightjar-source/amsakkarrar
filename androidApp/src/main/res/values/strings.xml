@@ -4,4 +4,7 @@
     <string name="widget_times">كرار — المواقيت</string>
     <string name="widget_countdown">كرار — العدّاد</string>
     <string name="widget_hijri">كرار — التاريخ الهجري</string>
+    <string name="widget_tasbih">كرار — المسبحة</string>
+    <string name="widget_clock">كرار — الساعة</string>
+    <string name="widget_journey">كرار — مسار الصلوات</string>
 </resources>

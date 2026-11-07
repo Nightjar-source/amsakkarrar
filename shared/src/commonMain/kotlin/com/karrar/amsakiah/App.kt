@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,10 @@ fun App() {
     var weather by remember { mutableStateOf<WeatherInfo?>(null) }
     var showSplash by remember { mutableStateOf(true) }
 
+    DisposableEffect(state) {
+        onDispose { state.dispose() }
+    }
+
     // تهيئة قاعدة المدن الأوفلاين
     LaunchedEffect(Unit) {
         state.prepareCities()
@@ -44,9 +49,9 @@ fun App() {
         }
     }
 
-    // إخفاء شاشة البداية بعد 2.4 ثانية
+    // إخفاء شاشة البداية بعد 3 ثوانٍ (ليظهر التوقيع بعد اكتمال دخول العنوان)
     LaunchedEffect(Unit) {
-        delay(2400)
+        delay(3000)
         showSplash = false
     }
 

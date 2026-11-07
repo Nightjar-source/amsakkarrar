@@ -19,13 +19,16 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                     putExtra(AdhanService.EXTRA_PRAYER, prayerLabel)
                     putExtra(AdhanService.EXTRA_VIBRATE, settings.vibration)
                 }
-                runCatching {
+                val started = runCatching {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         context.startForegroundService(serviceIntent)
                     } else {
                         context.startService(serviceIntent)
                     }
-                }
+                }.isSuccess
+                // إن منع النظام تشغيل الخدمة الأمامية، تعمل قناة الصوت الاحتياطية
+                // بالملف المخصص نفسه بدل الصمت.
+                if (!started) PrayerNotifier.showAdhanFallback(context, prayerLabel)
             }
 
             ACTION_REMINDER -> {

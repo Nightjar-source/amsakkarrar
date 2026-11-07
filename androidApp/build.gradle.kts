@@ -16,8 +16,8 @@ android {
         applicationId = "com.Nightjar.amsakkarrar"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 10001
-        versionName = "1.0.1"
+        versionCode = 10100
+        versionName = "1.1.0"
     }
 
     buildFeatures {
@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.navigation)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
+    implementation(libs.androidx.work.runtime)
     // مطلوبة مباشرة في كود androidApp (الإشعارات والودجت) وليست متاحة إلا عبر تمرير shared
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.json)

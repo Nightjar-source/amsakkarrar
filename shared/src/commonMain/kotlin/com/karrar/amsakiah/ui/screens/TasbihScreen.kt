@@ -1,161 +1,874 @@
 package com.karrar.amsakiah.ui.screens
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.karrar.amsakiah.core.data.TasbihDhikr
+import com.karrar.amsakiah.core.data.TasbihPresets
+import com.karrar.amsakiah.core.feedback.playTasbihClick
+import com.karrar.amsakiah.core.feedback.playTasbihComplete
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.theme.KararColors
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+
+// ألوان مستوحاة من مسبحة.html: سماوي على خلفية Slate
+private val Sky = Color(0xFF38BDF8)
+private val SkyDeep = Color(0xFF0284C7)
+private val Slate = Color(0xFF0F172A)
+private val SlateCard = Color(0xFF1E293B)
+private val SlateMuted = Color(0xFF94A3B8)
+private val Violet = Color(0xFFA78BFA)
+
+private const val TAB_COUNTER = 0
+private const val TAB_LIST = 1
+private const val TAB_STATS = 2
+private const val TAB_SETTINGS = 3
 
 @Composable
 fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
-    val count = state.settings.tasbihCount
-    val target = state.settings.tasbihTarget
+    val settings = state.settings
+    val presets = TasbihPresets.all
     val haptic = LocalHapticFeedback.current
-    val progress by animateFloatAsState(
-        targetValue = if (target > 0) (count % target).toFloat() / target else 0f,
-        label = "tasbih"
-    )
+    val dhikrIndex = TasbihPresets.safeIndex(settings.tasbihDhikrIndex)
+    val dhikr = presets[dhikrIndex]
+    val target = settings.tasbihTarget.coerceAtLeast(1)
+    val count = settings.tasbihCount.coerceAtLeast(0)
+
+    var tab by remember { mutableStateOf(TAB_COUNTER) }
+    var showCompletion by remember { mutableStateOf(false) }
+    var completedTarget by remember { mutableStateOf(0) }
+    var showResetConfirm by remember { mutableStateOf(false) }
+    var showResetAllConfirm by remember { mutableStateOf(false) }
+
+    val todayKey = remember {
+        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+    }
+
+    // تصفير عدّاد اليوم تلقائيًا عند تغيّر التاريخ (كما في مسبحة.html)
+    LaunchedEffect(todayKey) {
+        if (state.settings.tasbihDayDate != todayKey) {
+            state.update { it.copy(tasbihDayDate = todayKey, tasbihDayCount = 0) }
+        }
+    }
+
+    fun selectDhikr(index: Int) {
+        val safe = TasbihPresets.safeIndex(index)
+        state.update {
+            it.copy(
+                tasbihDhikrIndex = safe,
+                tasbihTarget = presets[safe].target,
+                tasbihCount = 0
+            )
+        }
+        tab = TAB_COUNTER
+    }
+
+    fun onTick() {
+        val current = state.settings
+        val currentTarget = current.tasbihTarget.coerceAtLeast(1)
+        val nextCount = current.tasbihCount + 1
+        if (nextCount >= currentTarget) {
+            // إتمام الهدف: احفظ الجلسة، وانتقل للذكر التالي إن كان ضمن مجموعة
+            if (current.tasbihSound) playTasbihComplete()
+            if (current.tasbihHaptics) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            val (nextIndex, nextTarget) = TasbihPresets.next(
+                current.tasbihDhikrIndex,
+                current.tasbihAutoAdvance
+            )
+            completedTarget = currentTarget
+            state.update {
+                it.copy(
+                    tasbihCount = 0,
+                    tasbihRound = it.tasbihRound + 1,
+                    tasbihTotal = it.tasbihTotal + 1,
+                    tasbihDayCount = it.tasbihDayCount + 1,
+                    tasbihDayDate = todayKey,
+                    tasbihDhikrIndex = nextIndex,
+                    tasbihTarget = nextTarget
+                )
+            }
+            if (current.tasbihCompletionOverlay) showCompletion = true
+        } else {
+            if (current.tasbihSound) playTasbihClick()
+            if (current.tasbihHaptics) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            state.update {
+                it.copy(
+                    tasbihCount = nextCount,
+                    tasbihTotal = it.tasbihTotal + 1,
+                    tasbihDayCount = it.tasbihDayCount + 1,
+                    tasbihDayDate = todayKey
+                )
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(
                 start = 16.dp,
                 end = 16.dp,
                 top = contentPadding.calculateTopPadding() + 8.dp,
-                bottom = contentPadding.calculateBottomPadding() + 8.dp
+                bottom = contentPadding.calculateBottomPadding() + 16.dp
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("مسبحة الزهراء (ع)", color = KararColors.Gold, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(4.dp))
-        Text("اذكر الله بقلب حاضر", color = KararColors.TextMuted, fontSize = 12.sp)
-        Spacer(Modifier.height(24.dp))
+        // ---------- الهيدر: اسم المجموعة + تصفير ----------
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x1FEF5350))
+                    .clickable { showResetConfirm = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.RestartAlt,
+                    contentDescription = "تصفير العداد",
+                    tint = KararColors.Danger,
+                    modifier = Modifier.size(21.dp)
+                )
+            }
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    dhikr.group,
+                    color = Sky,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    "مسبحة كرار — ${presets.size} أذكار",
+                    color = SlateMuted,
+                    fontSize = 10.sp
+                )
+            }
+            Box(Modifier.size(42.dp))
+        }
 
-        Box(contentAlignment = Alignment.Center) {
-            Canvas(Modifier.size(280.dp)) {
-                val stroke = 14.dp.toPx()
-                val radius = size.minDimension / 2f - stroke
-                drawCircle(Color(0x14FFFFFF), radius = radius, style = Stroke(stroke))
+        Spacer(Modifier.height(10.dp))
+        TasbihTabs(selected = tab, onSelect = { tab = it })
+        Spacer(Modifier.height(16.dp))
+
+        when (tab) {
+            TAB_LIST -> TasbihListTab(
+                selectedIndex = dhikrIndex,
+                onSelect = ::selectDhikr
+            )
+            TAB_STATS -> TasbihStatsTab(
+                dayCount = settings.tasbihDayCount,
+                total = settings.tasbihTotal,
+                rounds = settings.tasbihRound,
+                onResetDay = { state.update { it.copy(tasbihDayCount = 0) } },
+                onResetAll = { showResetAllConfirm = true }
+            )
+            TAB_SETTINGS -> TasbihSettingsTab(
+                haptics = settings.tasbihHaptics,
+                sound = settings.tasbihSound,
+                autoAdvance = settings.tasbihAutoAdvance,
+                overlay = settings.tasbihCompletionOverlay,
+                onHaptics = { v -> state.update { it.copy(tasbihHaptics = v) } },
+                onSound = { v -> state.update { it.copy(tasbihSound = v) } },
+                onAutoAdvance = { v -> state.update { it.copy(tasbihAutoAdvance = v) } },
+                onOverlay = { v -> state.update { it.copy(tasbihCompletionOverlay = v) } },
+                onResetAll = { showResetAllConfirm = true }
+            )
+            else -> TasbihCounterTab(
+                dhikr = dhikr,
+                count = count,
+                target = target,
+                rounds = settings.tasbihRound,
+                total = settings.tasbihTotal,
+                dayCount = settings.tasbihDayCount,
+                onTick = ::onTick,
+                onOpenList = { tab = TAB_LIST }
+            )
+        }
+    }
+
+    if (showCompletion) {
+        CompletionDialog(
+            target = completedTarget,
+            nextDhikr = presets[TasbihPresets.safeIndex(state.settings.tasbihDhikrIndex)].text,
+            onContinue = { showCompletion = false },
+            onChange = {
+                showCompletion = false
+                tab = TAB_LIST
+            }
+        )
+    }
+
+    if (showResetConfirm) {
+        TasbihConfirmDialog(
+            title = "إعادة العد",
+            message = "هل تريد إعادة العداد الحالي إلى الصفر؟",
+            confirmLabel = "تصفير",
+            onConfirm = {
+                state.update { it.copy(tasbihCount = 0) }
+                showResetConfirm = false
+            },
+            onDismiss = { showResetConfirm = false }
+        )
+    }
+
+    if (showResetAllConfirm) {
+        TasbihConfirmDialog(
+            title = "حذف كل الإحصاءات",
+            message = "سيتم تصفير اليوم والإجمالي والدورات نهائيًا. هل أنت متأكد؟",
+            confirmLabel = "حذف الكل",
+            onConfirm = {
+                state.update {
+                    it.copy(
+                        tasbihCount = 0,
+                        tasbihRound = 0,
+                        tasbihTotal = 0,
+                        tasbihDayCount = 0,
+                        tasbihDayDate = todayKey
+                    )
+                }
+                showResetAllConfirm = false
+            },
+            onDismiss = { showResetAllConfirm = false }
+        )
+    }
+}
+
+// ============================================================================
+//  التبويبات
+// ============================================================================
+@Composable
+private fun TasbihTabs(selected: Int, onSelect: (Int) -> Unit) {
+    val labels = listOf("المسبحة", "التسبيحات", "الإحصاءات", "الإعدادات")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0x14FFFFFF))
+            .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(16.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        labels.forEachIndexed { index, label ->
+            val isSelected = index == selected
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) Sky else Color.Transparent)
+                    .clickable { onSelect(index) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    label,
+                    color = if (isSelected) Color(0xFF082F49) else KararColors.TextSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+// ============================================================================
+//  تبويب المسبحة — العداد الكبير
+// ============================================================================
+@Composable
+private fun TasbihCounterTab(
+    dhikr: TasbihDhikr,
+    count: Int,
+    target: Int,
+    rounds: Int,
+    total: Int,
+    dayCount: Int,
+    onTick: () -> Unit,
+    onOpenList: () -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.95f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "tasbihScale"
+    )
+    val progress = (count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
+
+    Text(
+        dhikr.text,
+        color = Color(0xFFE2E8F0),
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        lineHeight = 36.sp
+    )
+    Spacer(Modifier.height(4.dp))
+    Text(dhikr.group, color = SlateMuted, fontSize = 11.sp)
+    Spacer(Modifier.height(18.dp))
+
+    Box(
+        modifier = Modifier
+            .size(296.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(interactionSource = interaction, indication = null) { onTick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val strokeWidth = 15.dp.toPx()
+            val radius = size.minDimension / 2f - strokeWidth
+            val topLeft = Offset(center.x - radius, center.y - radius)
+            val arcSize = Size(radius * 2, radius * 2)
+
+            // هالة خارجية
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Sky.copy(alpha = 0.16f), Color.Transparent),
+                    center = center,
+                    radius = size.minDimension / 2f
+                ),
+                radius = size.minDimension / 2f
+            )
+            // المسار الخلفي
+            drawArc(
+                color = Sky.copy(alpha = 0.14f),
+                startAngle = -90f,
+                sweepAngle = 360f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            )
+            // التقدم
+            if (progress > 0f) {
                 drawArc(
                     brush = Brush.sweepGradient(
-                        listOf(KararColors.Purple, KararColors.Gold, KararColors.Pink, KararColors.Purple)
+                        listOf(Sky, Violet, KararColors.Gold, Sky),
+                        center = center
                     ),
                     startAngle = -90f,
                     sweepAngle = 360f * progress,
                     useCenter = false,
-                    topLeft = Offset(center.x - radius, center.y - radius),
-                    size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = stroke, cap = StrokeCap.Round)
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
             }
-            Box(
-                Modifier
-                    .size(220.dp)
-                    .background(
-                        Brush.radialGradient(listOf(Color(0x33FFD700), Color(0x11FFFFFF))),
-                        CircleShape
-                    )
-                    .clickable(
-                        interactionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        state.update { s -> s.copy(tasbihCount = s.tasbihCount + 1) }
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = count.toString(),
-                        color = KararColors.TextPrimary,
-                        fontSize = 64.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text("اضغط للتسبيح", color = KararColors.TextMuted, fontSize = 11.sp)
-                }
-            }
         }
 
-        Spacer(Modifier.height(20.dp))
+        // القرص الداخلي — مثل الدائرة ذات الحد الأزرق في HTML
+        Box(
+            modifier = Modifier
+                .size(238.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        listOf(Color(0xFF1E293B), Slate)
+                    )
+                )
+                .border(8.dp, Sky, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = count.toString(),
+                    color = Color.White,
+                    fontSize = 78.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "من $target",
+                    color = SlateMuted,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+    Text("اضغط في أي مكان داخل الدائرة للتسبيح", color = SlateMuted, fontSize = 10.sp)
+    Spacer(Modifier.height(16.dp))
+
+    // شريط التقدم والهدف
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text("الهدف:", color = SlateMuted, fontSize = 12.sp)
+        Text("$target", color = Sky, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.weight(1f))
+        if (rounds > 0) InfoPill("الدورات: $rounds", Violet)
+        if (dayCount > 0) InfoPill("اليوم: $dayCount", KararColors.Gold)
+    }
+    Spacer(Modifier.height(8.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(RoundedCornerShape(50))
+            .background(Color(0x1F38BDF8))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress)
+                .height(8.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Brush.horizontalGradient(listOf(Sky, Violet)))
+        )
+    }
+    Spacer(Modifier.height(14.dp))
+
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        SmallPill("تغيير الذكر") { onOpenList() }
+        InfoPill("الإجمالي: $total", Sky)
+    }
+}
+
+// ============================================================================
+//  تبويب قائمة التسبيحات
+// ============================================================================
+@Composable
+private fun TasbihListTab(selectedIndex: Int, onSelect: (Int) -> Unit) {
+    val presets = TasbihPresets.all
+    SectionTitle("تسبيح فاطمة الزهراء (ع)")
+    Spacer(Modifier.height(8.dp))
+    presets.forEachIndexed { index, dhikr ->
+        if (index <= 2) {
+            DhikrRow(
+                index = index,
+                dhikr = dhikr,
+                selected = index == selectedIndex,
+                onClick = { onSelect(index) }
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+    Spacer(Modifier.height(6.dp))
+    SectionTitle("مأثورات وأذكار أخرى")
+    Spacer(Modifier.height(8.dp))
+    presets.forEachIndexed { index, dhikr ->
+        if (index > 2) {
+            DhikrRow(
+                index = index,
+                dhikr = dhikr,
+                selected = index == selectedIndex,
+                onClick = { onSelect(index) }
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun DhikrRow(index: Int, dhikr: TasbihDhikr, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (selected) Sky.copy(alpha = 0.13f) else Color(0x0DFFFFFF))
+            .border(
+                1.dp,
+                if (selected) Sky.copy(alpha = 0.7f) else Color(0x14FFFFFF),
+                RoundedCornerShape(18.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(if (selected) Sky else Color(0x1FFFFFFF)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "${index + 1}",
+                color = if (selected) Color(0xFF082F49) else SlateMuted,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                dhikr.text,
+                color = if (selected) Sky else Color(0xFFE2E8F0),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(dhikr.group, color = SlateMuted, fontSize = 10.sp)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text("${dhikr.target}", color = Sky, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("مرة", color = SlateMuted, fontSize = 9.sp)
+        }
+    }
+}
+
+// ============================================================================
+//  تبويب الإحصاءات
+// ============================================================================
+@Composable
+private fun TasbihStatsTab(
+    dayCount: Int,
+    total: Int,
+    rounds: Int,
+    onResetDay: () -> Unit,
+    onResetAll: () -> Unit
+) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            StatColumn("اليوم", dayCount, Sky)
+            StatColumn("الإجمالي", total, Color(0xFFE2E8F0))
+            StatColumn("الدورات", rounds, Violet)
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp) {
+        SectionTitle("ملاحظة")
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "عداد «اليوم» يتصفّر تلقائيًا كل 24 ساعة، بينما «الإجمالي» يبقى محفوظًا على جهازك. " +
+                "كل تسبيحة تُحفظ فورًا، ولا تحتاج إنترنت.",
+            color = SlateMuted,
+            fontSize = 11.sp,
+            lineHeight = 18.sp
+        )
+        Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            listOf(33, 99, 100, 1000).forEach { value ->
-                val selected = target == value
+            SmallPill("تصفير اليوم", onClick = onResetDay)
+            SmallPill("حذف كل الإحصاءات", danger = true, onClick = onResetAll)
+        }
+    }
+}
+
+@Composable
+private fun StatColumn(label: String, value: Int, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            value.toString(),
+            color = color,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(label, color = SlateMuted, fontSize = 11.sp)
+    }
+}
+
+// ============================================================================
+//  تبويب إعدادات المسبحة
+// ============================================================================
+@Composable
+private fun TasbihSettingsTab(
+    haptics: Boolean,
+    sound: Boolean,
+    autoAdvance: Boolean,
+    overlay: Boolean,
+    onHaptics: (Boolean) -> Unit,
+    onSound: (Boolean) -> Unit,
+    onAutoAdvance: (Boolean) -> Unit,
+    onOverlay: (Boolean) -> Unit,
+    onResetAll: () -> Unit
+) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp) {
+        TasbihToggleRow(
+            title = "الاهتزاز مع كل تسبيحة",
+            subtitle = "استجابة لمسية خفيفة",
+            checked = haptics,
+            onChange = onHaptics
+        )
+        Spacer(Modifier.height(6.dp))
+        TasbihToggleRow(
+            title = "الصوت",
+            subtitle = "نقرة قصيرة عند التسبيح ونغمة عند الإتمام",
+            checked = sound,
+            onChange = onSound
+        )
+        Spacer(Modifier.height(6.dp))
+        TasbihToggleRow(
+            title = "الانتقال التلقائي",
+            subtitle = "بعد إتمام الهدف انتقل للذكر التالي في تسبيح الزهراء",
+            checked = autoAdvance,
+            onChange = onAutoAdvance
+        )
+        Spacer(Modifier.height(6.dp))
+        TasbihToggleRow(
+            title = "شاشة التهنئة",
+            subtitle = "إظهار «أحسنت» عند إتمام الهدف",
+            checked = overlay,
+            onChange = onOverlay
+        )
+    }
+    Spacer(Modifier.height(10.dp))
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("حذف كل بيانات المسبحة", color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text("اليوم والإجمالي والدورات", color = SlateMuted, fontSize = 10.sp)
+            }
+            SmallPill("حذف", danger = true, onClick = onResetAll)
+        }
+    }
+}
+
+@Composable
+private fun TasbihToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = SlateMuted, fontSize = 10.sp, lineHeight = 15.sp)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color(0xFF082F49),
+                checkedTrackColor = Sky,
+                uncheckedThumbColor = SlateMuted,
+                uncheckedTrackColor = SlateCard
+            )
+        )
+    }
+}
+
+// ============================================================================
+//  عناصر صغيرة
+// ============================================================================
+@Composable
+private fun InfoPill(text: String, color: Color) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(color.copy(alpha = 0.14f))
+            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(50))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    ) {
+        Text(text, color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun SmallPill(text: String, danger: Boolean = false, onClick: () -> Unit) {
+    val color = if (danger) KararColors.Danger else Sky
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(color.copy(alpha = 0.14f))
+            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(50))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Text(text, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+// ============================================================================
+//  نوافذ التأكيد والتهنئة
+// ============================================================================
+@Composable
+private fun CompletionDialog(
+    target: Int,
+    nextDhikr: String,
+    onContinue: () -> Unit,
+    onChange: () -> Unit
+) {
+    val pulse = rememberInfiniteTransition(label = "completePulse")
+    val scale by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(tween(850), RepeatMode.Reverse),
+        label = "completeScale"
+    )
+    Dialog(onDismissRequest = onContinue) {
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            corner = 28.dp,
+            color = Color(0xF2132033),
+            borderColor = Sky.copy(alpha = 0.4f),
+            contentPadding = PaddingValues(24.dp)
+        ) {
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = Sky,
+                    modifier = Modifier
+                        .size(72.dp)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        }
+                )
+                Spacer(Modifier.height(12.dp))
+                Text("أحسنت!", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "لقد أتممت التسبيح $target مرة",
+                    color = Color(0xFFE2E8F0),
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "التالي: $nextDhikr",
+                    color = SlateMuted,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(18.dp))
                 Box(
-                    Modifier
-                        .background(if (selected) KararColors.Gold else Color(0x14FFFFFF), RoundedCornerShape(50))
-                        .clickable { state.update { it.copy(tasbihTarget = value) } }
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Sky)
+                        .clickable(onClick = onContinue)
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        value.toString(),
-                        color = if (selected) Color(0xFF241A00) else KararColors.TextSecondary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("متابعة", color = Color(0xFF082F49), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(SlateCard)
+                        .clickable(onClick = onChange)
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("تغيير التسبيح", color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
+    }
+}
 
-        Spacer(Modifier.height(16.dp))
-        GlassCard(modifier = Modifier.fillMaxWidth(), corner = 20.dp) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("الدورات المكتملة", color = KararColors.TextSecondary, fontSize = 11.sp)
-                    Text(
-                        text = if (target > 0) "${count / target}" else "0",
-                        color = KararColors.Gold,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Column(Modifier.weight(1f)) {
-                    Text("حتى الهدف", color = KararColors.TextSecondary, fontSize = 11.sp)
-                    Text(
-                        text = if (target > 0) "${target - (count % target)}" else "-",
-                        color = KararColors.TextPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+@Composable
+private fun TasbihConfirmDialog(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            corner = 24.dp,
+            color = Color(0xF2132033),
+            borderColor = Color(0x33FFFFFF),
+            contentPadding = PaddingValues(20.dp)
+        ) {
+            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text(message, color = SlateMuted, fontSize = 12.sp, lineHeight = 18.sp)
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SlateCard)
+                        .clickable(onClick = onDismiss)
+                        .padding(vertical = 11.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("إلغاء", color = Color(0xFFE2E8F0), fontSize = 12.sp)
                 }
                 Box(
-                    Modifier
-                        .background(Color(0x22EF5350), RoundedCornerShape(50))
-                        .clickable { state.update { it.copy(tasbihCount = 0) } }
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(KararColors.Danger)
+                        .clickable(onClick = onConfirm)
+                        .padding(vertical = 11.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("تصفير", color = KararColors.Danger, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(confirmLabel, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

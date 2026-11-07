@@ -6,6 +6,8 @@ package com.karrar.amsakiah.core.audio
 interface AudioPlayer {
     /** يشغّل ملفًا من res/raw بالاسم بدون الامتداد، مثال: "adhan" */
     fun play(resourceName: String, loop: Boolean = false)
+    /** يستأنف من موضع الإيقاف المؤقت (وليس من البداية) */
+    fun resume()
     fun pause()
     fun stop()
     fun isPlaying(): Boolean

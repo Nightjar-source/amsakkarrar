@@ -36,9 +36,8 @@ class PrayerAlarmScheduler(private val context: Context) {
         }
 
         val adhanIds = settings.adhanPrayers.toSet()
-        val reminderIds = PrayerMeta.order.filter {
-            it == "fajr" || it == "dhuhr" || it == "asr" || it == "maghrib" || it == "isha"
-        }
+        // أوقات التذكير يختارها المستخدم في الضبط (يمكن اختيار وقت محدّد أو الكل)
+        val reminderIds = PrayerMeta.order.filter { it in settings.reminderPrayers }
 
         for (day in 0..DAYS_AHEAD) {
             val date = today.plus(DatePeriod(days = day))

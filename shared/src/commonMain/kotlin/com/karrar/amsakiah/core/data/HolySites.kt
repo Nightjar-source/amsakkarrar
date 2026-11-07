@@ -80,4 +80,29 @@ object HolySites {
         val idx = ((d + 22.5) / 45.0).toInt() % 8
         return dirs[idx]
     }
+
+    /**
+     * لون مميّز لكل مرقد/مكان — يُستخدم في البوصلة وبطاقات المراقد،
+     * كما طُلب: لكل مرقد لونه الخاص المرتبط بمكانه.
+     */
+    fun accentOf(site: HolySite): Long = when {
+        site.kind == SiteKind.KAABA -> 0xFFFFD700
+        site.kind == SiteKind.PROPHET -> 0xFF4CAF50
+        site.name.contains("الحسين") -> 0xFFEF5350
+        site.name.contains("العباس") -> 0xFF42A5F5
+        site.name.contains("الإمام علي") -> 0xFF26C6DA
+        site.name.contains("الكاظمية") -> 0xFFAB47BC
+        site.name.contains("العسكرية") -> 0xFFFFB74D
+        site.name.contains("الرضا") -> 0xFF26A69A
+        site.name.contains("المعصومة") -> 0xFFF06292
+        site.name.contains("زينب") -> 0xFFEC407A
+        site.name.contains("رقية") -> 0xFF7E57C2
+        site.name.contains("نفيسة") -> 0xFF00ACC1
+        site.name.contains("الكوفة") -> 0xFF66BB6A
+        site.name.contains("السهلة") -> 0xFF9CCC65
+        site.name.contains("جمكران") -> 0xFF4DD0E1
+        site.name.contains("البقيع") -> 0xFF90A4AE
+        site.name.contains("المعلاة") -> 0xFFB0BEC5
+        else -> 0xFF38BDF8
+    }
 }

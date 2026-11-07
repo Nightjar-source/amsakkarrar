@@ -2,6 +2,7 @@ package com.karrar.amsakiah.core.location
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
+import kotlinx.coroutines.delay
 import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
@@ -21,12 +22,30 @@ actual class LocationProvider {
 
     actual suspend fun currentLocation(): GeoPoint? {
         if (!hasPermission()) return null
-        val loc = manager.location ?: return null
-        val coord = loc.coordinate
-        val lat = coord.useContents { latitude }
-        val lon = coord.useContents { longitude }
-        return GeoPoint(lat, lon, loc.horizontalAccuracy.toFloat())
+
+        // أولًا: آخر موقع معروف إن وُجد
+        manager.location?.let { return it.toGeoPoint() }
+
+        // ثانيًا: تشغيل التحديث مؤقتًا وانتظار أول قراءة (حتى 12 ثانية)
+        manager.startUpdatingLocation()
+        try {
+            repeat(40) {
+                manager.location?.let { return it.toGeoPoint() }
+                delay(300)
+            }
+            return null
+        } finally {
+            manager.stopUpdatingLocation()
+        }
     }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun platform.CoreLocation.CLLocation.toGeoPoint(): GeoPoint {
+    val coord = coordinate
+    val lat = coord.useContents { latitude }
+    val lon = coord.useContents { longitude }
+    return GeoPoint(lat, lon, horizontalAccuracy.toFloat())
 }
 
 actual fun createLocationProvider(): LocationProvider = LocationProvider()

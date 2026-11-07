@@ -15,7 +15,13 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * مدينة أوفلاين من قاعدة GeoNames (12,350+ مدينة حول العالم).
+ * مدينة أو محافظة أوفلاين من قاعدة GeoNames
+ * (كل مدن العالم فوق 5000 نسمة + المحافظات/الولايات).
+ *
+ * الحقول المختصرة لتقليل حجم JSON:
+ * n = الاسم، c = الدولة، r = المحافظة/المنطقة،
+ * la/lo = خط العرض/الطول، t = المنطقة الزمنية، p = السكان،
+ * k = النوع (0 مدينة، 1 محافظة/ولاية).
  */
 @Serializable
 data class OfflineCity(
@@ -24,9 +30,14 @@ data class OfflineCity(
     @SerialName("la") val lat: Double,
     @SerialName("lo") val lon: Double,
     @SerialName("t") val timeZoneId: String = "UTC",
-    @SerialName("p") val population: Long = 0
+    @SerialName("p") val population: Long = 0,
+    @SerialName("r") val region: String = "",
+    @SerialName("k") val kind: Int = 0
 ) {
-    val display: String get() = "$name، $country"
+    val isProvince: Boolean get() = kind == 1
+
+    val display: String
+        get() = if (isProvince) "$name (محافظة/ولاية)، $country" else "$name، $country"
 
     /** فرق التوقيت بالساعات عن UTC في اللحظة الحالية */
     fun offsetHoursNow(): Double = runCatching {
@@ -103,7 +114,11 @@ object CityDatabase {
         if (q.length < 2) return emptyList()
         val all = load()
         return all.asSequence()
-            .filter { normalize(it.name).contains(q) || normalize(it.country).contains(q) }
+            .filter {
+                normalize(it.name).contains(q) ||
+                    normalize(it.country).contains(q) ||
+                    normalize(it.region).contains(q)
+            }
             .sortedWith(compareByDescending<OfflineCity> { normalize(it.name).startsWith(q) }
                 .thenByDescending { it.population })
             .take(limit)

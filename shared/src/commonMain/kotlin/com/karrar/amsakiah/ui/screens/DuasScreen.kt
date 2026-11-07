@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,12 +22,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,12 +38,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.core.data.ShiaDuasLibrary
+import com.karrar.amsakiah.ui.components.DuaFloatingPlayer
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.SectionTitle
+import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.platform.PlatformBackHandler
 import com.karrar.amsakiah.ui.theme.KararColors
 
@@ -54,28 +60,58 @@ import com.karrar.amsakiah.ui.theme.KararColors
 fun DuasScreen(contentPadding: PaddingValues) {
     var selectedId by remember { mutableStateOf<String?>(null) }
     val selected = ShiaDuasLibrary.byId(selectedId)
+    val player = remember { DuaPlayerController() }
+
+    // إيقاف الصوت وتحرير المشغّل الأصلي عند مغادرة قسم الأدعية
+    DisposableEffect(Unit) {
+        onDispose { player.release() }
+    }
 
     PlatformBackHandler(enabled = selected != null) { selectedId = null }
 
-    Crossfade(
-        targetState = selected,
-        animationSpec = tween(220),
-        label = "dua-navigation"
-    ) { item ->
-        if (item == null) {
-            DuaList(contentPadding = contentPadding, onSelect = { selectedId = it.id })
-        } else {
-            DuaDetailScreen(
-                item = item,
-                contentPadding = contentPadding,
-                onBack = { selectedId = null }
-            )
+    Box(Modifier.fillMaxSize()) {
+        Crossfade(
+            targetState = selected,
+            animationSpec = tween(220),
+            label = "dua-navigation"
+        ) { item ->
+            if (item == null) {
+                DuaList(
+                    contentPadding = contentPadding,
+                    bottomInset = if (player.hasTrack) 118.dp else 0.dp,
+                    onSelect = { selectedId = it.id },
+                    onPlay = { player.play(it) },
+                    player = player
+                )
+            } else {
+                DuaDetailScreen(
+                    item = item,
+                    contentPadding = contentPadding,
+                    player = player,
+                    onBack = { selectedId = null }
+                )
+            }
         }
+
+        // المشغل العائم البيضوي — يبقى فوق المحتوى
+        DuaFloatingPlayer(
+            controller = player,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = contentPadding.calculateBottomPadding() + 10.dp)
+        )
     }
 }
 
 @Composable
-private fun DuaList(contentPadding: PaddingValues, onSelect: (ShiaDuaItem) -> Unit) {
+private fun DuaList(
+    contentPadding: PaddingValues,
+    bottomInset: Dp,
+    onSelect: (ShiaDuaItem) -> Unit,
+    onPlay: (ShiaDuaItem) -> Unit,
+    player: DuaPlayerController
+) {
     val all = remember { ShiaDuasLibrary.duasList }
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf<String?>(null) }
@@ -94,7 +130,7 @@ private fun DuaList(contentPadding: PaddingValues, onSelect: (ShiaDuaItem) -> Un
             start = 16.dp,
             end = 16.dp,
             top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp
+            bottom = contentPadding.calculateBottomPadding() + bottomInset + 8.dp
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -124,17 +160,33 @@ private fun DuaList(contentPadding: PaddingValues, onSelect: (ShiaDuaItem) -> Un
         item { SectionTitle("الأدعية والمناجاة (${filtered.size})") }
 
         items(filtered, key = { it.id }) { item ->
-            DuaCard(item = item, onClick = { onSelect(item) })
+            DuaCard(
+                item = item,
+                isCurrent = player.currentId == item.id,
+                isPlaying = player.currentId == item.id && player.playing,
+                isPreparing = player.currentId == item.id && player.durationMs <= 0L,
+                onClick = { onSelect(item) },
+                onPlay = { onPlay(item) }
+            )
         }
     }
 }
 
 @Composable
-private fun DuaCard(item: ShiaDuaItem, onClick: () -> Unit) {
+private fun DuaCard(
+    item: ShiaDuaItem,
+    isCurrent: Boolean,
+    isPlaying: Boolean,
+    isPreparing: Boolean,
+    onClick: () -> Unit,
+    onPlay: () -> Unit
+) {
     GlassCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         corner = 20.dp,
-        contentPadding = PaddingValues(14.dp)
+        contentPadding = PaddingValues(14.dp),
+        color = if (isCurrent) Color(0x1AFFD700) else KararColors.CardSoft,
+        borderColor = if (isCurrent) Color(0x4DFFD700) else KararColors.Border
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -148,15 +200,23 @@ private fun DuaCard(item: ShiaDuaItem, onClick: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Box(
                     Modifier
-                        .size(34.dp)
-                        .background(Color(0x33FFD700), CircleShape),
+                        .size(38.dp)
+                        .background(
+                            if (isCurrent) KararColors.Gold else Color(0x33FFD700),
+                            CircleShape
+                        )
+                        .clickable(onClick = onPlay),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Filled.PlayArrow,
-                        contentDescription = "يحتوي تسجيل صوتي",
-                        tint = KararColors.Gold,
-                        modifier = Modifier.size(20.dp)
+                        imageVector = when {
+                            isPreparing -> Icons.Filled.PlayArrow
+                            isPlaying -> Icons.Filled.Pause
+                            else -> Icons.Filled.PlayArrow
+                        },
+                        contentDescription = if (isPlaying) "إيقاف مؤقت" else "تشغيل التسجيل",
+                        tint = if (isCurrent) Color(0xFF241A00) else KararColors.Gold,
+                        modifier = Modifier.size(21.dp)
                     )
                 }
             }

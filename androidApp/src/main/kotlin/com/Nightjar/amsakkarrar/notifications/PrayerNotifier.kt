@@ -11,6 +11,7 @@ import com.Nightjar.amsakkarrar.R
 object PrayerNotifier {
 
     fun showReminder(context: Context, prayerLabel: String, minutes: Int) {
+        NotificationChannels.createAll(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val contentIntent = PendingIntent.getActivity(
             context,
@@ -43,6 +44,7 @@ object PrayerNotifier {
      * «حان الآن موعد …» + «تقبل الله طاعتكم» + الوقت الحالي والصلاة القادمة.
      */
     fun showAdhanArrived(context: Context, prayerLabel: String) {
+        NotificationChannels.createAll(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val snapshot = runCatching { PrayerSnapshotLoader.load(context) }.getOrNull()
 
@@ -60,6 +62,30 @@ object PrayerNotifier {
         )
 
         runCatching { manager.notify(NotificationDesign.PRAYER_ID, notification) }
+    }
+
+    /**
+     * احتياط الصوت: إشعار على قناة تحمل adhan.mp3 نفسه.
+     * يُستدعى فقط إذا فشل تشغيل AdhanService أو فتح ملف الصوت.
+     */
+    fun showAdhanFallback(context: Context, prayerLabel: String) {
+        NotificationChannels.createAll(context)
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val snapshot = runCatching { PrayerSnapshotLoader.load(context) }.getOrNull()
+        val entries = snapshot?.entries.orEmpty()
+        val index = entries.indexOfFirst { it.label == prayerLabel }.let { if (it < 0) 0 else it }
+        val current = entries.getOrNull(index)?.time ?: snapshot?.nextTime ?: "--:--"
+        val next = entries.getOrNull((index + 1) % entries.size.coerceAtLeast(1))
+
+        val notification = NotificationDesign.buildPrayer(
+            context = context,
+            prayerLabel = prayerLabel,
+            currentTime = current,
+            nextLabel = next?.label ?: snapshot?.afterLabel ?: "",
+            nextTime = next?.time ?: snapshot?.afterTime ?: "--:--",
+            channel = NotificationChannels.ADHAN_FALLBACK
+        )
+        runCatching { manager.notify(NotificationDesign.PRAYER_ID + 1, notification) }
     }
 
     const val REMINDER_ID = 3001

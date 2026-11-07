@@ -3,6 +3,7 @@ package com.Nightjar.amsakkarrar.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.Nightjar.amsakkarrar.widget.WidgetRefreshWorker
 import com.Nightjar.amsakkarrar.widget.WidgetUpdater
 
 /**
@@ -19,6 +20,7 @@ class BootReceiver : BroadcastReceiver() {
                 runCatching { PrayerAlarmScheduler(context).rescheduleAll() }
                 runCatching { LiveUpdateScheduler(context).schedule() }
                 runCatching { LiveNotificationManager.update(context) }
+                runCatching { WidgetRefreshWorker.ensurePeriodic(context) }
                 WidgetUpdater.updateAll(context)
             }
         }

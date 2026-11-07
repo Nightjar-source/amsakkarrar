@@ -25,6 +25,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,6 +54,7 @@ import com.karrar.amsakiah.ui.screens.SettingsScreen
 import com.karrar.amsakiah.ui.screens.ShrinesQiblaScreen
 import com.karrar.amsakiah.ui.screens.TasbihScreen
 import com.karrar.amsakiah.ui.screens.TodayScreen
+import com.karrar.amsakiah.ui.screens.WidgetsScreen
 import com.karrar.amsakiah.ui.theme.KararColors
 
 /**
@@ -70,6 +73,8 @@ fun AdaptiveAppScaffold(
 ) {
     val layout = rememberAppAdaptiveLayout()
     var destination by remember { mutableStateOf(AppDestination.TODAY) }
+    // شاشة فرعية مخصّصة للودجتات تُفتح من الضبط (كما في V7) دون إضافة تبويب ثامن
+    var showWidgets by remember { mutableStateOf(false) }
     val settings = state.settings
     val hijri = remember(settings, state.now) {
         PrayerCalculator.hijriFor(settings, PrayerCalculator.todayDate(settings))
@@ -94,24 +99,30 @@ fun AdaptiveAppScaffold(
                     SideNavigation(
                         destination = destination,
                         compact = layout.navigationLayout == NavigationLayout.RAIL,
-                        onSelect = { destination = it }
+                        onSelect = {
+                            showWidgets = false
+                            destination = it
+                        }
                     )
                 }
 
                 Column(Modifier.weight(1f)) {
-                    if (destination != AppDestination.TODAY) {
+                    if (destination != AppDestination.TODAY || showWidgets) {
                         AppTitleBar(
-                            title = destination.title,
-                            subtitle = "${hijri.day} ${hijri.monthName} ${hijri.year} هـ"
+                            title = if (showWidgets) "الودجتات" else destination.title,
+                            subtitle = if (showWidgets) "أشكال الودجت وخلفياتها" else "${hijri.day} ${hijri.monthName} ${hijri.year} هـ",
+                            onBack = if (showWidgets) ({ showWidgets = false }) else null
                         )
                     }
                     Crossfade(
-                        targetState = destination,
+                        targetState = destination to showWidgets,
                         animationSpec = tween(220),
                         label = "screen"
-                    ) { dest ->
+                    ) { (dest, widgetsOpen) ->
                         val padding = PaddingValues(0.dp)
-                        when (dest) {
+                        if (widgetsOpen) {
+                            WidgetsScreen(state = state, contentPadding = padding)
+                        } else when (dest) {
                             AppDestination.TODAY -> TodayScreen(
                                 state = state,
                                 weather = weather,
@@ -125,7 +136,11 @@ fun AdaptiveAppScaffold(
                             AppDestination.DUAS -> DuasScreen(padding)
                             AppDestination.TASBIH -> TasbihScreen(state, padding)
                             AppDestination.FIQH -> FiqhScreen(state, padding)
-                            AppDestination.SETTINGS -> SettingsScreen(state, padding)
+                            AppDestination.SETTINGS -> SettingsScreen(
+                                state = state,
+                                contentPadding = padding,
+                                onOpenWidgets = { showWidgets = true }
+                            )
                         }
                     }
                 }
@@ -134,7 +149,10 @@ fun AdaptiveAppScaffold(
             if (layout.navigationLayout == NavigationLayout.BOTTOM_BAR) {
                 BottomNavigation(
                     destination = destination,
-                    onSelect = { destination = it }
+                    onSelect = {
+                        showWidgets = false
+                        destination = it
+                    }
                 )
             }
         }
@@ -142,13 +160,31 @@ fun AdaptiveAppScaffold(
 }
 
 @Composable
-private fun AppTitleBar(title: String, subtitle: String) {
+private fun AppTitleBar(title: String, subtitle: String, onBack: (() -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (onBack != null) {
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0x1AFFD700))
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.ArrowBack,
+                    contentDescription = "رجوع",
+                    tint = KararColors.Gold,
+                    modifier = Modifier.size(17.dp)
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+        }
         Column(Modifier.weight(1f)) {
             Text(title, color = KararColors.Gold, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(subtitle, color = KararColors.TextMuted, fontSize = 10.sp)

@@ -14,6 +14,8 @@ data class AppSettings(
     val longitude: Double = 44.0249,
     val timeZoneId: String = "Asia/Baghdad",
     val useGps: Boolean = false,
+    /** مصدر الموقع: manual (اختيار يدوي) / gps (إحداثيات الجهاز) / ip (استشعار عبر IP) */
+    val locationSource: String = "manual",
 
     // ---------- الحساب ----------
     val methodCode: String = "alkafeel",
@@ -31,10 +33,15 @@ data class AppSettings(
 
     // ---------- الإشعارات ----------
     val adhanEnabled: Boolean = true,
+    /** الأوقات التي يُرفع عندها الأذان (اختيار محدّد أو الكل) */
     val adhanPrayers: List<String> = listOf("fajr", "dhuhr", "asr", "maghrib", "isha"),
     val reminderEnabled: Boolean = true,
+    /** الأوقات التي يُرسل قبلها تنبيه التذكير */
+    val reminderPrayers: List<String> = listOf("fajr", "dhuhr", "asr", "maghrib", "isha"),
     val reminderMinutes: Int = 15,
     val liveNotification: Boolean = true,
+    /** الأوقات التي يدور حولها العدّاد والإشعار الحي (اختيار محدّد أو الكل) */
+    val livePrayers: List<String> = listOf("imsak", "fajr", "dhuhr", "asr", "maghrib", "isha", "midnight"),
     val vibration: Boolean = true,
 
     // ---------- المظهر ----------
@@ -49,6 +56,21 @@ data class AppSettings(
     // ---------- المسبحة ----------
     val tasbihCount: Int = 0,
     val tasbihTarget: Int = 33,
+    /** فهرس الذكر المختار من قائمة تسبيح الزهراء والمأثورات */
+    val tasbihDhikrIndex: Int = 0,
+    /** عدد الدورات المكتملة في الجلسة الحالية */
+    val tasbihRound: Int = 0,
+    /** إجمالي التسبيحات (كل الأوقات) */
+    val tasbihTotal: Int = 0,
+    /** تسبيحات اليوم — تُصفَّر تلقائيًا عند تغيّر التاريخ */
+    val tasbihDayCount: Int = 0,
+    val tasbihDayDate: String = "",
+    val tasbihHaptics: Boolean = true,
+    val tasbihSound: Boolean = true,
+    /** الانتقال تلقائيًا إلى الذكر التالي ضمن تسبيح الزهراء (ع) */
+    val tasbihAutoAdvance: Boolean = true,
+    /** إظهار شاشة التهنئة عند إتمام الهدف */
+    val tasbihCompletionOverlay: Boolean = true,
 
     val version: Int = 1
 )

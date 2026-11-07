@@ -1,10 +1,14 @@
 # ============================================================================
 #  توليد قاعدة المدن العالمية أوفلاين (cities.json)
-#  المصدر: GeoNames cities15000 (CC BY 4.0) — https://download.geonames.org
+#  المصدر: GeoNames
+#    - cities5000.txt        (كل المدن التي يزيد سكانها عن 5000 نسمة + العواصم)
+#    - admin1CodesASCII.txt  (المحافظات/الولايات/الأقاليم في العالم)
+#  الترخيص: CC BY 4.0 — https://download.geonames.org
 #  الاستخدام: powershell -File scripts/build-cities-json.ps1
 # ============================================================================
 param(
-    [string]$Source = "$env:TEMP\geonames\cities15000.txt",
+    [string]$Source = "$env:TEMP\geonames\cities5000.txt",
+    [string]$Admin1Source = "$env:TEMP\geonames\admin1CodesASCII.txt",
     [string]$OutFile = ""
 )
 
@@ -16,7 +20,7 @@ if (-not $OutFile -or $OutFile -eq '') {
 }
 
 if (-not (Test-Path $Source)) {
-    throw "ملف المصدر غير موجود: $Source (نزّل cities15000.zip من download.geonames.org وفك ضغطه)"
+    throw "ملف المصدر غير موجود: $Source (نزّل cities5000.zip من download.geonames.org وفك ضغطه)"
 }
 
 # رمز الدولة -> الاسم العربي
@@ -87,40 +91,129 @@ function Get-ArabicName([string]$alts) {
     return $null
 }
 
-Write-Host "قراءة الملف: $Source"
-$rows = Import-Csv -Path $Source -Delimiter "`t" -Header id,name,ascii,alts,lat,lon,fclass,fcode,cc,cc2,adm1,adm2,adm3,adm4,pop,elev,dem,tz,mod |
-    Where-Object { [long]$_.pop -ge 50000 -or $_.fcode -eq 'PPLC' }
+# ---------- أسماء المحافظات/الولايات ----------
+$admin1Names = @{}
+if (Test-Path $Admin1Source) {
+    Write-Host "قراءة المحافظات: $Admin1Source"
+    Import-Csv -Path $Admin1Source -Delimiter "`t" -Header code,name,ascii,geonameid |
+        ForEach-Object { $admin1Names[$_.code] = $_.ascii }
+    Write-Host ("عدد المحافظات: {0}" -f $admin1Names.Count)
+} else {
+    Write-Host "تنبيه: ملف المحافظات غير موجود — سيتم تخطيها"
+}
 
-Write-Host ("المدن المرشحة: {0}" -f $rows.Count)
+function Json-Escape([string]$s) {
+    if ($null -eq $s) { return '' }
+    $sb = New-Object System.Text.StringBuilder($s.Length + 8)
+    foreach ($ch in $s.ToCharArray()) {
+        switch ($ch) {
+            '"' { [void]$sb.Append('\"') }
+            '\' { [void]$sb.Append('\\') }
+            "`n" { [void]$sb.Append('\n') }
+            "`r" { [void]$sb.Append('\r') }
+            "`t" { [void]$sb.Append('\t') }
+            default {
+                if ([int]$ch -lt 32) { [void]$sb.Append(('\u{0:x4}' -f [int]$ch)) }
+                else { [void]$sb.Append($ch) }
+            }
+        }
+    }
+    return $sb.ToString()
+}
+
+Write-Host "قراءة المدن: $Source"
+$rows = Import-Csv -Path $Source -Delimiter "`t" -Header id,name,ascii,alts,lat,lon,fclass,fcode,cc,cc2,adm1,adm2,adm3,adm4,pop,elev,dem,tz,mod
+
+Write-Host ("إجمالي المدن في المصدر: {0}" -f $rows.Count)
 
 $seen = @{}
+$provinceAnchor = @{}   # admin1 code -> (pop, lat, lon, tz)
 $list = New-Object System.Collections.Generic.List[object]
 
+# ترتيب حسب السكان لتكون أهم المدن أولًا
 foreach ($r in ($rows | Sort-Object { [long]$_.pop } -Descending)) {
     $cc = $r.cc
     $country = $countryAr[$cc]
     if (-not $country) { $country = $cc }
     $ar = Get-ArabicName $r.alts
     if (-not $ar) { $ar = $r.name }
-    $key = "$ar|$country"
-    if ($seen.ContainsKey($key)) { continue }
-    $seen[$key] = 1
-    $list.Add([ordered]@{
-        n  = $ar
-        c  = $country
-        la = [math]::Round([double]$r.lat, 4)
-        lo = [math]::Round([double]$r.lon, 4)
-        t  = $r.tz
-        p  = [long]$r.pop
+    $region = if ($r.adm1 -and $admin1Names.ContainsKey("$cc.$($r.adm1)")) { $admin1Names["$cc.$($r.adm1)"] } else { "" }
+    if ($r.adm1) {
+        $key1 = "$cc.$($r.adm1)"
+        $pop = [long]$r.pop
+        if (-not $provinceAnchor.ContainsKey($key1) -or $provinceAnchor[$key1].p -lt $pop) {
+            $provinceAnchor[$key1] = [pscustomobject]@{
+                p = $pop; la = [double]$r.lat; lo = [double]$r.lon; tz = $r.tz; n = $region; c = $country
+            }
+        }
+    }
+    $id = $r.id
+    if ($seen.ContainsKey($id)) { continue }
+    $seen[$id] = 1
+    $list.Add([pscustomobject]@{
+        n = $ar; c = $country; r = $region
+        la = [math]::Round([double]$r.lat, 4); lo = [math]::Round([double]$r.lon, 4)
+        t = $r.tz; p = [long]$r.pop; k = 0
     })
 }
 
 Write-Host ("عدد المدن بعد إزالة التكرار: {0}" -f $list.Count)
 
-$json = ConvertTo-Json -InputObject $list -Compress -Depth 3
+# ---------- إضافة المحافظات/الولايات كمداخل مستقلة ----------
+if (Test-Path $Admin1Source) {
+    $provinceCount = 0
+    foreach ($code in $admin1Names.Keys) {
+        $name = $admin1Names[$code]
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        $anchor = $provinceAnchor[$code]
+        if ($null -eq $anchor) { continue }
+        $list.Add([pscustomobject]@{
+            n = $name; c = $anchor.c; r = $anchor.n
+            la = [math]::Round($anchor.la, 4); lo = [math]::Round($anchor.lo, 4)
+            t = $anchor.tz; p = 0; k = 1
+        })
+        $provinceCount++
+    }
+    Write-Host ("عدد المحافظات المضافة: {0}" -f $provinceCount)
+}
+
+Write-Host ("الإجمالي: {0}" -f $list.Count)
+
+# ---------- كتابة JSON مضغوط بدون ConvertTo-Json (أسرع وأخف) ----------
 $dir = Split-Path -Parent $OutFile
 if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
-[System.IO.File]::WriteAllText($OutFile, $json, (New-Object System.Text.UTF8Encoding($false)))
+
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$writer = New-Object System.IO.StreamWriter($OutFile, $false, $utf8, 1048576)
+try {
+    $writer.Write('[')
+    $first = $true
+    foreach ($e in $list) {
+        if (-not $first) { $writer.Write(',') }
+        $first = $false
+        $writer.Write('{"n":"')
+        $writer.Write((Json-Escape $e.n))
+        $writer.Write('","c":"')
+        $writer.Write((Json-Escape $e.c))
+        $writer.Write('","r":"')
+        $writer.Write((Json-Escape $e.r))
+        $writer.Write('","la":')
+        $writer.Write($e.la.ToString([System.Globalization.CultureInfo]::InvariantCulture))
+        $writer.Write(',"lo":')
+        $writer.Write($e.lo.ToString([System.Globalization.CultureInfo]::InvariantCulture))
+        $writer.Write(',"t":"')
+        $writer.Write((Json-Escape $e.t))
+        $writer.Write('","p":')
+        $writer.Write($e.p)
+        $writer.Write(',"k":')
+        $writer.Write($e.k)
+        $writer.Write('}')
+    }
+    $writer.Write(']')
+} finally {
+    $writer.Dispose()
+}
 
 $fi = Get-Item $OutFile
 Write-Host ("تم إنشاء: {0} ({1} KB)" -f $fi.FullName, [math]::Round($fi.Length / 1KB, 0))
+Write-Host "المدن = k:0 ، المحافظات/الولايات = k:1"

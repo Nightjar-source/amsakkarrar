@@ -1,6 +1,7 @@
 package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.karrar.amsakiah.core.astronomy.CityDatabase
 import com.karrar.amsakiah.core.astronomy.OfflineCity
+import com.karrar.amsakiah.core.audio.SoundTestBridge
 import com.karrar.amsakiah.core.astronomy.OfflineCities
 import com.karrar.amsakiah.core.permissions.PermissionController
 import com.karrar.amsakiah.core.permissions.rememberPermissionController
@@ -52,11 +55,23 @@ import com.karrar.amsakiah.ui.theme.KararColors
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(state: AppState, contentPadding: PaddingValues) {
+fun SettingsScreen(
+    state: AppState,
+    contentPadding: PaddingValues,
+    onOpenWidgets: () -> Unit = {}
+) {
     val settings = state.settings
     val scope = rememberCoroutineScope()
     val permissions = rememberPermissionController()
     var showCityPicker by remember { mutableStateOf(false) }
+    // طلب صلاحية الموقع من النظام أولًا، ثم المتابعة تلقائيًا بعد الموافقة
+    var gpsAfterGrant by remember { mutableStateOf(false) }
+    LaunchedEffect(gpsAfterGrant, permissions.status.location) {
+        if (gpsAfterGrant && permissions.status.location) {
+            gpsAfterGrant = false
+            state.detectLocation()
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -81,10 +96,10 @@ fun SettingsScreen(state: AppState, contentPadding: PaddingValues) {
                             fontSize = 14.sp
                         )
                         Text(
-                            if (settings.useGps) {
-                                CityDatabase.proximityLabel(state.nearby).ifBlank { "محدّد عبر GPS" }
-                            } else {
-                                "اختيار يدوي — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
+                            when {
+                                settings.useGps -> CityDatabase.proximityLabel(state.nearby).ifBlank { "محدّد عبر GPS" }
+                                settings.locationSource == "ip" -> "استشعار تلقائي عبر IP — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
+                                else -> "اختيار يدوي — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
                             },
                             color = KararColors.TextMuted,
                             fontSize = 10.sp
@@ -98,9 +113,67 @@ fun SettingsScreen(state: AppState, contentPadding: PaddingValues) {
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SmallAction(if (state.locating) "جارٍ..." else "GPS أوفلاين", icon = true) {
-                        scope.launch { state.detectLocation() }
+                        if (permissions.status.location) {
+                            scope.launch { state.detectLocation() }
+                        } else {
+                            // نافذة نظام أصلية لطلب صلاحية الموقع (تعمل مع كل إصدارات أندرويد)
+                            gpsAfterGrant = true
+                            permissions.requestLocation()
+                        }
+                    }
+                    SmallAction("عبر IP", icon = false) {
+                        // استشعار الموقع عبر الشبكة كما في تطبيق الكفيل
+                        scope.launch { state.detectLocationByIp() }
                     }
                     SmallAction("بحث المدن") { showCityPicker = true }
+                }
+            }
+        }
+
+        // ---------- الودجتات (زر V7) ----------
+        item { SectionTitle("الودجتات") }
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth(), corner = 20.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.Widgets,
+                        contentDescription = null,
+                        tint = KararColors.Gold,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("ودجتات الشاشة الرئيسية", color = KararColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "خمسة أشكال: اليوم، المواقيت، العدّاد، الهجري، والمسبحة",
+                            color = KararColors.TextMuted,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0x2E38BDF8), RoundedCornerShape(14.dp))
+                        .clickable(onClick = onOpenWidgets)
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Widgets,
+                        contentDescription = null,
+                        tint = Color(0xFF7DD3FC),
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "إضافة ودجت للشاشة",
+                        color = Color(0xFF7DD3FC),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -205,6 +278,21 @@ fun SettingsScreen(state: AppState, contentPadding: PaddingValues) {
             )
         }
         item {
+            PrayerSelectionCard(
+                title = "أوقات الأذان",
+                subtitle = "اختر الصلوات التي يُرفع لها الأذان — أو الكل",
+                selected = settings.adhanPrayers,
+                accent = KararColors.Gold,
+                onToggle = { id ->
+                    state.update { s ->
+                        s.copy(adhanPrayers = s.adhanPrayers.togglePrayer(id, PrayerMeta.order))
+                    }
+                },
+                onAll = { state.update { it.copy(adhanPrayers = PrayerMeta.order) } },
+                onNone = { state.update { it.copy(adhanPrayers = emptyList()) } }
+            )
+        }
+        item {
             ToggleRow(
                 title = "تذكير قبل الوقت",
                 subtitle = "قبل ${settings.reminderMinutes} دقيقة",
@@ -221,10 +309,40 @@ fun SettingsScreen(state: AppState, contentPadding: PaddingValues) {
             )
         }
         item {
+            PrayerSelectionCard(
+                title = "أوقات التذكير",
+                subtitle = "اختر الأوقات التي يصلك قبلها التنبيه — أو الكل",
+                selected = settings.reminderPrayers,
+                accent = Color(0xFFFFB74D),
+                onToggle = { id ->
+                    state.update { s ->
+                        s.copy(reminderPrayers = s.reminderPrayers.togglePrayer(id, PrayerMeta.order))
+                    }
+                },
+                onAll = { state.update { it.copy(reminderPrayers = PrayerMeta.order) } },
+                onNone = { state.update { it.copy(reminderPrayers = emptyList()) } }
+            )
+        }
+        item {
             ToggleRow(
                 title = "الإشعار الحي (العدّاد)",
                 checked = settings.liveNotification,
                 onChange = { c -> state.update { it.copy(liveNotification = c) } }
+            )
+        }
+        item {
+            PrayerSelectionCard(
+                title = "أوقات العدّاد",
+                subtitle = "يدور العدّاد والإشعار الحي حول هذه الأوقات — أو الكل",
+                selected = settings.livePrayers,
+                accent = Color(0xFF7DD3FC),
+                onToggle = { id ->
+                    state.update { s ->
+                        s.copy(livePrayers = s.livePrayers.togglePrayer(id, PrayerMeta.order))
+                    }
+                },
+                onAll = { state.update { it.copy(livePrayers = PrayerMeta.order) } },
+                onNone = { state.update { it.copy(livePrayers = emptyList()) } }
             )
         }
         item {
@@ -233,6 +351,30 @@ fun SettingsScreen(state: AppState, contentPadding: PaddingValues) {
                 checked = settings.vibration,
                 onChange = { c -> state.update { it.copy(vibration = c) } }
             )
+        }
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("تشخيص الصوت والإشعار", color = KararColors.TextPrimary, fontSize = 13.sp)
+                        Text(
+                            if (SoundTestBridge.supported) {
+                                "يشغّل adhan.mp3 نفسه من الموارد المشتركة، ويعيد نشر الإشعار الحي"
+                            } else {
+                                "التشخيص متاح على أندرويد فقط"
+                            },
+                            color = KararColors.TextMuted,
+                            fontSize = 9.sp,
+                            lineHeight = 14.sp
+                        )
+                    }
+                    if (SoundTestBridge.supported) {
+                        SmallAction("الأذان") { SoundTestBridge.playAdhan() }
+                        Spacer(Modifier.width(6.dp))
+                        SmallAction("الإشعار") { SoundTestBridge.showLiveNotification() }
+                    }
+                }
+            }
         }
 
         // ---------- الصلاحيات ----------
@@ -374,6 +516,88 @@ private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+/** يضيف/يزيل وقتًا من مجموعة الاختيار ويحافظ على الترتيب الزمني */
+private fun List<String>.togglePrayer(id: String, order: List<String>): List<String> {
+    val set = toMutableSet()
+    if (!set.add(id)) set.remove(id)
+    return order.filter { it in set }
+}
+
+/** بطاقة اختيار أوقات الصلاة لمجموعة معيّنة (تذكير / عدّاد / أذان) */
+@Composable
+private fun PrayerSelectionCard(
+    title: String,
+    subtitle: String,
+    selected: List<String>,
+    accent: Color,
+    onToggle: (String) -> Unit,
+    onAll: () -> Unit,
+    onNone: () -> Unit
+) {
+    val allSelected = selected.containsAll(PrayerMeta.order)
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = KararColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(subtitle, color = KararColors.TextMuted, fontSize = 9.sp, lineHeight = 13.sp)
+            }
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier
+                    .background(if (allSelected) accent.copy(alpha = 0.16f) else Color(0x0FFFFFFF), RoundedCornerShape(50))
+                    .border(
+                        1.dp,
+                        if (allSelected) accent.copy(alpha = 0.6f) else Color(0x1FFFFFFF),
+                        RoundedCornerShape(50)
+                    )
+                    .clickable { if (allSelected) onNone() else onAll() }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    if (allSelected) "مسح" else "الكل",
+                    color = if (allSelected) accent else KararColors.TextSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        PrayerMeta.order.chunked(3).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                row.forEach { id ->
+                    val on = id in selected
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .background(
+                                if (on) accent.copy(alpha = 0.18f) else Color(0x0AFFFFFF),
+                                RoundedCornerShape(10.dp)
+                            )
+                            .border(
+                                1.dp,
+                                if (on) accent.copy(alpha = 0.55f) else Color(0x12FFFFFF),
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable { onToggle(id) }
+                            .padding(vertical = 7.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            PrayerMeta.label(id),
+                            color = if (on) accent else KararColors.TextSecondary,
+                            fontSize = 10.sp,
+                            fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+            Spacer(Modifier.height(6.dp))
         }
     }
 }

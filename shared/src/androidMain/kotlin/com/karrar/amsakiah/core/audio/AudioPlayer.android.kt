@@ -39,6 +39,17 @@ class AndroidAudioPlayer : AudioPlayer {
         }.onFailure { player = null }
     }
 
+    override fun resume() {
+        runCatching {
+            val mp = player ?: return
+            if (mp.isPlaying) return
+            // إذا انتهى الملف نعيده للبداية، وإلا نكمل من نفس الموضع
+            val duration = mp.duration
+            if (duration > 0 && mp.currentPosition >= duration - 250) mp.seekTo(0)
+            mp.start()
+        }
+    }
+
     override fun pause() {
         runCatching { player?.takeIf { it.isPlaying }?.pause() }
     }
