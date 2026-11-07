@@ -14,6 +14,8 @@ object LiveNotificationManager {
 
     fun update(context: Context) {
         val appContext = context.applicationContext
+        // القنوات قد لا تكون موجودة إذا نُودي من مستقبل/ودجت قبل أول فتح للتطبيق.
+        NotificationChannels.createAll(appContext)
         val manager = appContext.getSystemService(NotificationManager::class.java) ?: return
         val settings = SettingsLoader.load(appContext)
 

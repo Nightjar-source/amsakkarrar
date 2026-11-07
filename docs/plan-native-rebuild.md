@@ -9,8 +9,8 @@
 > - `appkarv/Startscreen .txt` — شاشة البداية
 > - `appkarv/widgetsnotifications.html` — ودجت رمضان + الإشعار الحي + إشعار الصلاة
 > - `appkarv/WIDGETSPRO.txt` — 12 تصميم ودجت إضافي
-> - `assets/sounds/k.mp3` — صوت الأذان
-> - `assets/sounds/3937.mp3` — صوت المناجاة (يُربط بشاشة الأدعية)
+> - `shared/src/commonMain/composeResources/files/adhan.mp3` — صوت الأذان (المصدر المشترك)
+> - `shared/src/commonMain/composeResources/files/munajat_manzuma.mp3` — صوت المناجاة
 > - `assets/images/icon.png` — أيقونة التطبيق (800×800)
 
 ---
@@ -80,13 +80,16 @@
 
 | المصدر | الهدف داخل Android | الهدف داخل shared | الاستخدام |
 | --- | --- | --- | --- |
-| `assets/sounds/k.mp3` | `androidApp/src/main/res/raw/adhan.mp3` | `shared/src/commonMain/composeResources/files/sounds/adhan.mp3` | إشعار الأذان + معاينة في الضبط |
-| `assets/sounds/3937.mp3` | `androidApp/src/main/res/raw/munajat.mp3` | `shared/src/commonMain/composeResources/files/sounds/munajat.mp3` | مشغل المناجاة في «الأدعية» |
+| `appkarv` (الأصل) | — | `shared/src/commonMain/composeResources/files/adhan.mp3` | الأذان + معاينة في الضبط |
+| `appkarv` (الأصل) | — | `shared/src/commonMain/composeResources/files/munajat_manzuma.mp3` | مشغل المناجاة في «الأدعية» |
 
 ملاحظات:
-- الإشعار **لا يستطيع** تشغيل ملف من assets، لذلك نسخة `res/raw` إلزامية.
-- `3937.mp3` حجمه 4.4MB — يُعاد ترميزه إلى mono 64–96kbps (≈1.2MB) قبل النسخ لتقليل حجم APK،
-  مع الاحتفاظ بالنسخة الأصلية في `assets/`.
+- المصدر الموحّد الآن هو `composeResources/files` على المنصتين، ويُقرأ عبر
+  `AndroidAudioSource` (أندرويد) و`Res.readBytes` (iOS).
+- الإشعار **لا يستطيع** تشغيل ملف من assets، لذلك بقيت نسخة واحدة
+  `shared/src/androidMain/res/raw/adhan.mp3` لقناة الاحتياط فقط.
+- حُذفت نسخ `assets/sounds/*.mp3` و`res/raw/munajat_manzuma.mp3` المكررة.
+- إعادة ترميز المناجاة مؤجلة لعدم توفر ffmpeg على جهاز البناء؛ الأصل 4.35MB.
 - إعدادات الإشعار: `AudioAttributes.USAGE_ALARM` + `CONTENT_TYPE_MUSIC`، وتشغيل
   `setLooping(false)` وإيقاف تلقائي عند انتهاء الصوت.
 
@@ -467,8 +470,9 @@ core/
 1. **شريط التنقل**: 7 عناصر قابلة للتمرير (`LazyRow`) في الأسفل — تم التنفيذ.
 2. **نطاق الحذف**: حُذفت كل الشاشات والمكوّنات القديمة غير المستخدمة.
 3. **الطقس**: يظهر اختياريًا عند توفر الإنترنت (Open-Meteo)، ويُخفى تلقائيًا بدونه.
-4. **الصوت**: الأذان والمناجاة من `res/raw` (نسخة واحدة). إعادة ترميز المناجاة مؤجلة
-   لعدم توفر ffmpeg على جهاز البناء؛ الأصل 4.35MB.
+4. **الصوت**: الأذان والمناجاة من `composeResources/files` (نسخة مشتركة واحدة)،
+   مع `PlaybackCoordinator` يمنع التزامن و`raw/adhan` لقناة الإشعار فقط.
+   إعادة ترميز المناجاة مؤجلة لعدم توفر ffmpeg على جهاز البناء؛ الأصل 4.35MB.
 5. **iOS**: الواجهة والصوت والموقع فقط الآن؛ الودجت والإشعارات أندرويد حصرًا.
 
 6. **قاعدة المدن**: GeoNames `cities15000` كاملة (12,350 مدينة) في `cities.json` أوفلاين.

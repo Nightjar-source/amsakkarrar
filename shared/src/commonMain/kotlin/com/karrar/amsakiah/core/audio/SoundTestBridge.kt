@@ -4,7 +4,8 @@ package com.karrar.amsakiah.core.audio
  * جسر تشخيص الصوت بين الواجهة المشتركة وأندرويد.
  *
  * الشاشة المشتركة لا تعرف خدمة الأذان، فيسجّل `MainActivity` معالجًا
- * يشغّل `AdhanService` بنفس مسار الصوت الحقيقي (adhan.mp3 من res/raw).
+ * يشغّل `AdhanService` بنفس مسار الصوت الحقيقي
+ * (`composeResources/files/adhan.mp3` عبر منسّق التشغيل الموحّد).
  * على iOS يبقى غير مدعوم وتُستخدم أزرار المشغّل الأصلية هناك.
  */
 object SoundTestBridge {

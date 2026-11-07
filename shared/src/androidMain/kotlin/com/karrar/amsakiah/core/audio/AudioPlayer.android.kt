@@ -2,41 +2,56 @@ package com.karrar.amsakiah.core.audio
 
 import android.media.AudioAttributes
 import android.media.MediaPlayer
-import android.os.Build
 import com.karrar.amsakiah.core.AndroidAppContext
 
+/**
+ * تنفيذ أندرويد لمشغّل الصوت — يقرأ من موارد Compose المشتركة عبر
+ * [AndroidAudioSource]، ويسجّل نفسه في [PlaybackCoordinator] كي لا يتزامن
+ * مع الأذان أو أي مشغّل آخر.
+ */
 class AndroidAudioPlayer : AudioPlayer {
 
     private var player: MediaPlayer? = null
     private var completion: (() -> Unit)? = null
+    private val owner = Any()
+
+    /** إيقاف داخلي لا يزيل التسجيل (يُستدعى من المنسّق أو من play). */
+    private fun stopInternal() {
+        runCatching {
+            player?.let {
+                if (it.isPlaying) it.stop()
+                it.release()
+            }
+        }
+        player = null
+    }
 
     override fun play(resourceName: String, loop: Boolean) {
-        stop()
         val ctx = AndroidAppContext.optional() ?: return
-        val resId = ctx.resources.getIdentifier(resourceName, "raw", ctx.packageName)
-        if (resId == 0) return
 
-        runCatching {
-            val mp = MediaPlayer()
-            val afd = ctx.resources.openRawResourceFd(resId) ?: return
-            mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-            afd.close()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mp.setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build()
-                )
-            }
-            mp.isLooping = loop
-            mp.setOnCompletionListener {
-                if (!loop) completion?.invoke()
-            }
-            mp.prepare()
-            mp.start()
-            player = mp
-        }.onFailure { player = null }
+        // صوت واحد فقط: أوقف الأذان/أي مشغّل آخر قبل البدء.
+        PlaybackCoordinator.requestPlayback(owner)
+        stopInternal()
+
+        val mp = AndroidAudioSource.createPlayer(
+            context = ctx,
+            name = resourceName,
+            usage = AudioAttributes.USAGE_MEDIA
+        ) ?: return
+
+        mp.isLooping = loop
+        mp.setOnCompletionListener {
+            if (!loop) completion?.invoke()
+            PlaybackCoordinator.unregister(owner)
+        }
+
+        if (runCatching { mp.start() }.isFailure) {
+            runCatching { mp.release() }
+            return
+        }
+
+        player = mp
+        PlaybackCoordinator.register(owner) { stopInternal() }
     }
 
     override fun resume() {
@@ -55,13 +70,8 @@ class AndroidAudioPlayer : AudioPlayer {
     }
 
     override fun stop() {
-        runCatching {
-            player?.let {
-                if (it.isPlaying) it.stop()
-                it.release()
-            }
-        }
-        player = null
+        PlaybackCoordinator.unregister(owner)
+        stopInternal()
     }
 
     override fun isPlaying(): Boolean = runCatching { player?.isPlaying == true }.getOrDefault(false)

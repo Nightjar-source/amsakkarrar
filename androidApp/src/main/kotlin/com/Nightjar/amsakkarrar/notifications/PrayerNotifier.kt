@@ -85,6 +85,8 @@ object PrayerNotifier {
             nextTime = next?.time ?: snapshot?.afterTime ?: "--:--",
             channel = NotificationChannels.ADHAN_FALLBACK
         )
+        // بطاقة واحدة فقط: أزل بطاقة الوصول الصامتة قبل نشر نسخة الصوت الاحتياطية.
+        runCatching { manager.cancel(NotificationDesign.PRAYER_ID) }
         runCatching { manager.notify(NotificationDesign.PRAYER_ID + 1, notification) }
     }
 

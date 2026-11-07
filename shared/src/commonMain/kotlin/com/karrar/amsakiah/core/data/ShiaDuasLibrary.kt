@@ -4,7 +4,7 @@ package com.karrar.amsakiah.core.data
  * عنصر دعاء في الفهرس.
  *
  * @property id معرّف ثابت يُستخدم للربط بين الفهرس وشاشة الدعاء
- * @property audioResource اسم ملف الصوت في res/raw (بدون امتداد) أو null
+ * @property audioResource اسم ملف الصوت في `composeResources/files` (بدون امتداد) أو null
  */
 data class ShiaDuaItem(
     val id: String,

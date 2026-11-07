@@ -1,6 +1,7 @@
 package com.Nightjar.amsakkarrar.notifications
 
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -17,17 +18,23 @@ import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.R
+import com.karrar.amsakiah.core.audio.PlaybackCoordinator
 
 /**
  * خدمة تشغيل الأذان في المقدمة — تعمل حتى لو كانت الشاشة مقفلة.
  *
  * مسار الصوت الحقيقي:
- *   AdhanService → AdhanPlayback.createPlayer → res/raw/adhan.mp3
+ *   AdhanService → AdhanPlayback.createPlayer → AndroidAudioSource
+ *   → composeResources/files/adhan.mp3 (النسخة المشتركة مع iOS)
  * ويوجد مسار احتياطي عبر قناة إشعار تحمل صوت الأذان المخصص نفسه إذا فشل
  * تشغيل الخدمة (مثلاً منع النظام تشغيل خدمة أمامية في الخلفية).
+ *
+ * يسجّل نفسه في [PlaybackCoordinator] فيتوقف تلقائيًا إذا بدأ المستخدم
+ * مناجاة، ويوقف أي صوت آخر قبل أن يبدأ.
  */
 class AdhanService : Service() {
 
+    private val audioOwner = Any()
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var audioManager: AudioManager? = null
@@ -58,6 +65,13 @@ class AdhanService : Service() {
     }
 
     private fun startPlayback(prayer: String) {
+        // أي تشغيل سابق في نفس الخدمة (معاينة أثناء أذان) يُحرّر أولًا:
+        // وإلا بقي MediaPlayer القديم يعزف مع الجديد.
+        releasePlayer()
+        // صوت واحد فقط: أوقف المناجاة أو أي مشغّل آخر قبل الأذان.
+        PlaybackCoordinator.requestPlayback(audioOwner)
+        PlaybackCoordinator.register(audioOwner) { stopPlayback() }
+
         val mp = AdhanPlayback.createPlayer(
             context = this,
             name = AdhanPlayback.ADHAN,
@@ -148,7 +162,7 @@ class AdhanService : Service() {
         }
     }
 
-    private fun stopPlayback() {
+    private fun releasePlayer() {
         runCatching {
             player?.let {
                 if (it.isPlaying) it.stop()
@@ -156,6 +170,11 @@ class AdhanService : Service() {
             }
         }
         player = null
+    }
+
+    private fun stopPlayback() {
+        PlaybackCoordinator.unregister(audioOwner)
+        releasePlayer()
         abandonAudioFocus()
         runCatching { vibrator?.cancel() }
         vibrator = null
@@ -166,6 +185,10 @@ class AdhanService : Service() {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
             }
+        }
+        // ضمان إضافي: لا يبقى إشعار تشغيل بعد الإيقاف حتى لو تجاهله النظام.
+        runCatching {
+            getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
         }
         stopSelf()
     }
@@ -200,11 +223,12 @@ class AdhanService : Service() {
             .setOngoing(true)
             .setSilent(true)
             .setContentIntent(openIntent)
-            .addAction(0, "إيقاف الأذان", stopIntent)
+            .addAction(R.drawable.ic_notif_small, "إيقاف الأذان", stopIntent)
             .build()
     }
 
     override fun onDestroy() {
+        PlaybackCoordinator.unregister(audioOwner)
         runCatching {
             player?.release()
             player = null

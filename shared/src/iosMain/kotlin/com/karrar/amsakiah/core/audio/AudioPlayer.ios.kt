@@ -8,12 +8,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import platform.AVFAudio.AVAudioPlayer
+import platform.AVFAudio.AVAudioPlayerDelegateProtocol
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryPlayback
 import platform.AVFAudio.setActive
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
 import platform.Foundation.NSURL
+import platform.darwin.NSObject
 
 /**
  * مشغّل الصوت على iOS.
@@ -22,6 +24,10 @@ import platform.Foundation.NSURL
  * `composeResources/files` هي النسخة المشتركة المضمونة في حزمة التطبيق.
  * ثم نحاول `NSBundle` كاحتياط إن نسخ مشروع Xcode الملفات إلى الحزمة.
  * يُشغَّل الملف من الذاكرة مباشرة عبر AVAudioPlayer(data:error:) — بلا ملفات مؤقتة.
+ *
+ * يسجّل نفسه في [PlaybackCoordinator] حتى لا يتزامن مع صوت آخر، ويبلّغ
+ * الواجهة عند انتهاء الملف عبر `AVAudioPlayerDelegate` (وإلا بقي شريط
+ * التقدم عالقًا في المنتصف).
  */
 class IosAudioPlayer : AudioPlayer {
 
@@ -29,9 +35,13 @@ class IosAudioPlayer : AudioPlayer {
     private var player: AVAudioPlayer? = null
     private var completion: (() -> Unit)? = null
     private var generation = 0
+    private val owner = Any()
+    private var finishDelegate: FinishDelegate? = null
 
     override fun play(resourceName: String, loop: Boolean) {
         stop()
+        // صوت واحد فقط: أوقف أي مشغّل آخر (الأذان/مناجاة أخرى).
+        PlaybackCoordinator.requestPlayback(owner)
         val token = ++generation
         scope.launch {
             val p = createPlayer(resourceName, loop) ?: return@launch
@@ -39,9 +49,16 @@ class IosAudioPlayer : AudioPlayer {
             runCatching {
                 AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback, null)
                 AVAudioSession.sharedInstance().setActive(true, null)
+                val delegate = FinishDelegate {
+                    if (!loop) completion?.invoke()
+                    PlaybackCoordinator.unregister(owner)
+                }
+                finishDelegate = delegate
+                p.delegate = delegate
                 p.prepareToPlay()
                 p.play()
                 player = p
+                PlaybackCoordinator.register(owner) { stop() }
             }
         }
     }
@@ -77,9 +94,11 @@ class IosAudioPlayer : AudioPlayer {
     }
 
     override fun stop() {
+        PlaybackCoordinator.unregister(owner)
         generation++
-        player?.stop()
+        runCatching { player?.stop() }
         player = null
+        finishDelegate = null
     }
 
     override fun isPlaying(): Boolean = player?.playing ?: false
@@ -94,6 +113,16 @@ class IosAudioPlayer : AudioPlayer {
 
     override fun setOnCompletion(callback: () -> Unit) {
         completion = callback
+    }
+}
+
+/** جسر انتهاء التشغيل من AVAudioPlayer إلى Kotlin. */
+private class FinishDelegate(
+    private val onFinish: () -> Unit
+) : NSObject(), AVAudioPlayerDelegateProtocol {
+
+    override fun audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully: Boolean) {
+        onFinish()
     }
 }
 
