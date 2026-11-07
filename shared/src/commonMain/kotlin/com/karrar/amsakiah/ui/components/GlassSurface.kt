@@ -1,0 +1,96 @@
+package com.karrar.amsakiah.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.karrar.amsakiah.ui.theme.KararTokens
+
+/** نغمة سطح الزجاج. */
+enum class GlassTone { Dark, DarkSoft, Light }
+
+/**
+ * سطح زجاجي موحّد (Liquid Glass 2026) مبني على الشفافية والحد المضيء والظل.
+ *
+ * لا نستخدم `Modifier.blur` لأنه يضبّب المحتوى نفسه لا الخلفية؛ بدلًا من ذلك
+ * نحاكي الزجاج بطبقتين متدرجتين + حد علوي مضيء + ظل خارجي، وهو أسلوب M3
+ * Expressive الرسمي للأسطح العائمة.
+ */
+@Composable
+fun GlassSurface(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(KararTokens.Radius.xxl),
+    tone: GlassTone = GlassTone.Dark,
+    borderWidth: Dp = 1.dp,
+    elevation: Dp = 18.dp,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    content: @Composable BoxScope.() -> Unit
+) {
+    val base = when (tone) {
+        GlassTone.Dark -> KararTokens.Glass.dark
+        GlassTone.DarkSoft -> KararTokens.Glass.darkSoft
+        GlassTone.Light -> KararTokens.Glass.light
+    }
+    val topTint = when (tone) {
+        GlassTone.Light -> Color(0x33FFFFFF)
+        else -> KararTokens.Glass.highlightStrong
+    }
+    val bottomTint = when (tone) {
+        GlassTone.Light -> Color(0x14FFFFFF)
+        else -> Color(0x08FFFFFF)
+    }
+
+    Box(
+        modifier = modifier
+            .shadow(
+                elevation = elevation,
+                shape = shape,
+                ambientColor = Color.Black.copy(alpha = 0.45f),
+                spotColor = Color.Black.copy(alpha = 0.55f)
+            )
+            .clip(shape)
+            .background(base)
+            .background(Brush.verticalGradient(listOf(topTint, bottomTint)))
+            .border(
+                width = borderWidth,
+                brush = Brush.verticalGradient(
+                    listOf(
+                        KararTokens.Glass.borderStrong,
+                        KararTokens.Glass.border
+                    )
+                ),
+                shape = shape
+            )
+            .padding(contentPadding),
+        content = content
+    )
+}
+
+/** خلفية زجاجية بسيطة دون ظل — للعناصر الصغيرة المتكررة. */
+@Composable
+fun glassFill(
+    shape: Shape = RoundedCornerShape(KararTokens.Radius.pill),
+    tone: GlassTone = GlassTone.DarkSoft
+): Modifier {
+    val base = when (tone) {
+        GlassTone.Dark -> KararTokens.Glass.dark
+        GlassTone.DarkSoft -> KararTokens.Glass.darkSoft
+        GlassTone.Light -> KararTokens.Glass.light
+    }
+    return Modifier
+        .clip(shape)
+        .background(base)
+        .border(1.dp, KararTokens.Glass.border, shape)
+}

@@ -180,7 +180,10 @@ fun TodayScreen(
                     )
                 )
             }
-            .padding(bottom = contentPadding.calculateBottomPadding())
+            .padding(
+                top = contentPadding.calculateTopPadding(),
+                bottom = contentPadding.calculateBottomPadding()
+            )
     ) {
         // ---------- الهيدر ----------
         Row(

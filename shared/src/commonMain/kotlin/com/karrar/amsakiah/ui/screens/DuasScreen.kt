@@ -30,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,10 +58,18 @@ import com.karrar.amsakiah.ui.theme.KararColors
  * - زر/إيماءة الرجوع تعيد إلى الفهرس (مع دعم Predictive Back).
  */
 @Composable
-fun DuasScreen(contentPadding: PaddingValues) {
+fun DuasScreen(
+    contentPadding: PaddingValues,
+    onDetailVisibilityChanged: (Boolean) -> Unit = {}
+) {
     var selectedId by remember { mutableStateOf<String?>(null) }
     val selected = ShiaDuasLibrary.byId(selectedId)
     val player = remember { DuaPlayerController() }
+
+    // إبلاغ الشل بحالة التفاصيل لتقليص الإزاحة وإخفاء شريط العنوان المزدوج
+    LaunchedEffect(selected != null) {
+        onDetailVisibilityChanged(selected != null)
+    }
 
     // إيقاف الصوت وتحرير المشغّل الأصلي عند مغادرة قسم الأدعية
     DisposableEffect(Unit) {

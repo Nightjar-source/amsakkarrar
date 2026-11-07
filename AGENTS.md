@@ -14,10 +14,21 @@ androidApp/             MainActivity، Glance widget، الموارد
 gradle/libs.versions.toml  المصدر الوحيد لإصدارات الاعتماديات
 ```
 
+## ابدأ من هنا (إلزامي)
+
+قبل أي عمل في هذه الجلسة أو أي جلسة جديدة:
+
+1. اقرأ `docs/NEXT-SESSION.md` — حالة اللحظة والخطوة التالية.
+2. اقرأ `docs/MASTER-PLAN-amsak3d.md` — الخطة الكاملة وبنك الأهداف والقرارات.
+3. المرجع البصري الحرفي هو `appkarv/amsak3d.tsx`، والبيانات من ملف الكفيل.
+
+لا تبدأ مهمة دون بطاقة «هدف + سبب + اختبار قبل/بعد»، ولا تُغلق مرحلة قبل
+بوابتها (Gate) المذكورة في الخطة.
+
 ## أوامر البناء
 
 ```powershell
-.\gradlew.bat :shared:compileDebugKotlinAndroid --stacktrace
+.\gradlew.bat :shared:compileAndroidMain --console=plain
 .\gradlew.bat :androidApp:assembleDebug --stacktrace
 .\gradlew.bat :androidApp:assembleRelease --stacktrace
 ```

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.core.weather.fetchWeather
-import com.karrar.amsakiah.ui.navigation.AdaptiveAppScaffold
+import com.karrar.amsakiah.ui.navigation.AppShell
 import com.karrar.amsakiah.ui.splash.SplashScreen
 import com.karrar.amsakiah.ui.theme.KararTheme
 import kotlinx.coroutines.delay
@@ -74,7 +74,7 @@ fun App() {
     KararTheme {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
             Box(Modifier.fillMaxSize().background(Color(0xFF050A15))) {
-                AdaptiveAppScaffold(state = state, weather = weather)
+                AppShell(state = state, weather = weather)
 
                 AnimatedVisibility(
                     visible = showSplash,
