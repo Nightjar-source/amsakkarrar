@@ -155,8 +155,9 @@ fun WidgetsScreen(state: AppState, contentPadding: PaddingValues) {
         val end = if (nextTime * 3600.0 <= nowSeconds) nextTime * 3600.0 + 86400.0 else nextTime * 3600.0
         ((nowSeconds - start) / (end - start).coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
     }
-    val dhikrIndex = TasbihPresets.safeIndex(settings.tasbihDhikrIndex)
-    val dhikr = TasbihPresets.all[dhikrIndex]
+    val dhikrList = TasbihPresets.combined(settings.customDhikrs)
+    val dhikrIndex = TasbihPresets.safeIndex(settings.tasbihDhikrIndex, dhikrList.size)
+    val dhikr = dhikrList[dhikrIndex]
     val tasbihProgress = if (settings.tasbihTarget > 0) {
         (settings.tasbihCount.toFloat() / settings.tasbihTarget).coerceIn(0f, 1f)
     } else 0f

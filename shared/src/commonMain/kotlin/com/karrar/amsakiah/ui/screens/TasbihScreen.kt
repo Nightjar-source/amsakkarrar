@@ -29,11 +29,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -56,6 +59,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,9 +92,11 @@ private const val TAB_SETTINGS = 3
 @Composable
 fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
     val settings = state.settings
-    val presets = TasbihPresets.all
+    val presets = remember(settings.customDhikrs) {
+        TasbihPresets.combined(settings.customDhikrs)
+    }
     val haptic = LocalHapticFeedback.current
-    val dhikrIndex = TasbihPresets.safeIndex(settings.tasbihDhikrIndex)
+    val dhikrIndex = TasbihPresets.safeIndex(settings.tasbihDhikrIndex, presets.size)
     val dhikr = presets[dhikrIndex]
     val target = settings.tasbihTarget.coerceAtLeast(1)
     val count = settings.tasbihCount.coerceAtLeast(0)
@@ -100,6 +106,7 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
     var completedTarget by remember { mutableStateOf(0) }
     var showResetConfirm by remember { mutableStateOf(false) }
     var showResetAllConfirm by remember { mutableStateOf(false) }
+    var showAddDhikr by remember { mutableStateOf(false) }
 
     val todayKey = remember {
         Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
@@ -113,7 +120,7 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
     }
 
     fun selectDhikr(index: Int) {
-        val safe = TasbihPresets.safeIndex(index)
+        val safe = TasbihPresets.safeIndex(index, presets.size)
         state.update {
             it.copy(
                 tasbihDhikrIndex = safe,
@@ -135,6 +142,7 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             }
             val (nextIndex, nextTarget) = TasbihPresets.next(
+                TasbihPresets.combined(current.customDhikrs),
                 current.tasbihDhikrIndex,
                 current.tasbihAutoAdvance
             )
@@ -222,8 +230,33 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
 
         when (tab) {
             TAB_LIST -> TasbihListTab(
+                items = presets,
+                presetCount = TasbihPresets.all.size,
                 selectedIndex = dhikrIndex,
-                onSelect = ::selectDhikr
+                onSelect = ::selectDhikr,
+                onAdd = { showAddDhikr = true },
+                onDelete = { index ->
+                    val item = presets.getOrNull(index)
+                    if (item != null && item.id.isNotBlank()) {
+                        state.update { s ->
+                            val remaining = s.customDhikrs.filterNot { it.id == item.id }
+                            val newList = TasbihPresets.combined(remaining)
+                            val currentId = presets.getOrNull(s.tasbihDhikrIndex)?.id.orEmpty()
+                            val match = newList.indexOfFirst { it.id == currentId && currentId.isNotBlank() }
+                            val newIndex = if (match >= 0) {
+                                match
+                            } else {
+                                TasbihPresets.safeIndex(s.tasbihDhikrIndex, newList.size)
+                            }
+                            s.copy(
+                                customDhikrs = remaining,
+                                tasbihDhikrIndex = newIndex,
+                                tasbihTarget = newList[newIndex].target,
+                                tasbihCount = 0
+                            )
+                        }
+                    }
+                }
             )
             TAB_STATS -> TasbihStatsTab(
                 dayCount = settings.tasbihDayCount,
@@ -259,7 +292,9 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
     if (showCompletion) {
         CompletionDialog(
             target = completedTarget,
-            nextDhikr = presets[TasbihPresets.safeIndex(state.settings.tasbihDhikrIndex)].text,
+            nextDhikr = presets[
+                TasbihPresets.safeIndex(state.settings.tasbihDhikrIndex, presets.size)
+            ].text,
             onContinue = { showCompletion = false },
             onChange = {
                 showCompletion = false
@@ -299,6 +334,34 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
                 showResetAllConfirm = false
             },
             onDismiss = { showResetAllConfirm = false }
+        )
+    }
+
+    if (showAddDhikr) {
+        AddDhikrDialog(
+            onDismiss = { showAddDhikr = false },
+            onAdd = { text, target, group ->
+                val trimmed = text.trim()
+                if (trimmed.isNotEmpty()) {
+                    val item = TasbihDhikr(
+                        text = trimmed,
+                        target = target.coerceIn(1, 9999),
+                        group = group.trim().ifBlank { TasbihPresets.CUSTOM_GROUP },
+                        hint = "${target.coerceIn(1, 9999)} مرة",
+                        id = "custom-${Clock.System.now().toEpochMilliseconds()}"
+                    )
+                    state.update { s ->
+                        val list = s.customDhikrs + item
+                        s.copy(
+                            customDhikrs = list,
+                            tasbihDhikrIndex = TasbihPresets.all.size + list.lastIndex,
+                            tasbihTarget = item.target,
+                            tasbihCount = 0
+                        )
+                    }
+                }
+                showAddDhikr = false
+            }
         )
     }
 }
@@ -502,11 +565,17 @@ private fun TasbihCounterTab(
 //  تبويب قائمة التسبيحات
 // ============================================================================
 @Composable
-private fun TasbihListTab(selectedIndex: Int, onSelect: (Int) -> Unit) {
-    val presets = TasbihPresets.all
+private fun TasbihListTab(
+    items: List<TasbihDhikr>,
+    presetCount: Int,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    onAdd: () -> Unit,
+    onDelete: (Int) -> Unit
+) {
     SectionTitle("تسبيح فاطمة الزهراء (ع)")
     Spacer(Modifier.height(8.dp))
-    presets.forEachIndexed { index, dhikr ->
+    items.forEachIndexed { index, dhikr ->
         if (index <= 2) {
             DhikrRow(
                 index = index,
@@ -520,8 +589,8 @@ private fun TasbihListTab(selectedIndex: Int, onSelect: (Int) -> Unit) {
     Spacer(Modifier.height(6.dp))
     SectionTitle("مأثورات وأذكار أخرى")
     Spacer(Modifier.height(8.dp))
-    presets.forEachIndexed { index, dhikr ->
-        if (index > 2) {
+    items.forEachIndexed { index, dhikr ->
+        if (index in 3 until presetCount) {
             DhikrRow(
                 index = index,
                 dhikr = dhikr,
@@ -531,10 +600,47 @@ private fun TasbihListTab(selectedIndex: Int, onSelect: (Int) -> Unit) {
             Spacer(Modifier.height(8.dp))
         }
     }
+    if (items.size > presetCount) {
+        Spacer(Modifier.height(6.dp))
+        SectionTitle("أذكاري (${items.size - presetCount})")
+        Spacer(Modifier.height(8.dp))
+        items.forEachIndexed { index, dhikr ->
+            if (index >= presetCount) {
+                DhikrRow(
+                    index = index,
+                    dhikr = dhikr,
+                    selected = index == selectedIndex,
+                    onClick = { onSelect(index) },
+                    onDelete = { onDelete(index) }
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+    Spacer(Modifier.height(4.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0x1A38BDF8))
+            .border(1.dp, Color(0x5538BDF8), RoundedCornerShape(18.dp))
+            .clickable(onClick = onAdd)
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("＋ إضافة تسبيح جديد", color = Sky, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+    }
 }
 
 @Composable
-private fun DhikrRow(index: Int, dhikr: TasbihDhikr, selected: Boolean, onClick: () -> Unit) {
+private fun DhikrRow(
+    index: Int,
+    dhikr: TasbihDhikr,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -576,6 +682,24 @@ private fun DhikrRow(index: Int, dhikr: TasbihDhikr, selected: Boolean, onClick:
         Column(horizontalAlignment = Alignment.End) {
             Text("${dhikr.target}", color = Sky, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Text("مرة", color = SlateMuted, fontSize = 9.sp)
+        }
+        if (onDelete != null) {
+            Spacer(Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x1FEF5350))
+                    .clickable(onClick = onDelete),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.DeleteOutline,
+                    contentDescription = "حذف الذكر",
+                    tint = KararColors.Danger,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
@@ -745,6 +869,83 @@ private fun SmallPill(text: String, danger: Boolean = false, onClick: () -> Unit
 // ============================================================================
 //  نوافذ التأكيد والتهنئة
 // ============================================================================
+@Composable
+private fun AddDhikrDialog(
+    onDismiss: () -> Unit,
+    onAdd: (text: String, target: Int, group: String) -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+    var targetText by remember { mutableStateOf("33") }
+    var group by remember { mutableStateOf("") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            corner = 24.dp,
+            color = Color(0xF2132033),
+            borderColor = Sky.copy(alpha = 0.35f),
+            contentPadding = PaddingValues(20.dp)
+        ) {
+            Text("إضافة تسبيح جديد", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "اكتب الذكر وحدّد عدده، وسيُضاف إلى قائمتك الخاصة.",
+                color = SlateMuted,
+                fontSize = 10.sp
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("نص الذكر", fontSize = 11.sp) },
+                minLines = 2,
+                maxLines = 4,
+                shape = RoundedCornerShape(14.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = targetText,
+                    onValueChange = { value -> targetText = value.filter { it.isDigit() }.take(4) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text("الهدف", fontSize = 11.sp) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(14.dp)
+                )
+                OutlinedTextField(
+                    value = group,
+                    onValueChange = { group = it },
+                    modifier = Modifier.weight(1.4f),
+                    label = { Text("المجموعة (اختياري)", fontSize = 11.sp) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp)
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallPill("إلغاء", onClick = onDismiss)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(Sky)
+                        .clickable { onAdd(text, targetText.toIntOrNull() ?: 33, group) }
+                        .padding(vertical = 9.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "إضافة التسبيح",
+                        color = Color(0xFF082F49),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun CompletionDialog(
     target: Int,

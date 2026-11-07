@@ -82,7 +82,8 @@ class TasbihWidget : GlanceAppWidget() {
 
 @androidx.compose.runtime.Composable
 private fun TasbihWidgetContent(context: Context, settings: AppSettings, appWidgetId: Int) {
-    val preset = TasbihPresets.all[TasbihPresets.safeIndex(settings.tasbihDhikrIndex)]
+    val presetList = TasbihPresets.combined(settings.customDhikrs)
+    val preset = presetList[TasbihPresets.safeIndex(settings.tasbihDhikrIndex, presetList.size)]
     val target = settings.tasbihTarget.coerceAtLeast(1)
     val progress = (settings.tasbihCount.toFloat() / target.toFloat()).coerceIn(0f, 1f)
     val background = Color(WidgetStyleStore.backgroundArgb(context, appWidgetId))
@@ -246,6 +247,7 @@ class TasbihIncrementAction : ActionCallback {
         val dayCount = if (settings.tasbihDayDate == today) settings.tasbihDayCount else 0
         val completed = next >= target
         val (nextIndex, nextTarget) = TasbihPresets.next(
+            TasbihPresets.combined(settings.customDhikrs),
             settings.tasbihDhikrIndex,
             settings.tasbihAutoAdvance
         )

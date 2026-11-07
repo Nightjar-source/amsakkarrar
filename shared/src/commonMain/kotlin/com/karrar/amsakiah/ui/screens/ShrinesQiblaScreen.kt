@@ -174,6 +174,13 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                                 color = KararColors.TextMuted,
                                 fontSize = 10.sp
                             )
+                            if (selected.imams.isNotBlank()) {
+                                Text(
+                                    selected.imams,
+                                    color = KararColors.TextSecondary,
+                                    fontSize = 9.sp
+                                )
+                            }
                         }
                     }
 
@@ -314,6 +321,9 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                             Spacer(Modifier.width(6.dp))
                             Text("• على البوصلة", color = siteColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         }
+                    }
+                    if (site.imams.isNotBlank()) {
+                        Text(site.imams, color = KararColors.TextMuted, fontSize = 9.sp)
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {

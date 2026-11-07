@@ -1,6 +1,7 @@
 package com.karrar.amsakiah.core.settings
 
 import kotlinx.serialization.Serializable
+import com.karrar.amsakiah.core.data.TasbihDhikr
 
 /**
  * إعدادات التطبيق المدمجة (V7 + الكفيل) — تُحفظ محليًا بالكامل أوفلاين.
@@ -78,6 +79,8 @@ data class AppSettings(
     val tasbihAutoAdvance: Boolean = true,
     /** إظهار شاشة التهنئة عند إتمام الهدف */
     val tasbihCompletionOverlay: Boolean = true,
+    /** أذكار يضيفها المستخدم بنفسه (تسبيح مفرد أو ضمن مجموعة) */
+    val customDhikrs: List<TasbihDhikr> = emptyList(),
 
     val version: Int = 1
 )
