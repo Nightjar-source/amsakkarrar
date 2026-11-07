@@ -32,7 +32,7 @@ async def main() -> None:
         print(f"APK_MISSING:{apk}")
         sys.exit(3)
 
-    cfg = json.loads(CONF_FILE.read_text(encoding="utf-8"))
+    cfg = json.loads(CONF_FILE.read_text(encoding="utf-8-sig"))
     target = cfg.get("target", "me")
 
     client = TelegramClient(str(SESSION), cfg["api_id"], cfg["api_hash"])
@@ -41,6 +41,24 @@ async def main() -> None:
         print("NOT_AUTHORIZED")
         await client.disconnect()
         sys.exit(4)
+
+    # الهدف قد يكون معرّف قناة رقميًا (-100...) وغير موجود في ذاكرة الجلسة،
+    # لذا نبحث عنه في قائمة الحوارات ثم نستخدم الكيان الناتج.
+    target_text = str(target)
+    if target_text.lstrip("-").isdigit():
+        channel_id = int(target_text[4:]) if target_text.startswith("-100") else abs(int(target_text))
+        resolved = None
+        async for dialog in client.iter_dialogs():
+            entity = dialog.entity
+            if entity is not None and getattr(entity, "id", None) == channel_id:
+                resolved = entity
+                break
+        if resolved is None:
+            print(f"TARGET_NOT_FOUND:{target_text}")
+            await client.disconnect()
+            sys.exit(5)
+        target = resolved
+        print(f"TARGET:{getattr(resolved, 'title', target_text)}")
 
     size_mb = apk.stat().st_size / (1024 * 1024)
     caption = (

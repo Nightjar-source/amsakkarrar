@@ -25,7 +25,7 @@ def load_config() -> dict:
     if not CONF_FILE.exists():
         print("CONF_MISSING")
         sys.exit(2)
-    return json.loads(CONF_FILE.read_text(encoding="utf-8"))
+    return json.loads(CONF_FILE.read_text(encoding="utf-8-sig"))
 
 
 async def main() -> None:
