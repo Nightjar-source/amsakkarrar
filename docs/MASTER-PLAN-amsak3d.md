@@ -518,6 +518,7 @@ shared/src/commonMain/kotlin/com/karrar/amsakiah/
 | 2026-11-08 | المرحلة 1 | إعادة بناء `SkyArc` (viewBox 22 2 356 298) + `WeatherEffects` بلا وميض + رأس متجاوب + عدّاد مشروط بـ`liveIds` + `PrayerStrip` موسّط + زر تقويم واحد؛ ومركزة فلترة الغروب/الإمساك في `visibleIds` وتطبيقها على التقويم والودجت والإشعار | نجح `:shared:compileAndroidMain` و`:androidApp:assembleDebug` (4m 28s) | `25df67d` |
 | 2026-11-08 | المرحلة 2 | `SettingsScreen` بأقسام منسدلة (الموقع، المواقيت، الطريقة، الهجري، التعديلات، الأوقات الظاهرة، العدّاد، الأذان/التذكير، الودجتات، الطقس، الصلاحيات) + `CalendarScreen` M3 Expressive بسنة/شهر مستقلين ومزامنة عند التبديل وشرائح أوقات `FlowRow` + `rememberSaveable` + تطبيق `fontScale` عالميًا | نجح `:shared:compileAndroidMain` و`:androidApp:assembleDebug` (6m 14s) | `8f1a4b9` |
 | 2026-11-08 | المرحلة 3 | مسبحة بأذكار مخصصة (`customDhikrs` + إضافة/حذف) وقائمة مدمجة آمنة، نصوص أئمة المراقد، 8 مقالات فقه كاملة داخل أكورديون، ومراجعة الأدعية (9 بمعرّفات) والمشغل العائم الواحد | نجح `:shared:compileAndroidMain` و`:androidApp:assembleDebug` (6m 15s) | `44ee2b7` |
+| 2026-11-08 | المرحلة 4 | الودجتات السبعة: `minResizeWidth/Height=110dp` لتعمل 2×2 و4×2، ثلاث درجات تكيّف، وعدّاد Chronometer/ProgressBar وTextClock أصلية، وتحديث غير حاجز بـCONFLATED+Mutex، والمستقبلات بـgoAsync ومهلة 8s | نجح `:androidApp:assembleDebug` (1m 39s) | `51973c3` |
 
 ---
 
