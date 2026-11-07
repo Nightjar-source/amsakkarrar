@@ -36,8 +36,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             }
         }
 
-        WidgetUpdater.updateAll(context)
         runCatching { LiveNotificationManager.update(context) }
+        // تحديث الودجتات في الخلفية لا يمنع استمرار الإشعار/الأذان أعلاه.
+        val pending = goAsync()
+        WidgetUpdater.updateAllAsync(context) { pending.finish() }
     }
 
     companion object {

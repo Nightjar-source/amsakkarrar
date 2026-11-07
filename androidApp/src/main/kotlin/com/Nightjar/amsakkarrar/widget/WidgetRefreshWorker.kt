@@ -30,7 +30,7 @@ class WidgetRefreshWorker(
 
     override suspend fun doWork(): Result {
         val context = applicationContext
-        runCatching { WidgetUpdater.updateAll(context) }
+        runCatching { WidgetUpdater.updateAllSuspending(context) }
         runCatching { LiveNotificationManager.update(context) }
         return Result.success()
     }

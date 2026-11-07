@@ -47,6 +47,14 @@ import com.Nightjar.amsakkarrar.notifications.PrayerSnapshot
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshotLoader
 import com.Nightjar.amsakkarrar.notifications.SettingsLoader
 import com.karrar.amsakiah.ui.theme.SkyTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 
 // ---------- ألوان الويدجت (مطابقة لـ widgetsnotifications.html) ----------
@@ -714,21 +722,65 @@ object WidgetUpdater {
         JourneyWidget()
     )
 
-    fun updateAll(context: Context) {
-        val appContext = context.applicationContext
-        // تهيئة سياق الويدجت (تحميل الإعدادات يحتاجه)
-        SettingsLoader.load(appContext)
-        val snapshot = runCatching { PrayerSnapshotLoader.load(appContext) }.getOrNull()
-        runCatching {
-            kotlinx.coroutines.runBlocking {
-                widgets.forEach { runCatching { it.updateAll(appContext) } }
+    /**
+     * تنفيذ التحديث في الخلفية دائمًا.
+     *
+     * سبب التصميم:
+     * - `GlanceAppWidget.updateAll` عملية معلّقة/حاجزة، واستدعاؤها من الخيط
+     *   الرئيسي (onCreate/onResume/المستقبلات/لمسات الودجت) يسبب تقطيعًا وقد
+     *   يصل إلى ANR مع سبعة ودجتات.
+     * - القناة `CONFLATED` تدمج الطلبات المتلاحقة: أثناء تحديث جارٍ لا تتراكم
+     *   طوابير، بل يُنفَّذ أحدث طلب مرة واحدة بعد انتهاء الحالي.
+     * - `Mutex` يمنع تحديثين متوازيين لنفس الودجتات.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val refreshLock = Mutex()
+    private val requests = Channel<Context>(Channel.CONFLATED)
+
+    init {
+        scope.launch {
+            for (appContext in requests) {
+                runCatching { refreshInternal(appContext) }
             }
         }
-        // WorkManager: تحديث دوري مضمون في الخلفية + تحديث عند وقت الصلاة القادمة.
-        // العدّاد نفسه يعمل عبر Chronometer/TextClock أصلي داخل الودجت فلا يتوقف بين التحديثات.
-        WidgetRefreshWorker.ensurePeriodic(appContext)
-        snapshot?.let {
-            WidgetRefreshWorker.scheduleBoundary(appContext, it.remainingSeconds * 1000L + 3_000L)
+    }
+
+    /** تحديث غير حاجز — آمن من الخيط الرئيسي. */
+    fun updateAll(context: Context) {
+        requests.trySend(context.applicationContext)
+    }
+
+    /**
+     * نسخة للمستقبلات (BroadcastReceiver):
+     * تُنفّذ التحديث في الخلفية ثم تستدعي [onDone] — استخدمها مع `goAsync()`
+     * لضمان عدم قتل العملية قبل اكتمال التحديث.
+     */
+    fun updateAllAsync(context: Context, onDone: () -> Unit) {
+        val appContext = context.applicationContext
+        scope.launch {
+            // مهلة قصيرة تناسب نافذة BroadcastReceiver (~10 ثوانٍ) وتمنع التعليق.
+            runCatching { withTimeoutOrNull(8_000) { refreshInternal(appContext) } }
+            onDone()
+        }
+    }
+
+    /** تحديث معلّق ينتظر إتمام كل الودجتات — يستخدمه العامل الدوري. */
+    suspend fun updateAllSuspending(context: Context) {
+        refreshInternal(context.applicationContext)
+    }
+
+    private suspend fun refreshInternal(appContext: Context) {
+        refreshLock.withLock {
+            // تهيئة سياق الودجت (تحميل الإعدادات يحتاجه)
+            SettingsLoader.load(appContext)
+            val snapshot = runCatching { PrayerSnapshotLoader.load(appContext) }.getOrNull()
+            widgets.forEach { runCatching { it.updateAll(appContext) } }
+            // WorkManager: تحديث دوري مضمون في الخلفية + تحديث عند وقت الصلاة القادمة.
+            // العدّاد نفسه يعمل عبر Chronometer/TextClock أصلي داخل الودجت فلا يتوقف بين التحديثات.
+            WidgetRefreshWorker.ensurePeriodic(appContext)
+            snapshot?.let {
+                WidgetRefreshWorker.scheduleBoundary(appContext, it.remainingSeconds * 1000L + 3_000L)
+            }
         }
     }
 }

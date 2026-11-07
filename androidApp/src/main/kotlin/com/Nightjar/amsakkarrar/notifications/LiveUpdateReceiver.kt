@@ -14,7 +14,8 @@ class LiveUpdateReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         runCatching { LiveNotificationManager.update(context) }
-        runCatching { WidgetUpdater.updateAll(context) }
+        val pending = goAsync()
+        WidgetUpdater.updateAllAsync(context) { pending.finish() }
     }
 
     companion object {

@@ -21,7 +21,9 @@ class BootReceiver : BroadcastReceiver() {
                 runCatching { LiveUpdateScheduler(context).schedule() }
                 runCatching { LiveNotificationManager.update(context) }
                 runCatching { WidgetRefreshWorker.ensurePeriodic(context) }
-                WidgetUpdater.updateAll(context)
+                // goAsync يمنح العملية وقتًا كافيًا لإتمام تحديث الودجتات السبعة.
+                val pending = goAsync()
+                WidgetUpdater.updateAllAsync(context) { pending.finish() }
             }
         }
     }
