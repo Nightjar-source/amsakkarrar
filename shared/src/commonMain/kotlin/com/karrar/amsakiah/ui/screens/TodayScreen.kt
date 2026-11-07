@@ -69,6 +69,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
@@ -292,7 +293,9 @@ private fun TodayHeader(
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val tiny = maxWidth < 360.dp
-        val kashidaSize = (maxWidth.value * 0.054f).coerceIn(18.4f, 45.6f).sp
+        // الكشيدة عنوان تصميمي ثابت: لا يتضخم مع حجم خط المستخدم حتى يبقى في سطر واحد.
+        val userFontScale = LocalDensity.current.fontScale.coerceAtLeast(0.1f)
+        val kashidaSize = (maxWidth.value * 0.054f / userFontScale).coerceIn(18.4f, 45.6f).sp
         val dateSize = if (maxWidth < 420.dp) 8.5.sp else 10.5.sp
         val chipTextSize = when {
             maxWidth < 360.dp -> 9.5.sp

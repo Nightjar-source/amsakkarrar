@@ -16,7 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.weather.WeatherInfo
@@ -72,7 +74,13 @@ fun App() {
     }
 
     KararTheme {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        // حجم الخط المختار من الضبط يُطبَّق عالميًا على كل النصوص.
+        val baseDensity = LocalDensity.current
+        val scaledFont = baseDensity.fontScale * state.settings.fontScale
+        CompositionLocalProvider(
+            LocalLayoutDirection provides LayoutDirection.Rtl,
+            LocalDensity provides Density(baseDensity.density, scaledFont)
+        ) {
             Box(Modifier.fillMaxSize().background(Color(0xFF050A15))) {
                 AppShell(state = state, weather = weather)
 

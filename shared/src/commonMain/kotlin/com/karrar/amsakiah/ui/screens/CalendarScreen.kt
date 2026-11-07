@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -25,66 +27,134 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.core.astronomy.HijriDate
+import com.karrar.amsakiah.core.settings.AppSettings
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
-import com.karrar.amsakiah.core.state.PrayerMeta
 import com.karrar.amsakiah.ui.components.GlassCard
-import com.karrar.amsakiah.ui.components.KashidaHeader
 import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
+import kotlin.math.roundToInt
 
+/**
+ * شاشة «التقويم» — M3 Expressive.
+ *
+ * تحلّ محل «الإمساكية» القديمة، وتتيح:
+ * - تبديل التقويم الهجري/الميلادي.
+ * - تغيير السنة والشهر لكل تقويم على حدة (أزرار مستقلة).
+ * - التنقل بين الأشهر ذهابًا وإيابًا والعودة للشهر الحالي.
+ * - عرض أوقات الصلاة اليومية وفق إعدادات الظهور (الغروب شيعي، الإمساك حسب وضعه).
+ */
 @Composable
 fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
     val settings = state.settings
     val today = PrayerCalculator.todayDate(settings)
-    var monthShift by remember { mutableIntStateOf(0) }
+    val todayHijri = remember(settings, today) { PrayerCalculator.hijriFor(settings, today) }
 
-    val monthStart: LocalDate = remember(settings.hijriOffset, settings.methodCode, today, monthShift) {
-        var start = today
-        val hijri = PrayerCalculator.hijriFor(settings, today)
-        start = today.plus(DatePeriod(days = -(hijri.day - 1)))
-        var shift = monthShift
-        while (shift > 0) {
-            start = start.plus(DatePeriod(days = 30))
-            val h = PrayerCalculator.hijriFor(settings, start)
-            start = start.plus(DatePeriod(days = -(h.day - 1)))
-            shift--
+    var mode by rememberSaveable { mutableStateOf(CalendarMode.HIJRI) }
+    var hijriYear by rememberSaveable { mutableIntStateOf(todayHijri.year) }
+    var hijriMonth by rememberSaveable { mutableIntStateOf(todayHijri.monthNum) }
+    var gregYear by rememberSaveable { mutableIntStateOf(today.year) }
+    var gregMonth by rememberSaveable { mutableIntStateOf(today.monthNumber) }
+
+    fun shiftMonth(delta: Int) {
+        if (mode == CalendarMode.HIJRI) {
+            var m = hijriMonth + delta
+            var y = hijriYear
+            if (m > 12) {
+                m = 1; y += 1
+            } else if (m < 1) {
+                m = 12; y -= 1
+            }
+            hijriMonth = m
+            hijriYear = y
+        } else {
+            var m = gregMonth + delta
+            var y = gregYear
+            if (m > 12) {
+                m = 1; y += 1
+            } else if (m < 1) {
+                m = 12; y -= 1
+            }
+            gregMonth = m
+            gregYear = y
         }
-        while (shift < 0) {
-            start = start.plus(DatePeriod(days = -29))
-            val h = PrayerCalculator.hijriFor(settings, start)
-            start = start.plus(DatePeriod(days = -(h.day - 1)))
-            shift++
-        }
-        start
     }
 
-    val monthHijri = remember(monthStart) { PrayerCalculator.hijriFor(settings, monthStart) }
+    fun shiftYear(delta: Int) {
+        if (mode == CalendarMode.HIJRI) hijriYear += delta else gregYear += delta
+    }
 
-    val days = remember(monthStart, settings) {
+    fun shiftMonthByPicker(delta: Int) {
+        if (mode == CalendarMode.HIJRI) {
+            hijriMonth = ((hijriMonth - 1 + delta + 12) % 12) + 1
+        } else {
+            gregMonth = ((gregMonth - 1 + delta + 12) % 12) + 1
+        }
+    }
+
+    fun resetToToday() {
+        hijriYear = todayHijri.year
+        hijriMonth = todayHijri.monthNum
+        gregYear = today.year
+        gregMonth = today.monthNumber
+    }
+
+    // أول يوم في الشهر المختار (هجري أو ميلادي)
+    val monthStart: LocalDate = remember(
+        mode, settings.hijriOffset, settings.methodCode, hijriYear, hijriMonth,
+        gregYear, gregMonth, today
+    ) {
+        when (mode) {
+            CalendarMode.HIJRI -> hijriMonthStart(settings, hijriYear, hijriMonth, today)
+            CalendarMode.GREGORIAN -> LocalDate(gregYear, gregMonth, 1)
+        }
+    }
+
+    val firstHijri = remember(settings, monthStart) { PrayerCalculator.hijriFor(settings, monthStart) }
+
+    val days = remember(mode, monthStart, settings, hijriYear, hijriMonth, gregYear, gregMonth) {
         buildList {
             var date = monthStart
-            repeat(31) { index ->
-                val h = PrayerCalculator.hijriFor(settings, date)
-                if (h.monthNum != monthHijri.monthNum || h.year != monthHijri.year) return@buildList
+            repeat(31) {
+                if (mode == CalendarMode.HIJRI) {
+                    val h = PrayerCalculator.hijriFor(settings, date)
+                    if (h.year != hijriYear || h.monthNum != hijriMonth) return@buildList
+                } else {
+                    if (date.year != gregYear || date.monthNumber != gregMonth) return@buildList
+                }
                 val times = PrayerCalculator.adjustedTimes(PrayerCalculator.timesFor(settings, date), settings)
-                add(CalendarDay(h.day, date, times, h.monthName))
+                val h = PrayerCalculator.hijriFor(settings, date)
+                add(CalendarDay(h.day, date, times, h))
                 date = date.plus(DatePeriod(days = 1))
             }
         }
     }
 
-    val todayHijriDay = PrayerCalculator.hijriFor(settings, today).day
+    val monthTitle = when (mode) {
+        CalendarMode.HIJRI -> "${PrayerCalculator.hijriMonths[hijriMonth - 1]} $hijriYear هـ"
+        CalendarMode.GREGORIAN -> "${PrayerCalculator.gregorianMonths[gregMonth - 1]} $gregYear م"
+    }
+    val monthSubtitle = when (mode) {
+        CalendarMode.HIJRI ->
+            "${PrayerCalculator.gregorianMonths[monthStart.monthNumber - 1]} ${monthStart.year} م — ${days.size} يومًا"
+        CalendarMode.GREGORIAN ->
+            "${firstHijri.monthName} ${firstHijri.year} هـ — ${days.size} يومًا"
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -98,89 +168,192 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
     ) {
         item {
             GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight) { monthShift-- }
+                // ---- تبديل التقويم ----
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ModePill(
+                        label = "هجري",
+                        selected = mode == CalendarMode.HIJRI,
+                        onClick = {
+                            if (mode != CalendarMode.HIJRI) {
+                                // مزامنة العرض الهجري مع الشهر الميلادي المعروض حاليًا
+                                val h = PrayerCalculator.hijriFor(settings, monthStart)
+                                hijriYear = h.year
+                                hijriMonth = h.monthNum
+                                mode = CalendarMode.HIJRI
+                            }
+                        }
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    ModePill(
+                        label = "ميلادي",
+                        selected = mode == CalendarMode.GREGORIAN,
+                        onClick = {
+                            if (mode != CalendarMode.GREGORIAN) {
+                                // مزامنة العرض الميلادي مع الشهر الهجري المعروض حاليًا
+                                gregYear = monthStart.year
+                                gregMonth = monthStart.monthNumber
+                                mode = CalendarMode.GREGORIAN
+                            }
+                        }
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0x1A2DD4BF), RoundedCornerShape(50))
+                            .clickable { resetToToday() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            "اليوم",
+                            color = KararTokens.Accent.teal,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // ---- عنوان الشهر مع سهمي التنقل ----
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight) { shiftMonth(-1) }
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        KashidaHeader(hijriDay = monthHijri.day, monthName = monthHijri.monthName, fontSize = 26.sp)
                         Text(
-                            "${monthHijri.year} هـ — ${days.size} يومًا",
-                            color = KararColors.TextSecondary,
-                            fontSize = 11.sp
+                            monthTitle,
+                            color = KararColors.TextPrimary,
+                            fontSize = 21.sp,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            monthSubtitle,
+                            color = KararColors.TextMuted,
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.Center
                         )
                     }
-                    MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowLeft) { monthShift++ }
+                    MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowLeft) { shiftMonth(1) }
                 }
-                if (monthShift != 0) {
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "العودة إلى الشهر الحالي",
-                        color = KararColors.Gold,
-                        fontSize = 11.sp,
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .clickable { monthShift = 0 }
+
+                Spacer(Modifier.height(10.dp))
+
+                // ---- تغيير السنة والشهر كلًّا على حدة ----
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CalendarStepper(
+                        label = "السنة",
+                        value = if (mode == CalendarMode.HIJRI) "$hijriYear" else "$gregYear",
+                        modifier = Modifier.weight(1f),
+                        onMinus = { shiftYear(-1) },
+                        onPlus = { shiftYear(1) }
+                    )
+                    CalendarStepper(
+                        label = "الشهر",
+                        value = if (mode == CalendarMode.HIJRI) {
+                            PrayerCalculator.hijriMonths[hijriMonth - 1]
+                        } else {
+                            PrayerCalculator.gregorianMonths[gregMonth - 1]
+                        },
+                        modifier = Modifier.weight(1f),
+                        onMinus = { shiftMonthByPicker(-1) },
+                        onPlus = { shiftMonthByPicker(1) }
                     )
                 }
             }
         }
 
+        // ---- بطاقات الأيام ----
         items(days, key = { it.date.toString() }) { day ->
-            val isToday = monthShift == 0 && day.hijriDay == todayHijriDay
-            // نفس فلترة الشاشة الرئيسية: الغروب شيعي فقط، والإمساك حسب وضعه.
-            val dayVisible = PrayerCalculator.visibleIds(settings, day.date)
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                corner = 18.dp,
-                color = when {
-                    isToday -> Color(0x1AFFD700)
-                    day.hijriDay < todayHijriDay && monthShift == 0 -> Color(0x08FFFFFF)
-                    else -> KararColors.CardSoft
-                },
-                borderColor = if (isToday) KararColors.Gold else KararColors.Border,
-                contentPadding = PaddingValues(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(40.dp)
-                            .background(
-                                if (isToday) KararColors.Gold else Color(0x1AFFFFFF),
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            day.hijriDay.toString(),
-                            color = if (isToday) Color(0xFF241A00) else KararColors.TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
-                    }
-                    Spacer(Modifier.size(10.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            PrayerCalculator.formattedGregorian(day.date),
-                            color = KararColors.TextPrimary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            day.times.entries
-                                .filter { it.key in dayVisible && PrayerMeta.fixed(it.key) }
-                                .joinToString("  ") { (id, value) ->
-                                    "${PrayerCalculator.formatHour(value).first} ${shortLabel(id)}"
-                                },
-                            color = KararColors.TextMuted,
-                            fontSize = 9.sp,
-                            lineHeight = 14.sp
-                        )
-                    }
-                }
-            }
+            DayCard(
+                day = day,
+                mode = mode,
+                isToday = day.date == today,
+                visibleIds = PrayerCalculator.visibleIds(settings, day.date)
+            )
         }
+    }
+}
+
+// =====================================================================
+// عناصر الواجهة
+// =====================================================================
+
+private enum class CalendarMode { HIJRI, GREGORIAN }
+
+@Composable
+private fun ModePill(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(
+                if (selected) KararTokens.Accent.teal else Color(0x0FFFFFFF),
+                RoundedCornerShape(50)
+            )
+            .border(
+                1.dp,
+                if (selected) Color.Transparent else Color(0x1FFFFFFF),
+                RoundedCornerShape(50)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp)
+    ) {
+        Text(
+            label,
+            color = if (selected) Color(0xFF06281F) else KararColors.TextSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun CalendarStepper(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    onMinus: () -> Unit,
+    onPlus: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .background(Color(0x0AFFFFFF), RoundedCornerShape(14.dp))
+            .border(1.dp, Color(0x12FFFFFF), RoundedCornerShape(14.dp))
+            .padding(horizontal = 8.dp, vertical = 7.dp)
+    ) {
+        Text(label, color = KararColors.TextMuted, fontSize = 9.sp)
+        Spacer(Modifier.height(2.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StepChip("−", onMinus)
+            Text(
+                value,
+                color = KararColors.TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+            StepChip("+", onPlus)
+        }
+    }
+}
+
+@Composable
+private fun StepChip(label: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(26.dp)
+            .background(Color(0x1AFFFFFF), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = KararColors.Gold, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -200,6 +373,133 @@ private fun MonthArrow(
     }
 }
 
+@Composable
+private fun DayCard(
+    day: CalendarDay,
+    mode: CalendarMode,
+    isToday: Boolean,
+    visibleIds: List<String>
+) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        corner = 18.dp,
+        color = if (isToday) Color(0x1AFFD700) else KararColors.CardSoft,
+        borderColor = if (isToday) KararColors.Gold else KararColors.Border,
+        contentPadding = PaddingValues(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .background(
+                        if (isToday) KararColors.Gold else Color(0x1AFFFFFF),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    if (mode == CalendarMode.HIJRI) day.hijri.day.toString() else day.date.dayOfMonth.toString(),
+                    color = if (isToday) Color(0xFF241A00) else KararColors.TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        PrayerCalculator.weekDays[day.date.dayOfWeek.ordinal],
+                        color = if (isToday) KararColors.Gold else KararColors.TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "  ${day.date.dayOfMonth} ${PrayerCalculator.gregorianMonths[day.date.monthNumber - 1]} ${day.date.year} م",
+                        color = KararColors.TextMuted,
+                        fontSize = 9.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (isToday) {
+                        Box(
+                            Modifier
+                                .background(KararColors.Gold, RoundedCornerShape(50))
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                "اليوم",
+                                color = Color(0xFF241A00),
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                Text(
+                    "${day.hijri.day} ${day.hijri.monthName} ${day.hijri.year} هـ",
+                    color = if (isToday) Color(0xFFFFF3C4) else KararColors.TextMuted,
+                    fontSize = 9.sp
+                )
+                Spacer(Modifier.height(6.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    visibleIds.forEach { id ->
+                        val time = PrayerCalculator.formatHour(day.times[id] ?: 0.0)
+                        Row(
+                            modifier = Modifier
+                                .background(
+                                    if (isToday) Color(0x24FFD700) else Color(0x0FFFFFFF),
+                                    RoundedCornerShape(50)
+                                )
+                                .padding(horizontal = 7.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                shortLabel(id),
+                                color = KararColors.TextMuted,
+                                fontSize = 8.sp
+                            )
+                            Spacer(Modifier.width(3.dp))
+                            Text(
+                                time.first,
+                                color = if (isToday) KararColors.Gold else KararColors.TextPrimary,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * يبحث عن أول يوم من الشهر الهجري المطلوب.
+ * نقدّر الفرق بالأيام ثم نمسح نافذة صغيرة حول التقدير (الخطأ أقل من يومين عادةً).
+ */
+private fun hijriMonthStart(
+    settings: AppSettings,
+    targetYear: Int,
+    targetMonth: Int,
+    today: LocalDate
+): LocalDate {
+    val current = PrayerCalculator.hijriFor(settings, today)
+    val estimate = (
+        (targetYear - current.year) * 354.367 +
+            (targetMonth - current.monthNum) * 29.53
+        ).roundToInt()
+    var probe = today.plus(DatePeriod(days = estimate - 40))
+    repeat(90) {
+        val h = PrayerCalculator.hijriFor(settings, probe)
+        if (h.year == targetYear && h.monthNum == targetMonth && h.day == 1) return probe
+        probe = probe.plus(DatePeriod(days = 1))
+    }
+    // احتياطي: أول الشهر الهجري الحالي
+    return today.plus(DatePeriod(days = -(current.day - 1)))
+}
+
 private fun shortLabel(id: String): String = when (id) {
     "imsak" -> "إمساك"
     "fajr" -> "فجر"
@@ -217,5 +517,5 @@ private data class CalendarDay(
     val hijriDay: Int,
     val date: LocalDate,
     val times: Map<String, Double>,
-    val monthName: String
+    val hijri: HijriDate
 )
