@@ -504,7 +504,7 @@ shared/src/commonMain/kotlin/com/karrar/amsakiah/
 | 2026-11-07 | خطة رئيسية | إنشاء الخطة وملف السياق | مراجعة يدوية | — |
 | 2026-11-08 | المرحلة 0 | الرموز + الأيقونات الدينية + الثيم + GlassSurface + شل Navigation 3/Adaptive/Edge-to-edge + انتقالات انزلاقية + إزالة الشل القديم | نجح `:shared:compileAndroidMain` و`:androidApp:assembleDebug` | `d9f7ada` |
 | 2026-11-08 | المرحلة 1 | إعادة بناء `SkyArc` (viewBox 22 2 356 298) + `WeatherEffects` بلا وميض + رأس متجاوب + عدّاد مشروط بـ`liveIds` + `PrayerStrip` موسّط + زر تقويم واحد؛ ومركزة فلترة الغروب/الإمساك في `visibleIds` وتطبيقها على التقويم والودجت والإشعار | نجح `:shared:compileAndroidMain` و`:androidApp:assembleDebug` (4m 28s) | `25df67d` |
-| 2026-11-08 | المرحلة 2 | `SettingsScreen` بأقسام منسدلة (الموقع، المواقيت، الطريقة، الهجري، التعديلات، الأوقات الظاهرة، العدّاد، الأذان/التذكير، الودجتات، الطقس، الصلاحيات) + `CalendarScreen` M3 Expressive بسنة/شهر مستقلين ومزامنة عند التبديل وشرائح أوقات `FlowRow` + `rememberSaveable` + تطبيق `fontScale` عالميًا | نجح `:shared:compileAndroidMain` و`:androidApp:assembleDebug` (6m 14s) | `ec04dc8` |
+| 2026-11-08 | المرحلة 2 | `SettingsScreen` بأقسام منسدلة (الموقع، المواقيت، الطريقة، الهجري، التعديلات، الأوقات الظاهرة، العدّاد، الأذان/التذكير، الودجتات، الطقس، الصلاحيات) + `CalendarScreen` M3 Expressive بسنة/شهر مستقلين ومزامنة عند التبديل وشرائح أوقات `FlowRow` + `rememberSaveable` + تطبيق `fontScale` عالميًا | نجح `:shared:compileAndroidMain` و`:androidApp:assembleDebug` (6m 14s) | `8f1a4b9` |
 
 ---
 
