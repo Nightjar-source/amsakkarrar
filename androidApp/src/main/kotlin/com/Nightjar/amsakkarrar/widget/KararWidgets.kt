@@ -346,25 +346,35 @@ private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWi
                 textAlign = TextAlign.Center
             )
         )
-        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 7.dp))
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.LARGE) 7.dp else 4.dp))
 
         // العدّاد — حبة «باقي على…» + Chronometer أصلي + شريط تقدم سميك + طرفا الشريط
         // كلها داخل RemoteViews واحد مطابق لـ widgetsnotifications.html.
+        // MEDIUM يستخدم السطر المصغّر حتى تتّسع شبكة الصلوات الست داخل 4×3.
         AndroidRemoteViews(
-            remoteViews = countdownRemoteViews(context, snapshot, compact = tier == WidgetTier.COMPACT),
+            remoteViews = countdownRemoteViews(context, snapshot, compact = tier != WidgetTier.LARGE),
             modifier = GlanceModifier.fillMaxWidth()
         )
 
-        if (tier != WidgetTier.COMPACT) {
-            Spacer(GlanceModifier.height(7.dp))
-            PrayerGridRow(gridEntries.take(3), snapshot.nextLabel)
-            Spacer(GlanceModifier.height(5.dp))
-            PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel)
-        } else {
-            Spacer(GlanceModifier.height(3.dp))
-            PillProgress(snapshot.periodProgress, snapshot.isDaytime)
-            Spacer(GlanceModifier.height(6.dp))
-            PrayerGridRow(gridEntries.filter { it.id == "fajr" || it.id == "maghrib" || it.id == "isha" }, snapshot.nextLabel, compact = true)
+        when (tier) {
+            WidgetTier.LARGE -> {
+                Spacer(GlanceModifier.height(7.dp))
+                PrayerGridRow(gridEntries.take(3), snapshot.nextLabel)
+                Spacer(GlanceModifier.height(5.dp))
+                PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel)
+            }
+            WidgetTier.MEDIUM -> {
+                Spacer(GlanceModifier.height(5.dp))
+                PrayerGridRow(gridEntries.take(3), snapshot.nextLabel, compact = true)
+                Spacer(GlanceModifier.height(3.dp))
+                PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel, compact = true)
+            }
+            WidgetTier.COMPACT -> {
+                Spacer(GlanceModifier.height(3.dp))
+                PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+                Spacer(GlanceModifier.height(6.dp))
+                PrayerGridRow(gridEntries.filter { it.id == "fajr" || it.id == "maghrib" || it.id == "isha" }, snapshot.nextLabel, compact = true)
+            }
         }
     }
 }

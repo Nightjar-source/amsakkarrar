@@ -160,6 +160,7 @@
 | طرفا الشريط: منتصف الليل ← الإمساك | `widget_progress_start` / `widget_progress_end` تُملأ من `periodStartLabel` / `periodEndLabel` في `countdownRemoteViews()` |
 | شبكة 3×2 للصلوات الست + تمييز الصلاة القادمة | `PrayerGridRow` + `PrayerBoxCell` (خلفية `WidgetActive` وحدود ذهبية للصفة النشطة) |
 | كشيدة «رمضـ 16 ـان» + التاريخ الميلادي | `WidgetKashida` + `gregorianText` |
+| ودجت 4×3 (MEDIUM) | عدّاد مصغّر بسطر واحد + شبكة الصلوات الست كاملة حتى لا تُقتطع |
 
 ### 8.2 الودجت المصغّر
 
