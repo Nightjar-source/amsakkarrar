@@ -73,6 +73,14 @@ object ShiaDuasLibrary {
             arabicText = DuaTexts.HUJJAH
         ),
         ShiaDuaItem(
+            id = "ghayba",
+            title = "دعاء الغيبة (يا من تحل به عقد المكاره)",
+            subtitle = "اللهم عرفني نفسك فإنك إن لم تعرفني نفسك لم أعرف رسولك",
+            category = "تعقيبات الصباح والمساء",
+            recommendedTime = "في تعقيبات الصلوات وكل وقت للفرج عن المكاره",
+            arabicText = DuaTexts.GHAYBA
+        ),
+        ShiaDuaItem(
             id = "sabah",
             title = "دعاء الصباح لأمير المؤمنين (ع)",
             subtitle = "مختارات من أدعية الإمام علي (عليه السلام) بعد صلاة الفجر",

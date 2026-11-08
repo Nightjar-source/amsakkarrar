@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +40,7 @@ import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.formatPlayerTime
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.KararTokens
 
 /**
  * شاشة دعاء مستقلة — تُفتح لكل دعاء عبر معرّفه (id).
@@ -62,22 +65,27 @@ fun DuaDetailScreen(
     ) {
         DuaTopBar(item = item, onBack = onBack)
 
-        androidx.compose.foundation.lazy.LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 4.dp,
-                bottom = if (player.hasTrack) 150.dp else 28.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            item {
-                DuaHeaderCard(item = item, player = player)
-            }
+        // عمود قراءة مُوسّط بعرض مريح على التابلت/الحاسوب بدل تمدّد النص لعرض النافذة.
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier
+                    .widthIn(max = KararTokens.Size.readingMaxWidth)
+                    .fillMaxHeight(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 4.dp,
+                    bottom = if (player.hasTrack) 150.dp else 28.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                item {
+                    DuaHeaderCard(item = item, player = player)
+                }
 
-            item {
-                DuaTextCard(item)
+                item {
+                    DuaTextCard(item)
+                }
             }
         }
     }

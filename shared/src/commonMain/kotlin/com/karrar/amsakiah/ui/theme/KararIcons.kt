@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -33,4 +35,16 @@ object KararIcons {
     val Duas: ImageVector = Icons.Filled.MenuBook
     val Tasbih: ImageVector = Icons.Filled.BlurCircular
     val Fiqh: ImageVector = Icons.Filled.Balance
+
+    /**
+     * أيقونة وقت الصلاة الموحّدة (تُستخدم في شاشة اليوم والتقويم والودجتات).
+     * مصدر واحد يمنع اختلاف الأيقونة بين الشاشات.
+     */
+    fun prayer(id: String): ImageVector = when (id) {
+        "imsak", "isha", "midnight" -> Icons.Filled.NightsStay
+        "fajr", "sunrise" -> Icons.Filled.WbTwilight
+        "dhuhr", "asr" -> Icons.Filled.WbSunny
+        "sunset", "maghrib" -> Icons.Filled.WbTwilight
+        else -> Icons.Filled.WbSunny
+    }
 }

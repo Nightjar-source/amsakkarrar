@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -196,9 +197,16 @@ fun AppShell(
             }
 
             Box(Modifier.weight(1f).fillMaxHeight()) {
-                NavDisplay(
-                    backStack = backStack,
-                    modifier = Modifier.fillMaxSize(),
+                // أقصى عرض للمحتوى: الشاشات العادية تُوسّط على 1024dp كما في المرجع
+                // (`max-w-5xl`)، وشاشة «اليوم» تبقى full-bleed لأن سماءها خلفية كاملة.
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val contentWidth = if (isToday) maxWidth else minOf(maxWidth, KararTokens.Size.contentMaxWidth)
+                    NavDisplay(
+                        backStack = backStack,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .width(contentWidth)
+                            .fillMaxHeight(),
                     onBack = ::pop,
                     transitionSpec = {
                         // M3 Expressive: نابض مكاني للانزلاق + نابض تأثيرات للتلاشي.
@@ -271,6 +279,7 @@ fun AppShell(
                         }
                     }
                 )
+                }
 
                 if (showTopBar) {
                     FloatingTopBar(

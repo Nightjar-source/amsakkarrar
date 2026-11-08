@@ -6,17 +6,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,9 +34,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.astronomy.HijriDate
@@ -44,6 +53,7 @@ import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.KararIcons
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -156,7 +166,15 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
             "${firstHijri.monthName} ${firstHijri.year} هـ — ${days.size} يومًا"
     }
 
-    LazyColumn(
+    // شريحتا «المنقضية/المتبقية» — تُحسبان من الأيام المعروضة مقارنةً باليوم الحالي،
+    // فتعملان في التقويمين وفي أي شهر معروض لا في الشهر الجاري فقط.
+    val passedCount = remember(days, today) { days.count { it.date < today } }
+    val remainingCount = days.size - passedCount
+
+    // شبكة تكيّفية: عمود واحد على الهاتف، عمودان على التابلت، وثلاثة على
+    // الحاسوب/الشاشات العريضة — دون تغيير تسلسل الأيام (RTL يتبع LayoutDirection).
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = KararTokens.Size.calendarCardMinWidth),
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(
             start = 16.dp,
@@ -164,9 +182,10 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
                 // ---- تبديل التقويم ----
                 Row(
@@ -246,6 +265,22 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
 
                 Spacer(Modifier.height(10.dp))
 
+                // ---- شريحتا المنقضية / المتبقية ----
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CalendarStatChip(
+                        label = "المنقضية:",
+                        value = passedCount,
+                        highlighted = false
+                    )
+                    CalendarStatChip(
+                        label = "المتبقية:",
+                        value = remainingCount,
+                        highlighted = true
+                    )
+                }
+
+                Spacer(Modifier.height(10.dp))
+
                 // ---- تغيير السنة والشهر كلًّا على حدة ----
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CalendarStepper(
@@ -271,11 +306,16 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
         }
 
         // ---- بطاقات الأيام ----
-        items(days, key = { it.date.toString() }) { day ->
+        items(
+            count = days.size,
+            key = { index -> days[index].date.toString() }
+        ) { index ->
+            val day = days[index]
             DayCard(
                 day = day,
                 mode = mode,
                 isToday = day.date == today,
+                isPassed = day.date < today,
                 visibleIds = PrayerCalculator.visibleIds(settings, day.date)
             )
         }
@@ -374,102 +414,243 @@ private fun MonthArrow(
 }
 
 @Composable
+private fun CalendarStatChip(label: String, value: Int, highlighted: Boolean) {
+    val shape = RoundedCornerShape(8.dp)
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(
+                brush = if (highlighted) {
+                    Brush.horizontalGradient(
+                        listOf(Color(0x33FFD700), Color(0x1AFF9800))
+                    )
+                } else {
+                    SolidColor(Color(0x1AFFFFFF))
+                },
+                shape = shape
+            )
+            .border(
+                1.dp,
+                if (highlighted) Color(0x66FFD700) else Color(0x33FFFFFF),
+                shape
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            label,
+            color = if (highlighted) Color(0xE6FFE9A8) else Color.White.copy(alpha = 0.70f),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            value.toString(),
+            color = if (highlighted) KararColors.Gold else KararColors.TextPrimary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            style = TextStyle(textDirection = TextDirection.Ltr)
+        )
+    }
+}
+
+@Composable
 private fun DayCard(
     day: CalendarDay,
     mode: CalendarMode,
     isToday: Boolean,
+    isPassed: Boolean,
     visibleIds: List<String>
 ) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        corner = 18.dp,
-        color = if (isToday) Color(0x1AFFD700) else KararColors.CardSoft,
-        borderColor = if (isToday) KararColors.Gold else KararColors.Border,
-        contentPadding = PaddingValues(12.dp)
+    val shape = RoundedCornerShape(24.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            // الأيام المنقضية باهتة كما في المرجع (`opacity-50 grayscale`).
+            .alpha(if (isPassed) 0.5f else 1f)
+            .graphicsLayer {
+                if (isToday) {
+                    scaleX = 1.02f
+                    scaleY = 1.02f
+                }
+            }
+            .clip(shape)
+            .background(
+                brush = if (isToday) {
+                    Brush.linearGradient(listOf(Color(0x26FFFFFF), Color(0x0DFFFFFF)))
+                } else {
+                    SolidColor(KararColors.CardSoft)
+                },
+                shape = shape
+            )
+            .border(
+                1.dp,
+                if (isToday) Color(0x99FFD700) else Color(0x0DFFFFFF),
+                shape
+            )
+            .padding(16.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(42.dp)
-                    .background(
-                        if (isToday) KararColors.Gold else Color(0x1AFFFFFF),
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+        // ---- رأس البطاقة: التقويمان معًا (هجري + ميلادي) ----
+        // الرقم في الدائرة يتبع وضع العرض المختار، أما السطران فيُظهران
+        // التاريخ بالتقويمين دائمًا حتى لا يفقد المستخدم مرجعًا زمنيًا.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .background(
+                            if (isToday) KararColors.Gold else Color(0x1AFFFFFF),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = (if (mode == CalendarMode.HIJRI) day.hijriDay else day.date.dayOfMonth).toString(),
+                        color = if (isToday) Color(0xFF241A00) else KararColors.TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = TextStyle(textDirection = TextDirection.Ltr)
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(
+                        text = PrayerCalculator.weekDays[day.date.dayOfWeek.ordinal],
+                        color = KararColors.TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${day.hijri.day} ${day.hijri.monthName} ${day.hijri.year} هـ",
+                        color = KararColors.Gold.copy(alpha = if (isToday) 0.95f else 0.75f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    if (mode == CalendarMode.HIJRI) day.hijri.day.toString() else day.date.dayOfMonth.toString(),
-                    color = if (isToday) Color(0xFF241A00) else KararColors.TextPrimary,
+                    text = "${day.date.dayOfMonth} - ${day.date.monthNumber} - ${day.date.year} م",
+                    color = Color.White.copy(alpha = 0.70f),
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
+                    letterSpacing = 0.5.sp,
+                    style = TextStyle(textDirection = TextDirection.Ltr)
+                )
+                Text(
+                    text = PrayerCalculator.gregorianMonths[day.date.monthNumber - 1],
+                    color = Color.White.copy(alpha = 0.45f),
+                    fontSize = 9.sp,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        PrayerCalculator.weekDays[day.date.dayOfWeek.ordinal],
-                        color = if (isToday) KararColors.Gold else KararColors.TextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        "  ${day.date.dayOfMonth} ${PrayerCalculator.gregorianMonths[day.date.monthNumber - 1]} ${day.date.year} م",
-                        color = KararColors.TextMuted,
-                        fontSize = 9.sp,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (isToday) {
-                        Box(
-                            Modifier
-                                .background(KararColors.Gold, RoundedCornerShape(50))
-                                .padding(horizontal = 7.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                "اليوم",
-                                color = Color(0xFF241A00),
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-                Text(
-                    "${day.hijri.day} ${day.hijri.monthName} ${day.hijri.year} هـ",
-                    color = if (isToday) Color(0xFFFFF3C4) else KararColors.TextMuted,
-                    fontSize = 9.sp
-                )
-                Spacer(Modifier.height(6.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color(0x1AFFFFFF))
+        )
+        Spacer(Modifier.height(12.dp))
+
+        // ---- شبكة أوقات الصلوات: ثلاثة أعمدة كما في المرجع ----
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            visibleIds.chunked(3).forEach { rowIds ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    visibleIds.forEach { id ->
-                        val time = PrayerCalculator.formatHour(day.times[id] ?: 0.0)
-                        Row(
-                            modifier = Modifier
-                                .background(
-                                    if (isToday) Color(0x24FFD700) else Color(0x0FFFFFFF),
-                                    RoundedCornerShape(50)
-                                )
-                                .padding(horizontal = 7.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                shortLabel(id),
-                                color = KararColors.TextMuted,
-                                fontSize = 8.sp
-                            )
-                            Spacer(Modifier.width(3.dp))
-                            Text(
-                                time.first,
-                                color = if (isToday) KararColors.Gold else KararColors.TextPrimary,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                    rowIds.forEach { id ->
+                        PrayerTimeCell(
+                            id = id,
+                            rawHour = day.times[id] ?: 0.0,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
+                    // إبقاء عرض الخلايا ثابتًا (الثلث) في الصف الأخير الناقص.
+                    repeat(3 - rowIds.size) { Spacer(Modifier.weight(1f)) }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Modifier) {
+    val (time, amPm, _) = PrayerCalculator.formatHour(rawHour)
+    val shortAmPm = if (amPm.startsWith("م")) "م" else "ص"
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0x4D000000))
+            .padding(horizontal = 6.dp, vertical = 8.dp)
+    ) {
+        // أيقونة مائية كبيرة أسفل الخلية (10% كما في المرجع).
+        Icon(
+            imageVector = KararIcons.prayer(id),
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.10f),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 8.dp, y = 8.dp)
+                .size(30.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Icon(
+                    imageVector = KararIcons.prayer(id),
+                    contentDescription = null,
+                    tint = KararColors.Gold.copy(alpha = 0.60f),
+                    modifier = Modifier.size(10.dp)
+                )
+                Text(
+                    text = shortLabel(id),
+                    color = Color.White.copy(alpha = 0.80f),
+                    fontSize = 9.sp,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+            Spacer(Modifier.height(2.dp))
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = time,
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TextStyle(textDirection = TextDirection.Ltr)
+                )
+                Text(
+                    text = shortAmPm,
+                    color = Color.White.copy(alpha = 0.50f),
+                    fontSize = 7.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 1.dp)
+                )
             }
         }
     }

@@ -43,7 +43,9 @@ object KararTokens {
     /** مقاسات عناصر الشل العائم. */
     object Size {
         val topBarHeight = 56.dp
-        val topBarMaxWidth = 640.dp
+        val topBarMaxWidth = 896.dp
+        /** أقصى عرض لمحتوى الشاشات غير السماوية (مطابق لـ max-w-5xl في amsak3d.tsx). */
+        val contentMaxWidth = 1024.dp
         val navBarHeight = 64.dp
         val navBarMaxWidth = 560.dp
         val navItem = 52.dp
@@ -54,6 +56,18 @@ object KararTokens {
         val contentHorizontal = 16.dp
         val contentBottomGap = 104.dp
         val contentTopGap = 74.dp
+        /**
+         * أقصى عرض لمسار «اليوم» على الشاشات العريضة: الخلفية السماوية تبقى
+         * full-bleed، بينما يبقى القوس والعدّاد في مسرح بحجم هاتف مريح (Flex /
+         * تابلت / حاسوب) بدل أن يتمدد الأفقي فقط.
+         */
+        val todayStageMaxWidth = 720.dp
+        /** أقل عرض لبطاقة يوم في شبكة التقويم التكيّفية. */
+        val calendarCardMinWidth = 340.dp
+        /** أقل عرض لبطاقة دعاء في شبكة الأدعية التكيّفية. */
+        val duaCardMinWidth = 320.dp
+        /** أقصى عرض لنصوص القراءة الطويلة (دعاء/فقه) على الشاشات العريضة. */
+        val readingMaxWidth = 840.dp
     }
 
     /** حركة Fluid — نفس منحنى التصميم `cubic-bezier(0.22, 1, 0.36, 1)`. */

@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +40,7 @@ import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.KararTokens
 
 private data class FiqhArticle(val title: String, val body: String)
 
@@ -157,16 +160,20 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
     }
     var expandedArticle by remember { mutableStateOf<Int?>(null) }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    // عمود قراءة مُوسّط على الشاشات العريضة (تابلت/حاسوب) بعرض مريح للنص الطويل.
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        LazyColumn(
+            modifier = Modifier
+                .widthIn(max = KararTokens.Size.readingMaxWidth)
+                .fillMaxHeight(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = contentPadding.calculateTopPadding() + 8.dp,
+                bottom = contentPadding.calculateBottomPadding() + 8.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
         if (times.isHighLatAnomaly) {
             item {
                 GlassCard(
@@ -316,5 +323,6 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
                 }
             }
         }
+    }
     }
 }

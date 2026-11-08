@@ -12,6 +12,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -204,102 +205,110 @@ fun SplashScreen(modifier: Modifier = Modifier) {
         }
 
         // ---------- المحتوى ----------
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier.size(310.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // هالة بنفسجية خلف الشعار
-                Canvas(Modifier.size(220.dp)) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            listOf(
-                                Color(0x668B5CF6),
-                                Color(0x338B5CF6),
-                                Color.Transparent
-                            )
-                        ),
-                        radius = size.minDimension / 2f
-                    )
-                }
-
-                // حلقات زحل — ميل ثلاثي الأبعاد عبر graphicsLayer
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            rotationX = 72f
-                            rotationY = -14f
-                            cameraDistance = 18f
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Ring(rotation = ringA, diameter = 300.dp, color = Color(0xFF00F2FE), width = 2.5f)
-                    Ring(rotation = ringB, diameter = 255.dp, color = Color(0xFFA18CD1), width = 2f)
-                    Ring(rotation = ringC, diameter = 210.dp, color = Color(0xFFFBC2EB), width = 1.2f)
-                }
-
-                // الشعار الشفاف كما هو — دون قصّ دائري أو مربّع
-                Image(
-                    painter = painterResource(Res.drawable.app_icon),
-                    contentDescription = "شعار إمساكية كرار",
-                    modifier = Modifier
-                        .size(164.dp)
-                        .graphicsLayer {
-                            alpha = iconAnim.value
-                            scaleX = 0.88f + 0.12f * iconAnim.value
-                            scaleY = 0.88f + 0.12f * iconAnim.value
-                        }
-                )
-            }
-
-            Spacer(Modifier.height(26.dp))
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            // مقاسات نسبية بدل 310dp الثابتة: تعمل من 320dp حتى الشاشات الكبيرة،
+            // وفي الوضع الأفقي، بلا قصّ للحلقات أو الشعار.
+            val logoBox = minOf(maxWidth - 48.dp, maxHeight * 0.46f).coerceIn(170.dp, 310.dp)
+            val unit = logoBox.value / 310f
+            val titleSize = (36f * unit).coerceIn(22f, 36f).sp
 
             Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.graphicsLayer {
-                    alpha = titleAnim.value
-                    translationY = (1f - titleAnim.value) * 40.dp.toPx()
-                }
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "إمساكية كرار",
-                    style = TextStyle(
-                        brush = Brush.linearGradient(
-                            listOf(
-                                Color(0xFF00F2FE),
-                                Color(0xFFFBC2EB),
-                                Color(0xFFA18CD1)
+                Box(
+                    modifier = Modifier.size(logoBox),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // هالة بنفسجية خلف الشعار
+                    Canvas(Modifier.size(logoBox * 0.71f)) {
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                listOf(
+                                    Color(0x668B5CF6),
+                                    Color(0x338B5CF6),
+                                    Color.Transparent
+                                )
+                            ),
+                            radius = size.minDimension / 2f
+                        )
+                    }
+
+                    // حلقات زحل — ميل ثلاثي الأبعاد عبر graphicsLayer
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                rotationX = 72f
+                                rotationY = -14f
+                                cameraDistance = 18f
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Ring(rotation = ringA, diameter = logoBox, color = Color(0xFF00F2FE), width = 2.5f * unit)
+                        Ring(rotation = ringB, diameter = logoBox * 0.823f, color = Color(0xFFA18CD1), width = 2f * unit)
+                        Ring(rotation = ringC, diameter = logoBox * 0.677f, color = Color(0xFFFBC2EB), width = 1.2f * unit)
+                    }
+
+                    // الشعار الشفاف كما هو — دون قصّ دائري أو مربّع
+                    Image(
+                        painter = painterResource(Res.drawable.app_icon),
+                        contentDescription = "شعار إمساكية كرار",
+                        modifier = Modifier
+                            .size(logoBox * 0.53f)
+                            .graphicsLayer {
+                                alpha = iconAnim.value
+                                scaleX = 0.88f + 0.12f * iconAnim.value
+                                scaleY = 0.88f + 0.12f * iconAnim.value
+                            }
+                    )
+                }
+
+                Spacer(Modifier.height(logoBox * 0.084f))
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.graphicsLayer {
+                        alpha = titleAnim.value
+                        translationY = (1f - titleAnim.value) * 40.dp.toPx()
+                    }
+                ) {
+                    Text(
+                        text = "إمساكية كرار",
+                        style = TextStyle(
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF00F2FE),
+                                    Color(0xFFFBC2EB),
+                                    Color(0xFFA18CD1)
+                                )
+                            ),
+                            fontSize = titleSize,
+                            fontWeight = FontWeight.Bold,
+                            shadow = Shadow(
+                                color = Color(0x6600F2FE),
+                                blurRadius = 18f
                             )
-                        ),
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        shadow = Shadow(
-                            color = Color(0x6600F2FE),
-                            blurRadius = 18f
                         )
                     )
-                )
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    text = "علي المرتضى والمهدي",
-                    color = Color(0xE6E5E7EB),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 1.sp
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "رمضان ١٤٤٧ هـ — ٢٠٢٦ م",
-                    color = Color(0xFF6C7590),
-                    fontSize = 11.sp
-                )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = "علي المرتضى والمهدي",
+                        color = Color(0xE6E5E7EB),
+                        fontSize = (17f * unit).coerceIn(13f, 17f).sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "رمضان ١٤٤٧ هـ — ٢٠٢٦ م",
+                        color = Color(0xFF6C7590),
+                        fontSize = (11f * unit).coerceIn(9f, 11f).sp
+                    )
+                }
             }
         }
 

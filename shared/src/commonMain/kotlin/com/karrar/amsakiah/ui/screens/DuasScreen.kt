@@ -1,7 +1,12 @@
 package com.karrar.amsakiah.ui.screens
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +21,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +57,7 @@ import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.platform.PlatformBackHandler
 import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.KararTokens
 
 /**
  * قسم الأدعية:
@@ -79,9 +87,29 @@ fun DuasScreen(
     PlatformBackHandler(enabled = selected != null) { selectedId = null }
 
     Box(Modifier.fillMaxSize()) {
-        Crossfade(
+        AnimatedContent(
             targetState = selected,
-            animationSpec = tween(220),
+            transitionSpec = {
+                if (targetState != null) {
+                    // دخول شاشة الدعاء: انزلاق خفيف من جهة البداية + تلاشٍ نابض.
+                    (
+                        slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { it / 4 } +
+                            fadeIn(animationSpec = KararTokens.Motion.effects())
+                        ).togetherWith(
+                        slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -it / 6 } +
+                            fadeOut(animationSpec = KararTokens.Motion.effects())
+                        )
+                } else {
+                    // العودة إلى الفهرس: عكس الاتجاه.
+                    (
+                        slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { -it / 6 } +
+                            fadeIn(animationSpec = KararTokens.Motion.effects())
+                        ).togetherWith(
+                        slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { it / 4 } +
+                            fadeOut(animationSpec = KararTokens.Motion.effects())
+                        )
+                }
+            },
             label = "dua-navigation"
         ) { item ->
             if (item == null) {
@@ -133,7 +161,8 @@ private fun DuaList(
         }
     }
 
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = KararTokens.Size.duaCardMinWidth),
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(
             start = 16.dp,
@@ -141,9 +170,10 @@ private fun DuaList(
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + bottomInset + 8.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -155,7 +185,7 @@ private fun DuaList(
             )
         }
 
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     CategoryChip("الكل", category == null) { category = null }
@@ -166,9 +196,15 @@ private fun DuaList(
             }
         }
 
-        item { SectionTitle("الأدعية والمناجاة (${filtered.size})") }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionTitle("الأدعية والمناجاة (${filtered.size})")
+        }
 
-        items(filtered, key = { it.id }) { item ->
+        items(
+            count = filtered.size,
+            key = { index -> filtered[index].id }
+        ) { index ->
+            val item = filtered[index]
             DuaCard(
                 item = item,
                 isCurrent = player.currentId == item.id,

@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Tune
@@ -60,10 +61,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -80,6 +86,10 @@ import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * شاشة «الضبط والأوقات» — دمج ضبط الكفيل وV7 في أقسام منسدلة M3 Expressive.
@@ -117,6 +127,24 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
 
+        // ==================== ترويسة الضبط ====================
+        item {
+            SettingsHero(
+                state = state,
+                onSearchCity = { showCityPicker = true },
+                onGps = {
+                    if (permissions.status.location) {
+                        scope.launch { state.detectLocation() }
+                    } else {
+                        gpsAfterGrant = true
+                        permissions.requestLocation()
+                    }
+                },
+                onIp = { scope.launch { state.detectLocationByIp() } },
+                onSelectMethod = { code -> state.update { it.copy(methodCode = code) } }
+            )
+        }
+
         // ==================== الموقع والمدينة ====================
         item {
             SettingsAccordion(
@@ -153,20 +181,6 @@ fun SettingsScreen(
                         SmallAction("تغيير") { showCityPicker = true }
                     }
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SmallAction(if (state.locating) "جارٍ..." else "GPS أوفلاين", icon = true) {
-                            if (permissions.status.location) {
-                                scope.launch { state.detectLocation() }
-                            } else {
-                                gpsAfterGrant = true
-                                permissions.requestLocation()
-                            }
-                        }
-                        SmallAction("عبر IP", icon = false) {
-                            scope.launch { state.detectLocationByIp() }
-                        }
-                        SmallAction("بحث المدن") { showCityPicker = true }
-                    }
                 }
                 DstModeSelector(
                     current = settings.dstMode,
@@ -482,7 +496,7 @@ fun SettingsScreen(
                 }
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("إمساكية كرار 2026", color = KararColors.Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("الإصدار 1.1.0 — أوفلاين بالكامل", color = KararColors.TextMuted, fontSize = 10.sp)
+                    Text("الإصدار 1.3.0 — أوفلاين بالكامل", color = KararColors.TextMuted, fontSize = 10.sp)
                     Text("تطوير: كرار", color = KararColors.TextMuted, fontSize = 10.sp)
                 }
             }
@@ -491,6 +505,303 @@ fun SettingsScreen(
 
     if (showCityPicker) {
         CityPickerDialog(state = state, onDismiss = { showCityPicker = false })
+    }
+}
+
+// =====================================================================
+// ترويسة الضبط (هيرو المدينة والمواقيت)
+// =====================================================================
+
+/** الطرق الأربع السريعة في الهيرو — البقية في قسم «طريقة الحساب». */
+private val HERO_METHODS = listOf(
+    "alkafeel" to "الكفيل",
+    "leufa" to "ليفا (قم)",
+    "tehran" to "طهران",
+    "ummalqura" to "أم القرى"
+)
+
+@Composable
+private fun SettingsHero(
+    state: AppState,
+    onSearchCity: () -> Unit,
+    onGps: () -> Unit,
+    onIp: () -> Unit,
+    onSelectMethod: (String) -> Unit
+) {
+    val settings = state.settings
+    val today = PrayerCalculator.todayDate(settings)
+    val hijri = remember(settings, today) { PrayerCalculator.hijriFor(settings, today) }
+
+    // ساعة حيّة تتبع إزاحة المنطقة المختارة (بما فيها الوضع الصيفي/الشتوي الإجباري).
+    val offsetHours = remember(settings) { PrayerCalculator.offsetHours(settings) }
+    val clockText = remember(state.now, offsetHours) {
+        val local = state.now
+            .plus((offsetHours * 3600).toInt().seconds)
+            .toLocalDateTime(TimeZone.UTC)
+        fun two(v: Int) = v.toString().padStart(2, '0')
+        "${two(local.hour)}:${two(local.minute)}:${two(local.second)}"
+    }
+    val whole = offsetHours.toInt()
+    val utcLabel = if (offsetHours == whole.toDouble()) {
+        "UTC${if (whole >= 0) "+" else ""}$whole"
+    } else {
+        "UTC${if (offsetHours >= 0) "+" else ""}${(offsetHours * 10).roundToInt() / 10.0}"
+    }
+
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        corner = 28.dp,
+        color = Color(0x08FFFFFF),
+        borderColor = Color(0x0DFFFFFF),
+        contentPadding = PaddingValues(18.dp)
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "إمساكية كرار",
+                    style = TextStyle(
+                        brush = Brush.linearGradient(
+                            listOf(KararTokens.Accent.teal, Color(0xFFA5B4FC))
+                        ),
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = 30.sp
+                    )
+                )
+                Text(
+                    text = "منظومة المواقيت الفلكية الشرعية — أوفلاين بالكامل",
+                    color = KararColors.TextMuted,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${hijri.day} ${hijri.monthName} ${hijri.year} هـ",
+                    color = KararColors.TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.End
+                )
+                Text(
+                    text = "${today.dayOfMonth} - ${today.monthNumber} - ${today.year} م",
+                    color = KararColors.TextMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
+                    style = TextStyle(textDirection = TextDirection.Ltr)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.LocationOn,
+                contentDescription = null,
+                tint = KararTokens.Accent.teal,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = settings.cityName,
+                color = KararColors.TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            HeroPill(clockText, KararTokens.Accent.teal, ltr = true)
+            HeroPill(utcLabel, Color(0xFFA5B4FC), ltr = true)
+            if (state.locating) HeroPill("جارٍ التحديد…", KararColors.TextMuted)
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // صندوق بحث يشبه حقل المرجع، يفتح منتقي المدن الأوفلاين.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0x80000000))
+                .border(1.dp, Color(0x0DFFFFFF), RoundedCornerShape(22.dp))
+                .clickable(onClick = onSearchCity)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Filled.Search,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.40f),
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "ابحث عن مدينة (كربلاء، النجف، لندن…)",
+                color = Color.White.copy(alpha = 0.45f),
+                fontSize = 11.sp,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            HeroAction(
+                text = if (state.locating) "جارٍ…" else "GPS ذكي",
+                icon = Icons.Filled.MyLocation,
+                color = Color(0xFF6EE7B7),
+                container = Color(0x1A34D399),
+                border = Color(0x3334D399),
+                modifier = Modifier.weight(1f),
+                onClick = onGps
+            )
+            HeroAction(
+                text = "مدينتي (IP)",
+                icon = Icons.Filled.Public,
+                color = Color(0xFFA5B4FC),
+                container = Color(0x1A6366F1),
+                border = Color(0x336366F1),
+                modifier = Modifier.weight(1f),
+                onClick = onIp
+            )
+            HeroAction(
+                text = "المدن",
+                icon = Icons.Filled.Search,
+                color = KararColors.TextSecondary,
+                container = Color(0x0DFFFFFF),
+                border = Color(0x1AFFFFFF),
+                onClick = onSearchCity
+            )
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        Text(
+            text = "طريقة الحساب",
+            color = Color.White.copy(alpha = 0.50f),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(6.dp))
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val columns = if (maxWidth >= 420.dp) 4 else 2
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                HERO_METHODS.chunked(columns).forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        row.forEach { (code, label) ->
+                            HeroMethodButton(
+                                label = label,
+                                selected = settings.methodCode == code,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onSelectMethod(code) }
+                            )
+                        }
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroPill(text: String, color: Color, ltr: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(color.copy(alpha = 0.14f))
+            .border(1.dp, color.copy(alpha = 0.30f), RoundedCornerShape(50))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = text,
+            color = color,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            style = if (ltr) TextStyle(textDirection = TextDirection.Ltr) else TextStyle.Default
+        )
+    }
+}
+
+@Composable
+private fun HeroAction(
+    text: String,
+    icon: ImageVector,
+    color: Color,
+    container: Color,
+    border: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(container)
+            .border(1.dp, border, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 11.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(15.dp))
+        Spacer(Modifier.width(5.dp))
+        Text(
+            text = text,
+            color = color,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false
+        )
+    }
+}
+
+@Composable
+private fun HeroMethodButton(
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                brush = if (selected) {
+                    Brush.verticalGradient(listOf(Color(0xFF14B8A6), Color(0xFF0F766E)))
+                } else {
+                    SolidColor(Color(0x80000000))
+                },
+                shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                1.dp,
+                if (selected) Color(0x8014B8A6) else Color.Transparent,
+                RoundedCornerShape(12.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = if (selected) Color.White else Color.White.copy(alpha = 0.50f),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false
+        )
     }
 }
 

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -83,6 +84,7 @@ import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.components.KashidaHeader
 import com.karrar.amsakiah.ui.components.SkyArc
 import com.karrar.amsakiah.ui.components.WeatherEffects
+import com.karrar.amsakiah.ui.theme.KararIcons
 import com.karrar.amsakiah.ui.theme.KararTokens
 import com.karrar.amsakiah.ui.theme.SkyTheme
 import kotlinx.datetime.DatePeriod
@@ -194,6 +196,10 @@ fun TodayScreen(
             .padding(contentPadding)
     ) {
         val compact = maxHeight < 620.dp
+        // على الشاشات العريضة (تابلت/حاسوب/مطوية مفتوحة) نُبقي الخلفية السماوية
+        // full-bleed لكن نُوسّط مسرح اليوم بعرض هاتف مريح حتى لا يتمدد القوس
+        // والعدّاد أفقيًا بلا داعٍ. على الهاتف stageWidth = maxWidth كما هو.
+        val stageWidth = minOf(maxWidth, KararTokens.Size.todayStageMaxWidth)
 
         // تأثيرات الطقس خلف كل المحتوى (z-index 1 في المرجع).
         WeatherEffects(
@@ -202,7 +208,12 @@ fun TodayScreen(
             modifier = Modifier.matchParentSize()
         )
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .width(stageWidth)
+                .fillMaxHeight()
+        ) {
             TodayHeader(
                 settings = settings,
                 weather = weather,
@@ -308,7 +319,7 @@ private fun TodayHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = horizontalPadding, end = horizontalPadding, top = if (tiny) 8.dp else 12.dp),
+                .padding(start = horizontalPadding, end = horizontalPadding, top = if (maxWidth < 600.dp) 10.dp else 20.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
@@ -532,11 +543,11 @@ private fun CountdownSection(
             )
         }
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp)
         ) {
             CountdownDigit(hours, compact)
             CountdownColon(compact)
@@ -545,10 +556,10 @@ private fun CountdownSection(
             CountdownDigit(seconds, compact)
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(dotsCount) { index ->
@@ -806,7 +817,7 @@ private fun PrayerCard(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
-                imageVector = prayerIcon(id),
+                imageVector = KararIcons.prayer(id),
                 contentDescription = null,
                 tint = if (active) Color(0xFFFFD700) else Color.White.copy(alpha = 0.50f),
                 modifier = Modifier.size(11.dp)
@@ -853,14 +864,6 @@ private fun PrayerCard(
             )
         }
     }
-}
-
-private fun prayerIcon(id: String): ImageVector = when (id) {
-    "imsak", "isha", "midnight" -> Icons.Filled.NightsStay
-    "fajr", "sunrise" -> Icons.Filled.WbTwilight
-    "dhuhr", "asr" -> Icons.Filled.WbSunny
-    "sunset", "maghrib" -> Icons.Filled.WbTwilight
-    else -> Icons.Filled.WbSunny
 }
 
 /** توسيط عنصر داخل LazyRow بدقة عبر فرق المركزين (يدعم RTL). */
