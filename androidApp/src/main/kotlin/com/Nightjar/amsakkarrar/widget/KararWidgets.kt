@@ -210,10 +210,10 @@ private fun WidgetKashida(snapshot: PrayerSnapshot, fontSize: Int = 26) {
 
 /** شريط تقدّم بشكل حبة دواء (بديل Pill في HTML). */
 @Composable
-private fun PillProgress(fraction: Float, isDaytime: Boolean) {
+private fun PillProgress(fraction: Float, isDaytime: Boolean, inset: Dp = 18.dp) {
     val f = fraction.coerceIn(0f, 1f)
-    // Glance لا يدعم defaultWeight(fraction)؛ نحسب العرض الفعلي من LocalSize.
-    val available = (LocalSize.current.width - 36.dp).coerceAtLeast(1.dp)
+    // Glance لا يدعم fillMaxWidth(fraction)؛ نحسب العرض من حجم الودجت ناقص الحاشية الفعلية.
+    val available = (LocalSize.current.width - inset * 2).coerceAtLeast(1.dp)
     val fillWidth = (available * f).coerceAtLeast(0.dp)
     Box(
         modifier = GlanceModifier
@@ -371,7 +371,7 @@ private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWi
             }
             WidgetTier.COMPACT -> {
                 Spacer(GlanceModifier.height(3.dp))
-                PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+                PillProgress(snapshot.periodProgress, snapshot.isDaytime, inset = 10.dp)
                 Spacer(GlanceModifier.height(6.dp))
                 PrayerGridRow(gridEntries.filter { it.id == "fajr" || it.id == "maghrib" || it.id == "isha" }, snapshot.nextLabel, compact = true)
             }
@@ -491,7 +491,7 @@ private fun CountdownWidgetContent(context: Context, snapshot: PrayerSnapshot, a
                 )
             }
             Spacer(GlanceModifier.height(5.dp))
-            PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+            PillProgress(snapshot.periodProgress, snapshot.isDaytime, inset = tierPadding(tier) + 1.dp)
         } else {
             if (tier != WidgetTier.COMPACT) {
                 WidgetKashida(snapshot, fontSize = if (tier == WidgetTier.MEDIUM) 16 else 19)
@@ -503,7 +503,7 @@ private fun CountdownWidgetContent(context: Context, snapshot: PrayerSnapshot, a
             )
             if (tier == WidgetTier.COMPACT) {
                 Spacer(GlanceModifier.height(3.dp))
-                PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+                PillProgress(snapshot.periodProgress, snapshot.isDaytime, inset = 10.dp)
             }
             Spacer(GlanceModifier.height(3.dp))
             Text(
@@ -574,7 +574,7 @@ private fun HijriWidgetContent(context: Context, snapshot: PrayerSnapshot, appWi
                 style = TextStyle(color = color(TextSecondary), fontSize = 8.sp)
             )
             Spacer(GlanceModifier.height(5.dp))
-            PillProgress(snapshot.dayProgress, snapshot.isDaytime)
+            PillProgress(snapshot.dayProgress, snapshot.isDaytime, inset = tierPadding(tier) + 1.dp)
         }
     }
 }
@@ -720,7 +720,7 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
         }
         if (tier == WidgetTier.LARGE) {
             Spacer(GlanceModifier.height(4.dp))
-            PillProgress(snapshot.periodProgress, snapshot.isDaytime)
+            PillProgress(snapshot.periodProgress, snapshot.isDaytime, inset = tierPadding(tier) + 1.dp)
         }
     }
 }

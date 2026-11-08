@@ -99,7 +99,8 @@ private fun TasbihWidgetContent(context: Context, settings: AppSettings, appWidg
     val card = Color(WidgetStyleStore.softBackgroundArgb(context, appWidgetId))
     val size = LocalSize.current
     val compact = size.width < 185.dp || size.height < 150.dp
-    val available = (size.width - if (compact) 18.dp else 24.dp).coerceAtLeast(1.dp)
+    val pad = if (compact) 8.dp else 12.dp
+    val available = (size.width - (pad + 1.dp) * 2).coerceAtLeast(1.dp)
     val fillWidth = (available * progress).coerceAtLeast(0.dp)
     val circle = if (compact) 66.dp else if (size.height < 235.dp) 84.dp else 98.dp
 
