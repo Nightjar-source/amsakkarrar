@@ -33,6 +33,7 @@ object PrayerNotifier {
             )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setTimeoutAfter(30 * 60 * 1000L)
             .setContentIntent(contentIntent)
             .build()
 
@@ -46,6 +47,8 @@ object PrayerNotifier {
     fun showAdhanArrived(context: Context, prayerLabel: String) {
         NotificationChannels.createAll(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        // بطاقة وصول جديدة تُلغي أي بطاقة احتياطية قديمة من صلاة سابقة.
+        clearFallback(context)
         val snapshot = runCatching { PrayerSnapshotLoader.load(context) }.getOrNull()
 
         val entries = snapshot?.entries.orEmpty()
@@ -83,11 +86,21 @@ object PrayerNotifier {
             currentTime = current,
             nextLabel = next?.label ?: snapshot?.afterLabel ?: "",
             nextTime = next?.time ?: snapshot?.afterTime ?: "--:--",
-            channel = NotificationChannels.ADHAN_FALLBACK
+            channel = NotificationChannels.ADHAN_FALLBACK,
+            // لا مهلة: قد يكون ملف الأذان طويلًا، ويجب ألا يُزال أثناء الصوت.
+            timeoutAfterMs = 0L
         )
         // بطاقة واحدة فقط: أزل بطاقة الوصول الصامتة قبل نشر نسخة الصوت الاحتياطية.
         runCatching { manager.cancel(NotificationDesign.PRAYER_ID) }
-        runCatching { manager.notify(NotificationDesign.PRAYER_ID + 1, notification) }
+        runCatching { manager.notify(NotificationDesign.FALLBACK_ID, notification) }
+    }
+
+    /** إزالة بطاقة الصوت الاحتياطية عند نجاح تشغيل الخدمة أو دخول صلاة جديدة. */
+    fun clearFallback(context: Context) {
+        runCatching {
+            context.getSystemService(NotificationManager::class.java)
+                ?.cancel(NotificationDesign.FALLBACK_ID)
+        }
     }
 
     const val REMINDER_ID = 3001

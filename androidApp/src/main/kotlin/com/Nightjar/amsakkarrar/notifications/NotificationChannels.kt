@@ -17,8 +17,16 @@ object NotificationChannels {
     /** قناة احتياطية تحمل صوت adhan.mp3 نفسه إن تعذّر تشغيل AdhanService. */
     const val ADHAN_FALLBACK = "adhan_fallback_sound"
 
+    /** يُنشأ مرة واحدة لكل عملية؛ إعادة الإنشاء كل تحديث كانت تستهلك Binder بلا داعٍ. */
+    @Volatile
+    private var created = false
+
     fun createAll(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        if (created) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            created = true
+            return
+        }
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
 
         val adhan = NotificationChannel(ADHAN, "الأذان", NotificationManager.IMPORTANCE_HIGH).apply {
@@ -69,5 +77,6 @@ object NotificationChannels {
         }
 
         manager.createNotificationChannels(listOf(adhan, reminder, live, playback, fallback))
+        created = true
     }
 }

@@ -43,6 +43,10 @@ class AppState {
     var lastLocationError: String? by mutableStateOf(null)
         private set
 
+    /** خدمة الموقع معطّلة في إعدادات النظام — تُعرض معها زر «تشغيل الموقع». */
+    var locationServiceDisabled: Boolean by mutableStateOf(false)
+        private set
+
     /**
      * مزامنة التغييرات القادمة من خارج الواجهة (ودجت المسبحة، الإجراءات السريعة).
      * عند تعديل الإعدادات من الودجت تُحدَّث حالة التطبيق فورًا دون إعادة تشغيل.
@@ -111,10 +115,16 @@ class AppState {
         if (locating) return
         locating = true
         lastLocationError = null
+        locationServiceDisabled = false
         try {
             val provider = createLocationProvider()
             if (!provider.isAvailable()) {
                 lastLocationError = "خدمة الموقع غير متوفرة على هذا الجهاز"
+                return
+            }
+            if (!provider.isLocationEnabled()) {
+                locationServiceDisabled = true
+                lastLocationError = "خدمة الموقع معطّلة — شغّلها من إعدادات الجهاز"
                 return
             }
             if (!provider.hasPermission()) {
@@ -183,7 +193,13 @@ class AppState {
         }
     }
 
+    /** يفتح إعدادات خدمة الموقع في النظام (أندرويد) عقب كشف تعطيلها. */
+    fun openSystemLocationSettings() {
+        runCatching { createLocationProvider().openLocationSettings() }
+    }
+
     fun clearLocationError() {
         lastLocationError = null
+        locationServiceDisabled = false
     }
 }

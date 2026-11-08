@@ -26,8 +26,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,9 +82,11 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
         }
     }
 
-    DisposableEffect(Unit) {
+    // البوصلة تعمل في المقدمة فقط: عند الخلفية/إطفاء الشاشة يتوقف المستشعر
+    // فورًا، فلا تستهلك بطارية في الخلفية.
+    LifecycleResumeEffect(available) {
         if (available) compass.start { heading = it }
-        onDispose { compass.stop() }
+        onPauseOrDispose { compass.stop() }
     }
 
     val kaabaBearing = remember(settings.latitude, settings.longitude) {

@@ -76,19 +76,133 @@ $countryAr = @{
     'YE'='اليمن'; 'YT'='مايوت'; 'ZA'='جنوب أفريقيا'; 'ZM'='زامبيا'; 'ZW'='زيمبابوي'
 }
 
-$arabicOnly = [regex]'^[\u0600-\u06FF\u0640\u0670\s\-\.\'’]+$'
+$arabicOnly = [regex]'^[\u0600-\u06FF\u0640\u0670\s\-\.\u0027\u2019]+$'
 $hasArabic = [regex]'[\u0600-\u06FF]'
+
+# أحرف كردية/فارسية/أردية لا تُستخدم في العربية الفصحى.
+# GeoNames يخلط بينها وبين العربية في البدائل؛ نقدّم الاسم العربي النظيف.
+$nonArabicScript = [regex]'[ەێۆڕڵڤپچژگکیہٹڈڑںے]'
+
+# «كة» الملتصقة بحرف تالٍ خطأ إملائي شائع في GeoNames (كةربالا بدل كربلاء).
+$suspiciousArabic = [regex]'كة[\u0600-\u06FF]'
+
+# تصحيحات أسماء عربية مشوّهة — المفتاح: معرّف GeoNames.
+# تُطبَّق بعد اختيار الاسم من البدائل، فتبقى ثابتة مهما تغيّرت قائمة البدائل.
+$nameFixesById = @{
+    '94824'    = 'كربلاء'          # Karbala — كانت «كةربالا»
+    '98717'    = 'الرمادي'         # Ramadi — كانت «الرمادى»
+    '98530'    = 'السماوة'         # As Samawah — كانت «السماوه»
+    '13631407' = 'أبو الخصيب'      # Abu al-Khasib
+    '447022'   = 'حاجياوة'         # Hajiawa
+    '13680586' = 'شيلاديز'         # Sheladiz
+    '99759'    = 'الدجيل'          # Ad Dujayl
+    '99439'    = 'الفهود'          # Nahiyat al Fuhud
+    '12494059' = 'الزوية'          # AlZwya
+    '92511'    = 'قلعة سكر'        # Qal'at Sukkar — كانت «قلعة سکر»
+    '91696'    = 'صلاح الدين'      # Pirmam / Salahaddin — كانت «سەلاحەدين»
+    '445694'   = 'عقرة'            # Akre — كانت «بيوك»
+    '94298'    = 'كفري'            # Kifri — كانت «كفرى»
+    '9253107'  = 'ديرلوك'          # Dereluk — كانت «دیرلوك منطقه نهیلي»
+    '387345'   = 'أبو غرق'         # Abu Gharaq — كانت «ابي غرق»
+    '446208'   = 'كسنزان'          # Kasnazan — كانت «كستران ستي اسماعيل»
+    '290187'   = 'مدينة عيسى'      # Madinat Isa (البحرين)
+    '166716'   = 'مخيم اليرموك'    # مخيم اليرموك (سوريا)
+    '281577'   = 'طولكرم'          # Tulkarm (فلسطين)
+    '361058'   = 'الإسكندرية'      # Alexandria (مصر)
+    '2472431'  = 'بنقردان'         # Ben Gardane (تونس)
+    '2490098'  = 'معسكر'           # Mascara (الجزائر)
+    '368277'   = 'ربك'             # Rabak (السودان)
+    '364933'   = 'أم كدادة'        # Umm Kaddadah (السودان)
+    '54225'    = 'مركة'            # Marka (الصومال)
+    '49636'    = 'يغوري'           # Yagoori (الصومال)
+    '56505'    = 'أسكوشوبان'       # Iskushuban (الصومال)
+}
+
+# مدن كبرى بقي اسمها لاتينيًا لعدم وجود بديل عربي في GeoNames.
+# المفتاح: رمز الدولة + الاسم المختار حاليًا.
+$nameFixes = @{
+    'SA|Sulţānah'                  = 'السلطانة'
+    'SA|Hafar Al-Batin'            = 'حفر الباطن'
+    'SA|Unaizah'                   = 'عنيزة'
+    'AE|Business Bay'              = 'الخليج التجاري'
+    'AE|Dubai Investments Park'    = 'مجمع دبي للاستثمار'
+    'AE|International City'        = 'المدينة الدولية'
+    'AE|Al Majaz'                  = 'المجاز'
+    'QA|Lusail'                    = 'لوسيل'
+    'OM|Şaḩam'                     = 'صحم'
+    "LB|Ra’s Bayrūt"               = 'رأس بيروت'
+    'EG|Madīnat an Naşr'           = 'مدينة نصر'
+    'EG|Al Khuşūş'                 = 'الخصوص'
+    'EG|Kom Ombo'                  = 'كوم أمبو'
+    'EG|6th of October City'       = 'مدينة السادس من أكتوبر'
+    'EG|Al Ḩawāmidīyah'            = 'الحوامدية'
+    'EG|Sinnūris'                  = 'سنورس'
+    'LY|Qaşr Bin Ghashīr'          = 'قصر بن غشير'
+    "LY|Tājūrā’"                   = 'تاجوراء'
+    'TN|Sīdī Ḥusayn'               = 'سيدي حسين'
+    'TN|Sakiet ed Daier'           = 'ساقية الدائر'
+    'TN|El Mourouj'                = 'المروج'
+    'TN|Sakiet ez Zit'             = 'ساقية الزيت'
+    'DZ|El Eulma'                  = 'العلمة'
+    'DZ|Aïn Beïda'                 = 'عين البيضاء'
+    'MA|Temara'                    = 'تمارة'
+    'MA|Salé Al Jadida'            = 'سلا الجديدة'
+    'MA|Ait Melloul'               = 'أيت ملول'
+    'MA|Dar Bouazza'               = 'دار بوعزة'
+    'MA|Fès al Bali'               = 'فاس البالي'
+    'MA|Berrechid'                 = 'برشيد'
+    'MA|Khemisset'                 = 'الخميسات'
+    'MA|Inezgane'                  = 'إنزكان'
+    'MA|Ksar El Kebir'             = 'القصر الكبير'
+    'MA|Taourirt'                  = 'تاوريرت'
+    'MA|Bouskoura'                 = 'بوسكورة'
+    'MA|Al Fqih Ben Çalah'         = 'الفقيه بن صالح'
+    'MA|Dchira El Jihadia'         = 'الدشيرة الجهادية'
+    'MA|El Kelaa des Srarhna'      = 'قلعة السراغنة'
+    'MA|Sidi Slimane'              = 'سيدي سليمان'
+    'SD|El Geneina Fort'           = 'الجنينة'
+    'SD|Al Manāqil'                = 'المناقل'
+    'SO|El Dibir'                  = 'الديبير'
+    'SO|Ruqi'                      = 'روقي'
+    'SO|Cabudwaaq'                 = 'عبد الواق'
+}
+
+# صفوف مكررة/غير مناسبة من GeoNames (نفس المدينة بمعرّفين).
+$dropIds = @('10303650', '98822')   # Simele مكرر، وAqrah مركز مكرر
+
+# أسماء المحافظات العراقية بالعربية (GeoNames يستخدم أسماء إنجليزية).
+$admin1Ar = @{
+    'IQ.01' = 'الأنبار';     'IQ.02' = 'البصرة';      'IQ.03' = 'المثنى'
+    'IQ.04' = 'القادسية';    'IQ.05' = 'السليمانية';  'IQ.06' = 'بابل'
+    'IQ.07' = 'بغداد';       'IQ.08' = 'دهوك';        'IQ.09' = 'ذي قار'
+    'IQ.10' = 'ديالى';       'IQ.11' = 'أربيل';       'IQ.12' = 'كربلاء'
+    'IQ.13' = 'كركوك';       'IQ.14' = 'ميسان';       'IQ.15' = 'نينوى'
+    'IQ.16' = 'واسط';        'IQ.17' = 'النجف';       'IQ.18' = 'صلاح الدين'
+    'IQ.19' = 'حلبجة'
+}
 
 function Get-ArabicName([string]$alts) {
     if ([string]::IsNullOrWhiteSpace($alts)) { return $null }
+    $firstAny = $null      # أول بديل مقبول حتى لو خطه غير عربي
+    $firstClean = $null    # أول بديل عربي نظيف
+    $hehEnd = $null        # بديل ينتهي بـ«ه» (قد يكون «ة» الصحيحة)
     foreach ($token in ($alts -split ',')) {
         $t = $token.Trim()
         if ($t.Length -lt 2 -or $t.Length -gt 40) { continue }
         if (-not $hasArabic.IsMatch($t)) { continue }
         if (-not $arabicOnly.IsMatch($t)) { continue }
-        return $t
+        if ($nonArabicScript.IsMatch($t) -or $suspiciousArabic.IsMatch($t)) {
+            if ($null -eq $firstAny) { $firstAny = $t }
+            continue
+        }
+        if ($null -eq $firstClean) { $firstClean = $t }
+        # التاء المربوطة هي الصيغة الأرجح لأسماء المدن العربية.
+        if ($t.EndsWith([string][char]0x0629)) { return $t }
+        if ($null -eq $hehEnd -and $t.EndsWith([string][char]0x0647)) { $hehEnd = $t }
     }
-    return $null
+    if ($null -ne $hehEnd) { return $hehEnd }
+    if ($null -ne $firstClean) { return $firstClean }
+    return $firstAny
 }
 
 # ---------- أسماء المحافظات/الولايات ----------
@@ -102,8 +216,12 @@ if (Test-Path $Admin1Source) {
     Write-Host "تنبيه: ملف المحافظات غير موجود — سيتم تخطيها"
 }
 
+$jsonEscapeNeeded = [regex]'["\\\x00-\x1F]'
+
 function Json-Escape([string]$s) {
     if ($null -eq $s) { return '' }
+    # الأغلبية الساحقة من الأسماء لا تحتاج ترميزًا — الفحص السريع يوفّر وقتًا هائلًا.
+    if (-not $jsonEscapeNeeded.IsMatch($s)) { return $s }
     $sb = New-Object System.Text.StringBuilder($s.Length + 8)
     foreach ($ch in $s.ToCharArray()) {
         switch ($ch) {
@@ -133,13 +251,22 @@ $list = New-Object System.Collections.Generic.List[object]
 # ترتيب حسب السكان لتكون أهم المدن أولًا
 foreach ($r in ($rows | Sort-Object { [long]$_.pop } -Descending)) {
     $cc = $r.cc
+    if ($dropIds -contains $r.id) { continue }
     $country = $countryAr[$cc]
     if (-not $country) { $country = $cc }
     $ar = Get-ArabicName $r.alts
     if (-not $ar) { $ar = $r.name }
-    $region = if ($r.adm1 -and $admin1Names.ContainsKey("$cc.$($r.adm1)")) { $admin1Names["$cc.$($r.adm1)"] } else { "" }
+    if ($nameFixesById.ContainsKey($r.id)) {
+        $ar = $nameFixesById[$r.id]
+    } else {
+        $fixKey = "$cc|$ar"
+        if ($nameFixes.ContainsKey($fixKey)) { $ar = $nameFixes[$fixKey] }
+    }
+    $regionKey = "$cc.$($r.adm1)"
+    $region = if ($r.adm1 -and $admin1Names.ContainsKey($regionKey)) { $admin1Names[$regionKey] } else { "" }
+    if ($admin1Ar.ContainsKey($regionKey)) { $region = $admin1Ar[$regionKey] }
     if ($r.adm1) {
-        $key1 = "$cc.$($r.adm1)"
+        $key1 = $regionKey
         $pop = [long]$r.pop
         if (-not $provinceAnchor.ContainsKey($key1) -or $provinceAnchor[$key1].p -lt $pop) {
             $provinceAnchor[$key1] = [pscustomobject]@{
@@ -165,6 +292,7 @@ if (Test-Path $Admin1Source) {
     foreach ($code in $admin1Names.Keys) {
         $name = $admin1Names[$code]
         if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        if ($admin1Ar.ContainsKey($code)) { $name = $admin1Ar[$code] }
         $anchor = $provinceAnchor[$code]
         if ($null -eq $anchor) { continue }
         $list.Add([pscustomobject]@{

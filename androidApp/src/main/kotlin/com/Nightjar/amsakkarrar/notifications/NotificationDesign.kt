@@ -29,6 +29,7 @@ object NotificationDesign {
 
     const val LIVE_ID = 3100
     const val PRAYER_ID = 3101
+    const val FALLBACK_ID = 3102
 
     /** Android 16 (Baklava) — أول إصدار يدعم الإشعارات الحية المروَّجة */
     private const val API_LIVE_UPDATES = 36
@@ -39,6 +40,19 @@ object NotificationDesign {
         Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_MAIN
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        },
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    /**
+     * يُستدعى عند سحب الإشعار الحي أو إخفائه من النظام.
+     * بدونه يعيد التحديث الدوري نشره كل 15 دقيقة — وهو ما يزعج المستخدم.
+     */
+    private fun liveDismissIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        901,
+        Intent(context, LiveDismissReceiver::class.java).apply {
+            action = LiveDismissReceiver.ACTION_DISMISS
         },
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
@@ -95,6 +109,7 @@ object NotificationDesign {
             .setCategory(Notification.CATEGORY_STOPWATCH)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(contentIntent(context))
+            .setDeleteIntent(liveDismissIntent(context))
             .setStyle(progressStyle)
             .setRequestPromotedOngoing(true)
             .build()
@@ -138,7 +153,9 @@ object NotificationDesign {
             .setCustomContentView(views)
             .setCustomBigContentView(views)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setOngoing(true)
+            // غير مستمر: يمكن سحبه وإخفاؤه من النظام؛ وLiveDismissReceiver
+            // يمنع إعادة نشره حتى دخول وقت الصلاة القادم.
+            .setOngoing(false)
             .setOnlyAlertOnce(true)
             .setSilent(true)
             .setShowWhen(true)
@@ -150,6 +167,7 @@ object NotificationDesign {
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(contentIntent(context))
+            .setDeleteIntent(liveDismissIntent(context))
             .build()
     }
 
@@ -169,7 +187,8 @@ object NotificationDesign {
         currentTime: String,
         nextLabel: String,
         nextTime: String,
-        channel: String = NotificationChannels.ADHAN
+        channel: String = NotificationChannels.ADHAN,
+        timeoutAfterMs: Long = 2 * 60 * 60 * 1000L
     ): Notification {
         val views = RemoteViews(context.packageName, R.layout.notification_prayer)
         views.setTextViewText(R.id.prayer_name, prayerLabel)
@@ -185,6 +204,7 @@ object NotificationDesign {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
+            .setTimeoutAfter(timeoutAfterMs)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setColor(0xFFFFD700.toInt())
             .setColorized(true)

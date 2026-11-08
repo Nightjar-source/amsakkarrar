@@ -80,14 +80,13 @@
             </intent-filter>
         </receiver>
 
-        <!-- التحديث الدوري للإشعار الحي والودجت (كل 15 دقيقة) -->
+        <!-- يُستدعى عند سحب الإشعار الحي (deleteIntent) لتسجيل الإخفاء -->
         <receiver
-            android:name=".notifications.LiveUpdateReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.Nightjar.amsakkarrar.LIVE_REFRESH" />
-            </intent-filter>
-        </receiver>
+            android:name=".notifications.LiveDismissReceiver"
+            android:exported="false" />
+
+        <!-- التحديث الدوري للإشعار الحي والودجت يتم عبر WorkManager فقط
+             (WidgetRefreshWorker) — لا مستقبل منبهات متكررة. -->
 
         <!-- ================= الويدجت (4) ================= -->
 

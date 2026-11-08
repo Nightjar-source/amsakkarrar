@@ -3,6 +3,7 @@ package com.karrar.amsakiah.core.location
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -11,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import com.karrar.amsakiah.core.AndroidAppContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -35,6 +37,30 @@ actual class LocationProvider {
         (ctx.getSystemService(Context.LOCATION_SERVICE) as? LocationManager)
             ?.allProviders?.isNotEmpty() == true
     } ?: false
+
+    actual fun isLocationEnabled(): Boolean {
+        val ctx = contextOrNull() ?: return false
+        val manager = ctx.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            manager.isLocationEnabled
+        } else {
+            @Suppress("DEPRECATION")
+            runCatching {
+                manager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                    manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+            }.getOrDefault(false)
+        }
+    }
+
+    actual fun openLocationSettings() {
+        val ctx = contextOrNull() ?: return
+        runCatching {
+            ctx.startActivity(
+                Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
 
     actual fun hasPermission(): Boolean {
         val ctx = contextOrNull() ?: return false

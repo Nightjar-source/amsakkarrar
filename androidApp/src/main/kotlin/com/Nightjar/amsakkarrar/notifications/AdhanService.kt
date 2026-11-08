@@ -56,7 +56,12 @@ class AdhanService : Service() {
 
         // إنشاء القنوات مضمون حتى لو بدأت الخدمة قبل فتح التطبيق.
         NotificationChannels.createAll(this)
-        startForegroundSafely(prayer, preview)
+        if (!startForegroundSafely(prayer, preview)) {
+            // بلا خدمة أمامية قد يقتل النظام الصوت بلا إشعار — الأفضل الاحتياط.
+            PrayerNotifier.showAdhanFallback(this, prayer)
+            stopPlayback()
+            return START_NOT_STICKY
+        }
 
         if (vibrate && !preview) startVibration()
         startPlayback(prayer)
@@ -99,11 +104,10 @@ class AdhanService : Service() {
         }
     }
 
-    private fun startForegroundSafely(prayer: String, isPreview: Boolean) {
+    private fun startForegroundSafely(prayer: String, isPreview: Boolean): Boolean =
         runCatching {
             startForeground(NOTIFICATION_ID, buildNotification(prayer, isPreview))
-        }
-    }
+        }.isSuccess
 
     private fun requestAudioFocus() {
         runCatching {
@@ -220,20 +224,33 @@ class AdhanService : Service() {
                     .bigText("حان الآن موعد $prayer. الله أكبر — تقبل الله طاعتكم.")
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
+            // غير مستمر: يمكن سحبه. سحبه يستدعي deleteIntent فيوقف الصوت
+            // والخدمة معًا — بدل أن يبقى الإشعار عالقًا أو الصوت بلا تحكم.
+            .setOngoing(false)
+            .setOnlyAlertOnce(true)
             .setSilent(true)
             .setContentIntent(openIntent)
+            .setDeleteIntent(stopIntent)
             .addAction(R.drawable.ic_notif_small, "إيقاف الأذان", stopIntent)
             .build()
     }
 
     override fun onDestroy() {
         PlaybackCoordinator.unregister(audioOwner)
+        runCatching { vibrator?.cancel() }
+        vibrator = null
         runCatching {
-            player?.release()
+            player?.let {
+                if (it.isPlaying) it.stop()
+                it.release()
+            }
             player = null
         }
         abandonAudioFocus()
+        // شبكة أمان: لا يبقى إشعار تشغيل بعد تدمير الخدمة بأي سبب.
+        runCatching {
+            getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
+        }
         super.onDestroy()
     }
 

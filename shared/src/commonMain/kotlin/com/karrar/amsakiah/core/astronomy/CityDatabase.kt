@@ -83,19 +83,35 @@ object CityDatabase {
         return result
     }
 
-    /** القائمة مرتبة حسب عدد السكان (لعرض أهم المدن أولًا) */
-    suspend fun popular(limit: Int = 4000): List<OfflineCity> {
+    /**
+     * القائمة مرتبة حسب عدد السكان (لعرض أهم المدن أولًا).
+     *
+     * عند تمرير دولة المستخدم تُعرض مدنها أولًا ثم بقية العالم،
+     * لأن الترتيب العالمي يبدأ بمدن ضخمة لا تخص المستخدم (الصين، الهند…).
+     */
+    suspend fun popular(limit: Int = 4000, preferredCountry: String? = null): List<OfflineCity> {
         load()
-        return sortedByPop.orEmpty().take(limit)
+        val all = sortedByPop.orEmpty()
+        val country = preferredCountry?.trim()
+        if (country.isNullOrEmpty()) return all.take(limit)
+        val local = all.filter { it.country == country }
+        val rest = all.filter { it.country != country }
+        return (local + rest).take(limit)
     }
 
-    /** أقرب مدينة لإحداثيات معينة — يعمل أوفلاين بالكامل */
+    /**
+     * أقرب مدينة لإحداثيات معينة — يعمل أوفلاين بالكامل.
+     *
+     * تُستبعد صفوف المحافظات (`k=1`) لأن إحداثياتها هي إحداثيات مركز
+     * أكبر مدينة فيها؛ ضمّها يجعل GPS يختار «محافظة» بدل المدينة نفسها.
+     */
     suspend fun nearest(lat: Double, lon: Double): NearbyCity? {
         val cities = load()
         if (cities.isEmpty()) return null
-        var best = cities[0]
+        var best: OfflineCity? = null
         var bestDist = Double.MAX_VALUE
         for (city in cities) {
+            if (city.isProvince) continue
             // فحص سريع لتقليل الحسابات
             val dLat = abs(city.lat - lat)
             if (dLat * 111.0 > bestDist) continue
@@ -105,14 +121,16 @@ object CityDatabase {
                 best = city
             }
         }
-        return NearbyCity(best, bestDist)
+        val found = best ?: return null
+        return NearbyCity(found, bestDist)
     }
 
     /** بحث نصي بالعربية أو الإنجليزية */
-    suspend fun search(query: String, limit: Int = 40): List<OfflineCity> {
+    suspend fun search(query: String, limit: Int = 40, preferredCountry: String? = null): List<OfflineCity> {
         val q = normalize(query).trim()
         if (q.length < 2) return emptyList()
         val all = load()
+        val country = preferredCountry?.trim().orEmpty()
         return all.asSequence()
             .filter {
                 normalize(it.name).contains(q) ||
@@ -120,6 +138,7 @@ object CityDatabase {
                     normalize(it.region).contains(q)
             }
             .sortedWith(compareByDescending<OfflineCity> { normalize(it.name).startsWith(q) }
+                .thenByDescending { country.isNotEmpty() && it.country == country }
                 .thenByDescending { it.population })
             .take(limit)
             .toList()

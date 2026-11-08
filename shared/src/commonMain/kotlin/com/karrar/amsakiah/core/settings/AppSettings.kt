@@ -14,6 +14,13 @@ data class AppSettings(
     val latitude: Double = 32.6160,
     val longitude: Double = 44.0249,
     val timeZoneId: String = "Asia/Baghdad",
+    /**
+     * التوقيت الصيفي:
+     * - `auto`: قاعدة المنطقة لكل تاريخ (الافتراضي، يعمل في كل مدن العالم).
+     * - `summer`: إجبار إزاحة الصيف (DST) طوال السنة.
+     * - `winter`: إجبار التوقيت الشتوي/القياسي طوال السنة.
+     */
+    val dstMode: String = "auto",
     val useGps: Boolean = false,
     /** مصدر الموقع: manual (اختيار يدوي) / gps (إحداثيات الجهاز) / ip (استشعار عبر IP) */
     val locationSource: String = "manual",

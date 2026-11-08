@@ -17,7 +17,6 @@ import com.karrar.amsakiah.core.audio.SoundTestBridge
 import com.karrar.amsakiah.core.state.SettingsChangeBus
 import com.Nightjar.amsakkarrar.notifications.AdhanService
 import com.Nightjar.amsakkarrar.notifications.LiveNotificationManager
-import com.Nightjar.amsakkarrar.notifications.LiveUpdateScheduler
 import com.Nightjar.amsakkarrar.notifications.NotificationChannels
 import com.Nightjar.amsakkarrar.notifications.PrayerAlarmScheduler
 import com.Nightjar.amsakkarrar.widget.WidgetPinHelper
@@ -64,9 +63,8 @@ class MainActivity : ComponentActivity() {
         WidgetPinHelper.install(this)
         installSoundTestBridge()
         PrayerAlarmScheduler(this).rescheduleAll()
-        LiveUpdateScheduler(this).schedule()
         WidgetUpdater.updateAll(this)
-        WidgetRefreshWorker.ensurePeriodic(this)
+        WidgetRefreshWorker.syncPeriodic(this)
         SettingsChangeBus.addListener(settingsChangeListener)
 
         requestNotificationPermissionIfNeeded()
@@ -106,7 +104,7 @@ class MainActivity : ComponentActivity() {
                 }.isSuccess
             },
             showLive = {
-                LiveNotificationManager.update(this)
+                LiveNotificationManager.update(this, force = true)
                 true
             },
             isSupported = true

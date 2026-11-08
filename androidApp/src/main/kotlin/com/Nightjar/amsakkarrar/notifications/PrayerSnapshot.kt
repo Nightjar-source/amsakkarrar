@@ -59,8 +59,31 @@ data class PrayerSnapshot(
 
 object PrayerSnapshotLoader {
 
+    /**
+     * كاش قصير (10 ثوانٍ): تحديث الودجتات السبعة يطلب اللقطة نفسها سبع
+     * مرات متتالية، وحساب الهجري/الأوقات ليس مجانيًا. المفتاح هو الإعدادات
+     * نفسها، فأي تغيير من المستخدم يُبطل الكاش فورًا.
+     */
+    private const val CACHE_MS = 10_000L
+    private var cachedAt = 0L
+    private var cachedSettings: AppSettings? = null
+    private var cached: PrayerSnapshot? = null
+
     fun load(context: Context): PrayerSnapshot {
         val settings = SettingsLoader.load(context)
+        val nowMs = System.currentTimeMillis()
+        val hit = cached
+        if (hit != null && cachedSettings == settings && nowMs - cachedAt in 0..CACHE_MS) {
+            return hit
+        }
+        val snapshot = build(settings)
+        cached = snapshot
+        cachedSettings = settings
+        cachedAt = nowMs
+        return snapshot
+    }
+
+    private fun build(settings: AppSettings): PrayerSnapshot {
         val zone = PrayerCalculator.zoneOf(settings)
         val now = Clock.System.now().toLocalDateTime(zone)
         val today = now.date

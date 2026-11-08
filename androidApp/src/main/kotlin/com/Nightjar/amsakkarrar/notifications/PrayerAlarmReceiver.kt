@@ -11,6 +11,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val prayerLabel = intent.getStringExtra(EXTRA_PRAYER) ?: return
         val settings = SettingsLoader.load(context)
+        var forceLive = false
 
         when (intent.action) {
             ACTION_ADHAN -> {
@@ -28,7 +29,14 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 }.isSuccess
                 // إن منع النظام تشغيل الخدمة الأمامية، تعمل قناة الصوت الاحتياطية
                 // بالملف المخصص نفسه بدل الصمت.
-                if (!started) PrayerNotifier.showAdhanFallback(context, prayerLabel)
+                if (started) {
+                    PrayerNotifier.clearFallback(context)
+                } else {
+                    PrayerNotifier.showAdhanFallback(context, prayerLabel)
+                }
+                // دخول وقت الصلاة يبدأ فترة جديدة: أعد نشر الإشعار الحي
+                // حتى لو كان المستخدم قد سحبه في الفترة السابقة.
+                forceLive = true
             }
 
             ACTION_REMINDER -> {
@@ -36,7 +44,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             }
         }
 
-        runCatching { LiveNotificationManager.update(context) }
+        runCatching { LiveNotificationManager.update(context, force = forceLive) }
         // تحديث الودجتات في الخلفية لا يمنع استمرار الإشعار/الأذان أعلاه.
         val pending = goAsync()
         WidgetUpdater.updateAllAsync(context) { pending.finish() }

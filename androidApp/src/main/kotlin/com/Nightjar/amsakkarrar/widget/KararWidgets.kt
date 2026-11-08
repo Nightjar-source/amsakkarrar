@@ -45,7 +45,6 @@ import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.notifications.PrayerEntry
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshot
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshotLoader
-import com.Nightjar.amsakkarrar.notifications.SettingsLoader
 import com.karrar.amsakiah.ui.theme.SkyTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -771,13 +770,14 @@ object WidgetUpdater {
 
     private suspend fun refreshInternal(appContext: Context) {
         refreshLock.withLock {
-            // تهيئة سياق الودجت (تحميل الإعدادات يحتاجه)
-            SettingsLoader.load(appContext)
             val snapshot = runCatching { PrayerSnapshotLoader.load(appContext) }.getOrNull()
-            widgets.forEach { runCatching { it.updateAll(appContext) } }
+            // لا تبنِ الودجتات السبعة إن لم يكن أيّ منها مثبّتًا على الشاشة.
+            if (WidgetRefreshWorker.hasAnyWidget(appContext)) {
+                widgets.forEach { runCatching { it.updateAll(appContext) } }
+            }
             // WorkManager: تحديث دوري مضمون في الخلفية + تحديث عند وقت الصلاة القادمة.
             // العدّاد نفسه يعمل عبر Chronometer/TextClock أصلي داخل الودجت فلا يتوقف بين التحديثات.
-            WidgetRefreshWorker.ensurePeriodic(appContext)
+            WidgetRefreshWorker.syncPeriodic(appContext)
             snapshot?.let {
                 WidgetRefreshWorker.scheduleBoundary(appContext, it.remainingSeconds * 1000L + 3_000L)
             }

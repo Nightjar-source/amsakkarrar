@@ -143,6 +143,10 @@ fun SettingsScreen(
                             if (state.lastLocationError != null) {
                                 Text(state.lastLocationError ?: "", color = KararColors.Danger, fontSize = 10.sp)
                             }
+                            if (state.locationServiceDisabled) {
+                                Spacer(Modifier.height(6.dp))
+                                SmallAction("تشغيل خدمة الموقع") { state.openSystemLocationSettings() }
+                            }
                         }
                         SmallAction("تغيير") { showCityPicker = true }
                     }
@@ -162,6 +166,11 @@ fun SettingsScreen(
                         SmallAction("بحث المدن") { showCityPicker = true }
                     }
                 }
+                DstModeSelector(
+                    current = settings.dstMode,
+                    timeZoneId = settings.timeZoneId,
+                    onChange = { mode -> state.update { it.copy(dstMode = mode) } }
+                )
             }
         }
 
@@ -760,6 +769,65 @@ private fun ImsakModeSelector(current: String, onChange: (String) -> Unit) {
 }
 
 // =====================================================================
+// التوقيت الصيفي
+// =====================================================================
+
+private val DST_MODES = listOf(
+    "auto" to "تلقائي",
+    "summer" to "صيفي",
+    "winter" to "شتوي"
+)
+
+@Composable
+private fun DstModeSelector(current: String, timeZoneId: String, onChange: (String) -> Unit) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(10.dp)) {
+        Text(
+            "التوقيت الصيفي",
+            color = KararColors.TextPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            "تلقائي يتبع قاعدة $timeZoneId لكل تاريخ على حدة؛ «صيفي/شتوي» يثبّت الإزاحة طوال السنة.",
+            color = KararColors.TextMuted,
+            fontSize = 9.sp,
+            lineHeight = 14.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0x1A000000))
+                .padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            DST_MODES.forEach { (id, label) ->
+                val selected = current == id
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (selected) Color(0xFF7DD3FC) else Color.Transparent)
+                        .clickable { onChange(id) }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        color = if (selected) Color(0xFF062033) else KararColors.TextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+// =====================================================================
 // شبكة تعديل الأوقات
 // =====================================================================
 
@@ -833,7 +901,11 @@ private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(query) {
-        results = if (query.isBlank()) CityDatabase.popular(60) else CityDatabase.search(query, 60)
+        results = if (query.isBlank()) {
+            CityDatabase.popular(60, preferredCountry = state.settings.countryName)
+        } else {
+            CityDatabase.search(query, 60, preferredCountry = state.settings.countryName)
+        }
     }
 
     Dialog(onDismissRequest = onDismiss) {

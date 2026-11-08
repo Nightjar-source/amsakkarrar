@@ -165,8 +165,19 @@ object AndroidAudioSource {
         }
     }
 
-    private fun packageUpdateTime(context: Context): Long = runCatching {
-        @Suppress("DEPRECATION")
-        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
-    }.getOrDefault(0L)
+    private fun packageUpdateTime(context: Context): Long {
+        // التحديث لا يتغيّر إلا بتثبيت نسخة جديدة؛ تخزينه يوفّر استدعاء
+        // PackageManager (Binder) في كل تشغيل للصوت.
+        val cached = cachedUpdateTime
+        if (cached >= 0L) return cached
+        val value = runCatching {
+            @Suppress("DEPRECATION")
+            context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
+        }.getOrDefault(0L)
+        if (value > 0L) cachedUpdateTime = value
+        return value
+    }
+
+    @Volatile
+    private var cachedUpdateTime = -1L
 }

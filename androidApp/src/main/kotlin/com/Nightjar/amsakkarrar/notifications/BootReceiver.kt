@@ -18,9 +18,10 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_DATE_CHANGED,
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 runCatching { PrayerAlarmScheduler(context).rescheduleAll() }
-                runCatching { LiveUpdateScheduler(context).schedule() }
                 runCatching { LiveNotificationManager.update(context) }
-                runCatching { WidgetRefreshWorker.ensurePeriodic(context) }
+                // WorkManager وحده مسؤول عن التحديث الدوري؛ syncPeriodic
+                // يجدول فقط عند وجود ودجت أو إشعار حي، ويلغي العمل بخلافهما.
+                runCatching { WidgetRefreshWorker.syncPeriodic(context) }
                 // goAsync يمنح العملية وقتًا كافيًا لإتمام تحديث الودجتات السبعة.
                 val pending = goAsync()
                 WidgetUpdater.updateAllAsync(context) { pending.finish() }

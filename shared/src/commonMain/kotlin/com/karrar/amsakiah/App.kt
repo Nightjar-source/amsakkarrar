@@ -20,6 +20,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.core.weather.fetchWeather
@@ -43,11 +46,16 @@ fun App() {
         state.prepareCities()
     }
 
-    // المؤقّت العام (ثانية واحدة)
-    LaunchedEffect(Unit) {
-        while (true) {
+    // المؤقّت العام (ثانية واحدة) — يتوقف تمامًا عند خروج التطبيق من المقدمة
+    // حتى لا يوقظ المعالج كل ثانية في الخلفية.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             state.tick()
-            delay(1000)
+            while (true) {
+                delay(1000)
+                state.tick()
+            }
         }
     }
 
@@ -57,19 +65,26 @@ fun App() {
         showSplash = false
     }
 
-    // الطقس الاختياري (إنترنت)
+    // الطقس الاختياري (إنترنت) — يتوقف في الخلفية ولا يستهلك شبكة/بطارية.
     LaunchedEffect(
+        lifecycleOwner,
         state.settings.latitude,
         state.settings.longitude,
         state.settings.showWeather
     ) {
-        weather = null
-        if (!state.settings.showWeather) return@LaunchedEffect
-        while (true) {
-            weather = runCatching {
-                fetchWeather(state.settings.latitude, state.settings.longitude)
-            }.getOrNull()
-            delay(20 * 60 * 1000L)
+        if (!state.settings.showWeather) {
+            weather = null
+            return@LaunchedEffect
+        }
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                val fresh = runCatching {
+                    fetchWeather(state.settings.latitude, state.settings.longitude)
+                }.getOrNull()
+                // لا نمسح القيمة القديمة عند فشل التحديث: يمنع وميض اختفاء الطقس.
+                if (fresh != null) weather = fresh
+                delay(20 * 60 * 1000L)
+            }
         }
     }
 

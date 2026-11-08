@@ -14,6 +14,16 @@ actual class LocationProvider {
 
     actual fun isAvailable(): Boolean = true
 
+    /**
+     * على iOS يغطي إذن الموقع حالة الخدمة؛ لا توجد واجهة موحّدة لكشف
+     * «خدمات الموقع» النظامية من Kotlin، فتُعامَل كمفعّلة ويظهر خطأ الإذن
+     * أو تعذّر القراءة عند الحاجة.
+     */
+    actual fun isLocationEnabled(): Boolean = true
+
+    /** iOS لا يسمح بفتح صفحة خدمات الموقع مباشرة؛ يفتح المستخدم إعدادات التطبيق. */
+    actual fun openLocationSettings() = Unit
+
     actual fun hasPermission(): Boolean {
         val status = CLLocationManager.authorizationStatus()
         return status == kCLAuthorizationStatusAuthorizedWhenInUse ||

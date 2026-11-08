@@ -106,11 +106,21 @@ class PrayerAlarmScheduler(private val context: Context) {
         }
     }
 
-    private fun cancelAdhan(day: Int, index: Int) = cancel(adhanRequestCode(day, index))
-    private fun cancelReminder(day: Int, index: Int) = cancel(reminderRequestCode(day, index))
+    private fun cancelAdhan(day: Int, index: Int) =
+        cancel(PrayerAlarmReceiver.ACTION_ADHAN, adhanRequestCode(day, index))
 
-    private fun cancel(requestCode: Int) {
-        val intent = Intent(context, PrayerAlarmReceiver::class.java)
+    private fun cancelReminder(day: Int, index: Int) =
+        cancel(PrayerAlarmReceiver.ACTION_REMINDER, reminderRequestCode(day, index))
+
+    /**
+     * يجب أن يطابق الـIntent المُجدول في **العمل** (action) وليس فقط
+     * requestCode؛ فـPendingIntent يقارن action ضمن هويته. غياب action هنا
+     * كان يجعل الإلغاء يفشل، فتبقى منبهات الصلوات الملغاة تعمل في الخلفية.
+     */
+    private fun cancel(action: String, requestCode: Int) {
+        val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            this.action = action
+        }
         val pending = PendingIntent.getBroadcast(
             context,
             requestCode,

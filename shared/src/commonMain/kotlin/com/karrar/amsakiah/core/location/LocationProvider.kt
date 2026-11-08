@@ -9,6 +9,12 @@ expect class LocationProvider() {
     fun hasPermission(): Boolean
     suspend fun currentLocation(): GeoPoint?
     fun isAvailable(): Boolean
+
+    /** هل خدمة الموقع (GPS) مفعّلة في إعدادات النظام؟ */
+    fun isLocationEnabled(): Boolean
+
+    /** يفتح شاشة إعدادات الموقع في النظام — لتشغيل الخدمة المعطّلة. */
+    fun openLocationSettings()
 }
 
 expect fun createLocationProvider(): LocationProvider

@@ -56,6 +56,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.theme.KararColors
 import kotlinx.coroutines.delay
@@ -76,11 +79,15 @@ fun DuaFloatingPlayer(
 ) {
     if (!controller.hasTrack) return
 
-    // مزامنة دورية مع المشغّل الأصلي — مصدر الحقيقة لشريط التقدم
-    LaunchedEffect(controller.currentId, controller.playing) {
-        while (controller.playing) {
-            controller.sync()
-            delay(200)
+    // مزامنة دورية مع المشغّل الأصلي — مصدر الحقيقة لشريط التقدم.
+    // تتوقف في الخلفية (الصوت يستمر) وتستأنف فور العودة للمقدمة.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(controller.currentId, controller.playing, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (controller.playing) {
+                controller.sync()
+                delay(200)
+            }
         }
     }
 

@@ -10,9 +10,11 @@ import com.karrar.amsakiah.core.settings.AppSettings
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.offsetAt
 import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -60,8 +62,44 @@ object PrayerCalculator {
     fun zoneOf(settings: AppSettings): TimeZone =
         runCatching { TimeZone.of(settings.timeZoneId) }.getOrDefault(TimeZone.currentSystemDefault())
 
-    fun offsetHours(settings: AppSettings): Double =
-        zoneOf(settings).offsetAt(Clock.System.now()).totalSeconds / 3600.0
+    /** إزاحة المنطقة عن UTC بالساعات في منتصف نهار تاريخ محدد. */
+    private fun offsetAtNoon(zone: TimeZone, date: LocalDate): Double =
+        zone.offsetAt(
+            LocalDateTime(date.year, date.monthNumber, date.dayOfMonth, 12, 0)
+                .toInstant(zone)
+        ).totalSeconds / 3600.0
+
+    /**
+     * أكبر/أصغر إزاحة خلال السنة — تُستخدم لوضعي «صيفي» و«شتوي» الإجباريين.
+     * أخذ عيّنة من منتصف كل شهر يجعلها صحيحة في نصفي الكرة الأرضية وفي
+     * المناطق التي تبدأ DST في تواريخ مختلفة (مثل المغرب).
+     */
+    private fun extremeOffset(zone: TimeZone, year: Int, max: Boolean): Double {
+        var best = offsetAtNoon(zone, LocalDate(year, 1, 15))
+        for (month in 2..12) {
+            val value = offsetAtNoon(zone, LocalDate(year, month, 15))
+            best = if (max) maxOf(best, value) else minOf(best, value)
+        }
+        return best
+    }
+
+    /**
+     * إزاحة المنطقة الزمنية للتاريخ المطلوب — لا للحظة الحالية.
+     *
+     * لماذا؟ لو حُسبت مرة واحدة بـ`Clock.System.now()` ثم طُبّقت على كل
+     * تواريخ التقويم، تصبح أوقات الأيام الواقعة على الجانب الآخر من تغيير
+     * التوقيت الصيفي خاطئة بساعة كاملة. نحسب هنا إزاحة منتصف نهار `date`.
+     */
+    fun offsetHours(settings: AppSettings, date: LocalDate): Double {
+        val zone = zoneOf(settings)
+        return when (settings.dstMode) {
+            "summer" -> extremeOffset(zone, date.year, max = true)
+            "winter" -> extremeOffset(zone, date.year, max = false)
+            else -> offsetAtNoon(zone, date)
+        }
+    }
+
+    fun offsetHours(settings: AppSettings): Double = offsetHours(settings, todayDate(settings))
 
     fun timesFor(settings: AppSettings, date: LocalDate): PrayerTimes =
         AstronomicalEngine.calculatePrayerTimes(
@@ -70,7 +108,7 @@ object PrayerCalculator {
             day = date.dayOfMonth,
             lat = settings.latitude,
             lon = settings.longitude,
-            tzOffset = offsetHours(settings),
+            tzOffset = offsetHours(settings, date),
             method = methodFor(settings.methodCode),
             highLatRule = highLatFor(settings.highLatRule),
             asrMethod = settings.asrMethod
