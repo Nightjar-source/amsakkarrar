@@ -1,10 +1,7 @@
 package com.karrar.amsakiah.ui.navigation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.animateColorAsState
@@ -37,9 +34,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -159,8 +154,14 @@ fun AppShell(
     fun selectDestination(destination: AppDestination) {
         val target = destination.toRoute()
         if (target == currentRoute) return
+        // نفرّغ أي شاشات فرعية ثم نستبدل الجذر، حتى يعمل الانتقال إلى «اليوم»
+        // من أي شاشة (بما فيها شاشة فُتحت من الضبط) دون بقاء عنصر قديم.
         while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-        if (backStack.isEmpty()) backStack.add(target) else backStack[0] = target
+        if (backStack.isEmpty()) {
+            backStack.add(target)
+        } else if (backStack[0] != target) {
+            backStack[0] = target
+        }
     }
 
     fun push(route: AppRoute) {
@@ -200,37 +201,34 @@ fun AppShell(
                     modifier = Modifier.fillMaxSize(),
                     onBack = ::pop,
                     transitionSpec = {
+                        // M3 Expressive: نابض مكاني للانزلاق + نابض تأثيرات للتلاشي.
                         (
                             slideInHorizontally(
-                                animationSpec = tween(
-                                    durationMillis = KararTokens.Motion.mediumMs,
-                                    easing = KararTokens.Motion.Fluid
-                                )
-                            ) { it / 3 } + fadeIn(tween(220))
+                                animationSpec = KararTokens.Motion.spatial()
+                            ) { it / 3 } + fadeIn(KararTokens.Motion.effects())
                             ).togetherWith(
                             slideOutHorizontally(
-                                animationSpec = tween(
-                                    durationMillis = KararTokens.Motion.mediumMs,
-                                    easing = KararTokens.Motion.Fluid
+                                animationSpec = KararTokens.Motion.spatial(
+                                    KararTokens.Motion.SpatialStiffnessFast
                                 )
-                            ) { -it / 4 } + fadeOut(tween(180))
+                            ) { -it / 4 } + fadeOut(
+                                KararTokens.Motion.effects(KararTokens.Motion.EffectsStiffnessFast)
+                            )
                         )
                     },
                     popTransitionSpec = {
                         (
                             slideInHorizontally(
-                                animationSpec = tween(
-                                    durationMillis = KararTokens.Motion.mediumMs,
-                                    easing = KararTokens.Motion.Fluid
-                                )
-                            ) { -it / 3 } + fadeIn(tween(220))
+                                animationSpec = KararTokens.Motion.spatial()
+                            ) { -it / 3 } + fadeIn(KararTokens.Motion.effects())
                             ).togetherWith(
                             slideOutHorizontally(
-                                animationSpec = tween(
-                                    durationMillis = KararTokens.Motion.mediumMs,
-                                    easing = KararTokens.Motion.Fluid
+                                animationSpec = KararTokens.Motion.spatial(
+                                    KararTokens.Motion.SpatialStiffnessFast
                                 )
-                            ) { it / 4 } + fadeOut(tween(180))
+                            ) { it / 4 } + fadeOut(
+                                KararTokens.Motion.effects(KararTokens.Motion.EffectsStiffnessFast)
+                            )
                         )
                     },
                     entryProvider = entryProvider {
@@ -473,95 +471,96 @@ private fun CircleGlassButton(
     }
 }
 
-/** الشريط السفلي العائم — 7 وجهات، المحددة تتوسّع بالاسم. */
+/** الشريط السفلي العائم — M3 Expressive: عرض ثابت لكل وجهة، بلا توسّع أو تمرير. */
 @Composable
 private fun FloatingBottomBar(
     current: AppDestination?,
     onSelect: (AppDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
-    val selectedIndex = current?.let { AppDestination.entries.indexOf(it) } ?: -1
-
-    LaunchedEffect(selectedIndex) {
-        if (selectedIndex >= 0 && listState.layoutInfo.totalItemsCount > 0) {
-            runCatching { listState.animateScrollToItem(selectedIndex) }
-        }
-    }
-
     GlassSurface(
         modifier = modifier
             .widthIn(max = KararTokens.Size.navBarMaxWidth)
             .fillMaxWidth(),
-        shape = CircleShape,
+        shape = RoundedCornerShape(26.dp),
         elevation = 24.dp,
         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
     ) {
-        LazyRow(
-            state = listState,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items(AppDestination.entries, key = { it.name }) { destination ->
-                BottomNavPill(
+            AppDestination.entries.forEach { destination ->
+                BottomNavItem(
                     destination = destination,
                     selected = destination == current,
-                    onClick = { onSelect(destination) }
+                    onClick = { onSelect(destination) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
     }
 }
 
-/** عنصر الشريط السفلي: أيقونة دائمًا، والاسم عند التحديد فقط. */
+/**
+ * عنصر الشريط السفلي على نمط `ShortNavigationBar` في M3 Expressive:
+ * مؤشّر كبسولي خلف الأيقونة + الاسم أسفلها دائمًا.
+ *
+ * عرض كل عنصر ثابت (`weight`)، لذلك لا يتغيّر حجم الشريط ولا تتحرك
+ * بقية الأيقونات عند تغيير الوجهة، وتبقى كل الأيقونات قابلة للنقر.
+ */
 @Composable
-private fun BottomNavPill(
+private fun BottomNavItem(
     destination: AppDestination,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val background by animateColorAsState(
+    val indicator by animateColorAsState(
         targetValue = if (selected) KararTokens.Accent.gold else Color.Transparent,
-        animationSpec = tween(KararTokens.Motion.normalMs, easing = KararTokens.Motion.Fluid),
-        label = "nav-bg"
+        animationSpec = KararTokens.Motion.effects(),
+        label = "nav-indicator"
     )
     val contentColor by animateColorAsState(
         targetValue = if (selected) Color(0xFF241A00) else Color.White.copy(alpha = 0.72f),
-        animationSpec = tween(KararTokens.Motion.normalMs, easing = KararTokens.Motion.Fluid),
-        label = "nav-fg"
+        animationSpec = KararTokens.Motion.effects(),
+        label = "nav-content"
     )
 
-    Row(
-        modifier = Modifier
+    Column(
+        modifier = modifier
             .height(KararTokens.Size.navItem)
-            .clip(CircleShape)
-            .background(background)
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(vertical = 3.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = destination.icon,
-            contentDescription = destination.title,
-            tint = contentColor,
-            modifier = Modifier.size(20.dp)
-        )
-        AnimatedVisibility(
-            visible = selected,
-            enter = expandHorizontally(animationSpec = tween(220, easing = KararTokens.Motion.Fluid)) + fadeIn(),
-            exit = shrinkHorizontally(animationSpec = tween(180, easing = KararTokens.Motion.Fluid)) + fadeOut()
+        Box(
+            modifier = Modifier
+                .width(38.dp)
+                .height(25.dp)
+                .clip(CircleShape)
+                .background(indicator),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = destination.shortTitle,
-                color = contentColor,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Clip
+            Icon(
+                imageVector = destination.icon,
+                contentDescription = destination.title,
+                tint = contentColor,
+                modifier = Modifier.size(19.dp)
             )
         }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = destination.shortTitle,
+            color = contentColor,
+            fontSize = 9.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

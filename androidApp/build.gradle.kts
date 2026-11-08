@@ -50,7 +50,10 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            // R8 الكامل: تقليص الكود + تقليص الموارد المحسّن (مفعّل تلقائيًا في AGP 9+)
+            // مرجع: developer.android.com/topic/performance/app-optimization/enable-app-optimization
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

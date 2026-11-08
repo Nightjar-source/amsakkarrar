@@ -47,6 +47,9 @@ fun countdownRemoteViews(
             (snapshot.periodProgress * 100f).toInt().coerceIn(0, 100),
             false
         )
+        // طرفا الشريط (widgetsnotifications.html: منتصف الليل ← الإمساك).
+        views.setTextViewText(R.id.widget_progress_start, snapshot.periodStartLabel)
+        views.setTextViewText(R.id.widget_progress_end, snapshot.periodEndLabel)
     }
 
     return views

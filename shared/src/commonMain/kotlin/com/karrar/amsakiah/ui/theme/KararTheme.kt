@@ -137,6 +137,21 @@ private val KararShapes = Shapes(
  * @param darkTheme التصميم الأساسي داكن؛ يُمرَّر `false` عند إضافة الوضع الفاتح
  *   الكامل للشاشات لاحقًا.
  */
+/**
+ * ثيم التطبيق الموحّد.
+ *
+ * @param darkTheme التصميم الأساسي داكن؛ يُمرَّر `false` عند إضافة الوضع الفاتح
+ *   الكامل للشاشات لاحقًا.
+ *
+ * ملاحظة توافق (تم التحقق منها في CMP 1.12.2): واجهات Material 3 Expressive
+ * الرسمية (`MaterialExpressiveTheme` و`MotionScheme`) ما زالت `internal` في
+ * حزمة JetBrains المشتركة، لذلك نطبّق رموز Expressive نفسها يدويًا:
+ *  - حركة Spring بنوعيها Spatial/Effects (انظر `KararTokens.Motion`).
+ *  - أشكال كبيرة ناعمة وكبسولات (انظر `KararShapes`).
+ *  - مكوّنات M3 القياسية مع ألوان كرار.
+ * عند فتح الواجهة في نسخة CMP قادمة، يُستبدل `MaterialTheme` بـ
+ * `MaterialExpressiveTheme(..., motionScheme = MotionScheme.expressive())`.
+ */
 @Composable
 fun KararTheme(
     darkTheme: Boolean = true,

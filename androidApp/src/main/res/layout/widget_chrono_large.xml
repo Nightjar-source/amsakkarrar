@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- عدّاد الودجت الكبير — Chronometer + ProgressBar أصليان يعملان بوقت الجهاز -->
+<!-- عدّاد الودجت الكبير — مطابق لـ widgetsnotifications.html:
+     حبة «باقي على…» + عدّاد ساعة/دقيقة/ثانية بوحدات + شريط تقدم سميك + طرفا الشريط -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -13,8 +14,14 @@
         android:id="@+id/widget_chrono_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@drawable/widget_label_pill"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="3dp"
         android:text="باقي على الفجر"
-        android:textColor="#B3B9C0D4"
+        android:textColor="#FFFFD700"
         android:textSize="9sp"
         android:textStyle="bold" />
 
@@ -23,16 +30,61 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layoutDirection="ltr"
-        android:paddingTop="1dp"
-        android:paddingBottom="1dp"
+        android:layout_marginTop="2dp"
+        android:includeFontPadding="false"
+        android:shadowColor="#66FFD700"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="8"
         android:textColor="#FFFFD700"
-        android:textSize="30sp"
+        android:textSize="32sp"
         android:textStyle="bold" />
+
+    <!-- وحدات العدّاد الثلاث تحت الأرقام -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="ساعة"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="دقيقة"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="ثانية"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/widget_chrono_target"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:maxLines="1"
         android:text="موعد 5:18 ص"
         android:textColor="#99B9C0D4"
         android:textSize="8sp" />
@@ -41,9 +93,41 @@
         android:id="@+id/widget_chrono_progress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginTop="5dp"
+        android:layout_height="10dp"
+        android:layout_marginTop="6dp"
         android:max="100"
         android:progress="0"
         android:progressDrawable="@drawable/widget_progress" />
+
+    <!-- طرفا شريط التقدم: منتصف الليل ← الإمساك -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp">
+
+        <TextView
+            android:id="@+id/widget_progress_start"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="منتصف الليل"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_progress_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="الإمساك"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 </LinearLayout>

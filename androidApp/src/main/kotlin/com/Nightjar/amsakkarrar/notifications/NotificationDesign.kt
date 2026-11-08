@@ -4,12 +4,9 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Icon
-import android.os.Build
-import android.os.SystemClock
-import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
 import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.R
 
@@ -17,12 +14,13 @@ import com.Nightjar.amsakkarrar.R
  * بناء الإشعارين بتصميم `widgetsnotifications.html`:
  *
  * 1) الإشعار الحي «رمضان مباشر»:
- *    - Android 16+ (API 36): Live Update مع Notification.ProgressStyle
- *      و shortCriticalText وطلب الترقية (setRequestPromotedOngoing) — تظهر
- *      في شريحة الحالة/شاشة القفل كما في نظام أندرويد 16، وتتوافق مع
- *      One UI 7+ و«الآن بار» في سامسونج.
- *    - ما قبل Android 16: RemoteViews مخصص مطابق لملف HTML مع Chronometer
- *      حي وشريط تقدم متدرّج نهاري/ليلي.
+ *    - `NotificationCompat.ProgressStyle` موحّد على كل الإصدارات، بلا أي
+ *      `customContentView`. هذا شرط أساسي لقبوله كـ Live Update مروّج على
+ *      Android 16+ (developer.android.com/develop/ui/views/notifications/live-update).
+ *    - على Android 16+ يضيف `setShortCriticalText` و`setRequestPromotedOngoing`
+ *      فتظهر الشريحة في شريط الحالة وشاشة القفل؛ وعلى Android 7–15 يعمل
+ *      كإشعار قياسي بعدّاد تنازلي أصلي، بلا RemoteViews مخصص (أقل ذاكرة
+ *      وأقل عرضة للتسريب).
  * 2) إشعار الصلاة: «حان الآن موعد …» + «تقبل الله طاعتكم».
  */
 object NotificationDesign {
@@ -30,9 +28,6 @@ object NotificationDesign {
     const val LIVE_ID = 3100
     const val PRAYER_ID = 3101
     const val FALLBACK_ID = 3102
-
-    /** Android 16 (Baklava) — أول إصدار يدعم الإشعارات الحية المروَّجة */
-    private const val API_LIVE_UPDATES = 36
 
     fun contentIntent(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
@@ -63,111 +58,47 @@ object NotificationDesign {
     fun buildLive(context: Context, snapshot: PrayerSnapshot): Notification {
         val remaining = snapshot.remainingSeconds.coerceAtLeast(0)
         val percent = (snapshot.periodProgress * 100f).toInt().coerceIn(0, 100)
-        return if (Build.VERSION.SDK_INT >= API_LIVE_UPDATES) {
-            buildLiveUpdates(context, snapshot, percent, remaining)
-        } else {
-            buildLiveCompat(context, snapshot, percent, remaining)
-        }
-    }
-
-    /**
-     * Android 16+ — Live Updates:
-     * شريحة حالة + Now Bar/One UI 7+ مع شريط تقدم غني ملوّن
-     * ونقطة تتبّع (tracker) على شكل هلال، ونص قصير للعدّاد.
-     */
-    @Suppress("NewApi")
-    private fun buildLiveUpdates(
-        context: Context,
-        snapshot: PrayerSnapshot,
-        percent: Int,
-        remaining: Int
-    ): Notification {
         val accent = if (snapshot.isDaytime) 0xFFFF9F1C.toInt() else 0xFF80A1D4.toInt()
-        val progressStyle = Notification.ProgressStyle()
+
+        // ProgressStyle عبر NotificationCompat: يتوافق مع Android 7 ويُرقّى
+        // تلقائيًا إلى Live Update على Android 16+، ولا يحتاج RemoteViews.
+        val progressStyle = NotificationCompat.ProgressStyle()
             .setProgress(percent)
             .setStyledByProgress(false)
             .setProgressSegments(
-                listOf(Notification.ProgressStyle.Segment(100).setColor(accent))
+                listOf(NotificationCompat.ProgressStyle.Segment(100).setColor(accent))
             )
-            .addProgressPoint(Notification.ProgressStyle.Point(0).setColor(0x66FFD700.toInt()))
-            .addProgressPoint(Notification.ProgressStyle.Point(percent).setColor(accent))
-            .addProgressPoint(Notification.ProgressStyle.Point(100).setColor(0xFFFFD700.toInt()))
-            .setProgressTrackerIcon(Icon.createWithResource(context, R.drawable.ic_notif_moon))
-
-        return Notification.Builder(context, NotificationChannels.LIVE)
-            .setSmallIcon(R.drawable.ic_notif_small)
-            .setContentTitle("رمضان مباشر")
-            .setContentText("باقي على ${snapshot.nextLabel} • ${snapshot.nextTime}")
-            .setSubText(snapshot.city)
-            .setShortCriticalText(criticalRemaining(snapshot))
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setShowWhen(true)
-            .setWhen(System.currentTimeMillis() + remaining * 1000L)
-            .setUsesChronometer(true)
-            .setChronometerCountDown(true)
-            .setCategory(Notification.CATEGORY_STOPWATCH)
-            .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setContentIntent(contentIntent(context))
-            .setDeleteIntent(liveDismissIntent(context))
-            .setStyle(progressStyle)
-            .setRequestPromotedOngoing(true)
-            .build()
-    }
-
-    /**
-     * Android 7–15 (و One UI 7 على أندرويد 15) — RemoteViews مخصص
-     * مطابق لتصميم الملف: رأس + عدّاد حي + شريط تقدم متدرج.
-     */
-    private fun buildLiveCompat(
-        context: Context,
-        snapshot: PrayerSnapshot,
-        percent: Int,
-        remaining: Int
-    ): Notification {
-        val views = RemoteViews(context.packageName, R.layout.notification_live)
-
-        views.setTextViewText(R.id.live_label, "باقي على ${snapshot.nextLabel}")
-        views.setTextViewText(R.id.live_target, snapshot.nextTime)
-        views.setTextViewText(R.id.live_city, snapshot.city)
-
-        views.setChronometer(
-            R.id.live_chrono,
-            SystemClock.elapsedRealtime() + remaining * 1000L,
-            null,
-            true
-        )
-        @Suppress("NewApi")
-        views.setChronometerCountDown(R.id.live_chrono, true)
-
-        val dayBar = R.id.live_progress_day
-        val nightBar = R.id.live_progress_night
-        views.setViewVisibility(dayBar, if (snapshot.isDaytime) View.VISIBLE else View.GONE)
-        views.setViewVisibility(nightBar, if (snapshot.isDaytime) View.GONE else View.VISIBLE)
-        views.setProgressBar(if (snapshot.isDaytime) dayBar else nightBar, 100, percent, false)
+            .addProgressPoint(NotificationCompat.ProgressStyle.Point(percent).setColor(accent))
+            .setProgressTrackerIcon(IconCompat.createWithResource(context, R.drawable.ic_notif_moon))
 
         return NotificationCompat.Builder(context, NotificationChannels.LIVE)
             .setSmallIcon(R.drawable.ic_notif_small)
             .setContentTitle("رمضان مباشر")
             .setContentText("باقي على ${snapshot.nextLabel} • ${snapshot.nextTime}")
-            .setCustomContentView(views)
-            .setCustomBigContentView(views)
-            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            // غير مستمر: يمكن سحبه وإخفاؤه من النظام؛ وLiveDismissReceiver
-            // يمنع إعادة نشره حتى دخول وقت الصلاة القادم.
-            .setOngoing(false)
+            .setSubText(snapshot.city)
+            // شريحة الحالة النصية القصيرة — تُهمَل تلقائيًا قبل Android 16.
+            .setShortCriticalText(criticalRemaining(snapshot))
+            .setStyle(progressStyle)
+            // شريط تقدم قياسي على Android 7–15؛ ويتجاهله النظام على 16+ لأن
+            // ProgressStyle هو المسؤول عن العرض هناك.
+            .setProgress(100, percent, false)
+            // مستمر على Android 16+ (شرط الإشعار المروّج، ويبقى قابلًا للسحب)،
+            // وقابل للسحب على الإصدارات الأقدم حيث لا يوجد مفهوم Live Update.
+            .setOngoing(android.os.Build.VERSION.SDK_INT >= 36)
             .setOnlyAlertOnce(true)
             .setSilent(true)
             .setShowWhen(true)
             .setWhen(System.currentTimeMillis() + remaining * 1000L)
             .setUsesChronometer(true)
             .setChronometerCountDown(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(contentIntent(context))
+            // يمكن سحب الإشعار؛ وLiveDismissReceiver يمنع إعادة نشره حتى
+            // دخول وقت الصلاة القادم.
             .setDeleteIntent(liveDismissIntent(context))
+            // طلب الترقية إلى Live Update (لا أثر له قبل Android 16).
+            .setRequestPromotedOngoing(true)
             .build()
     }
 

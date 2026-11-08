@@ -67,6 +67,14 @@ class TasbihWidgetReceiver : GlanceAppWidgetReceiver() {
 class TasbihWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode get() = SizeMode.Exact
 
+    // بديل آمن عند فشل التركيب — سياسة Android 17 للودجتات.
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val settings = SettingsLoader.load(context)
         val widgetId = runCatching {

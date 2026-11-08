@@ -77,7 +77,10 @@ object CityDatabase {
             val bytes = Res.readBytes(RES_PATH)
             json.decodeFromString<List<OfflineCity>>(bytes.decodeToString())
         }.getOrNull()
-        val result = if (loaded.isNullOrEmpty()) fallback else loaded
+        // إزالة التكرار: GeoNames يحتوي صفوفًا متطابقة الاسم/الدولة/الإحداثيات،
+        // وتكرار المفاتيح يُسقط LazyColumn في شاشة اختيار المدينة.
+        val result = (if (loaded.isNullOrEmpty()) fallback else loaded)
+            .distinctBy { "${it.name}|${it.country}|${it.lat}|${it.lon}" }
         cache = result
         sortedByPop = result.sortedByDescending { it.population }
         return result

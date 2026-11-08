@@ -2,6 +2,8 @@ package com.karrar.amsakiah.ui.theme
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
@@ -44,7 +46,7 @@ object KararTokens {
         val topBarMaxWidth = 640.dp
         val navBarHeight = 64.dp
         val navBarMaxWidth = 560.dp
-        val navItem = 46.dp
+        val navItem = 52.dp
         val touchTarget = 48.dp
         val circleButton = 52.dp
         val railWidth = 76.dp
@@ -61,6 +63,34 @@ object KararTokens {
         const val normalMs = 300
         const val mediumMs = 420
         const val slowMs = 650
+
+        // ------------------------------------------------------------------
+        // Material 3 Expressive (2026): حركة نابضية (Spring) بنوعين:
+        //  - Spatial: للحركة والانتقالات والأحجام (مرونة 0.8).
+        //  - Effects: للتلاشي والتلوين (بدون ارتداد، استجابة أسرع).
+        // القيم مطابقة لرموز ExpressiveMotionTokens الرسمية في material3 1.4.
+        // ------------------------------------------------------------------
+        const val SpatialDamping = 0.8f
+        const val SpatialStiffnessDefault = 380f
+        const val SpatialStiffnessFast = 1400f
+        const val SpatialStiffnessSlow = 200f
+
+        const val EffectsDamping = 1f
+        const val EffectsStiffnessDefault = 3800f
+        const val EffectsStiffnessFast = 10000f
+        const val EffectsStiffnessSlow = 800f
+
+        /** نابض مكاني: للانتقالات، تغيّر الحجم، حركة العناصر. */
+        fun <T> spatial(
+            stiffness: Float = SpatialStiffnessDefault,
+            dampingRatio: Float = SpatialDamping
+        ): SpringSpec<T> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+
+        /** نابض تأثيرات: للتلاشي وتغيّر اللون والشفافية. */
+        fun <T> effects(
+            stiffness: Float = EffectsStiffnessDefault,
+            dampingRatio: Float = EffectsDamping
+        ): SpringSpec<T> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
     }
 
     /** أسطح الزجاج الليلي والنهاري. */

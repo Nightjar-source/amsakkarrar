@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- عدّاد ودجت المواقيت المدمج — Chronometer أصلي -->
+<!-- عدّاد الودجت المصغّر — سطر واحد (WIDGETSPRO: MiniRow / DynamicPill) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -12,6 +12,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:ellipsize="end"
         android:maxLines="1"
         android:text="باقي على الفجر"
         android:textColor="#B3B9C0D4"
@@ -22,8 +23,14 @@
         android:id="@+id/widget_chrono"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@drawable/widget_chrono_pill"
+        android:includeFontPadding="false"
         android:layoutDirection="ltr"
+        android:paddingStart="10dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="2dp"
         android:textColor="#FFFFD700"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textStyle="bold" />
 </LinearLayout>

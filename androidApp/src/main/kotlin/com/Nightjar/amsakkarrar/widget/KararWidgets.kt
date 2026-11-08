@@ -78,6 +78,10 @@ internal enum class WidgetTier { COMPACT, MEDIUM, LARGE }
 @Composable
 private fun rememberWidgetTier(): WidgetTier {
     val size = LocalSize.current
+    // على Android 7–11 لا يوفّر المشغّل أبعادًا دقيقة، وقد تصل القيمة صفرًا
+    // عند أول تركيب. نرجع إلى MEDIUM بدل الانهيار إلى COMPACT، لأن COMPACT
+    // يُخفي الصلوات ويُظهر الودجت ناقصًا على أجهزة قديمة.
+    if (size.width <= 0.dp || size.height <= 0.dp) return WidgetTier.MEDIUM
     // العرض هو الفيصل: 2 أعمدة = مصغّر، 4 أعمدة = كامل. الارتفاع يكمّل الحالة.
     return when {
         size.width < 200.dp || size.height < 120.dp -> WidgetTier.COMPACT
@@ -302,6 +306,14 @@ class TodayWidgetReceiver : GlanceAppWidgetReceiver() {
 class TodayWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode get() = SizeMode.Exact
 
+    // بديل آمن عند فشل التركيب — سياسة Android 17 للودجتات.
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
         val widgetId = appWidgetIdFor(context, id)
@@ -336,52 +348,14 @@ private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWi
         )
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 7.dp))
 
-        Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-            Box(
-                modifier = GlanceModifier
-                    .background(Color(0x14FFFFFF))
-                    .cornerRadius(50.dp)
-                    .padding(horizontal = if (tier == WidgetTier.COMPACT) 7.dp else 13.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = "باقي على ${snapshot.nextLabel}",
-                    style = TextStyle(
-                        color = color(Gold),
-                        fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
-            Spacer(GlanceModifier.width(4.dp))
-            Text(
-                text = "• ${snapshot.nextTime}",
-                style = TextStyle(color = color(TextSecondary), fontSize = if (tier == WidgetTier.COMPACT) 6.sp else 8.sp)
-            )
-        }
-        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 2.dp else 4.dp))
-
-        // العدّاد — Chronometer أصلي يدقّ كل ثانية من ساعة الجهاز
+        // العدّاد — حبة «باقي على…» + Chronometer أصلي + شريط تقدم سميك + طرفا الشريط
+        // كلها داخل RemoteViews واحد مطابق لـ widgetsnotifications.html.
         AndroidRemoteViews(
             remoteViews = countdownRemoteViews(context, snapshot, compact = tier == WidgetTier.COMPACT),
             modifier = GlanceModifier.fillMaxWidth()
         )
 
         if (tier != WidgetTier.COMPACT) {
-            // شريط التقدم داخل RemoteViews أعلاه (ProgressBar أصلي) — لا نكرّره هنا.
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(top = 3.dp),
-                verticalAlignment = Alignment.Vertical.CenterVertically
-            ) {
-                Text(
-                    text = snapshot.periodStartLabel,
-                    modifier = GlanceModifier.defaultWeight(),
-                    style = TextStyle(color = color(TextMuted), fontSize = 7.sp)
-                )
-                Text(
-                    text = snapshot.periodEndLabel,
-                    style = TextStyle(color = color(TextMuted), fontSize = 7.sp)
-                )
-            }
             Spacer(GlanceModifier.height(7.dp))
             PrayerGridRow(gridEntries.take(3), snapshot.nextLabel)
             Spacer(GlanceModifier.height(5.dp))
@@ -404,6 +378,13 @@ class TimesWidgetReceiver : GlanceAppWidgetReceiver() {
 
 class TimesWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode get() = SizeMode.Exact
+
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
@@ -454,6 +435,13 @@ class CountdownWidgetReceiver : GlanceAppWidgetReceiver() {
 
 class CountdownWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode get() = SizeMode.Exact
+
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
@@ -507,9 +495,9 @@ private fun CountdownWidgetContent(context: Context, snapshot: PrayerSnapshot, a
                 Spacer(GlanceModifier.height(3.dp))
                 PillProgress(snapshot.periodProgress, snapshot.isDaytime)
             }
-            Spacer(GlanceModifier.height(4.dp))
+            Spacer(GlanceModifier.height(3.dp))
             Text(
-                text = "${snapshot.periodStartLabel} ← ${snapshot.periodEndLabel} • ${snapshot.city}",
+                text = snapshot.city,
                 style = TextStyle(
                     color = color(TextMuted),
                     fontSize = if (tier == WidgetTier.COMPACT) 6.sp else 7.sp,
@@ -529,6 +517,13 @@ class HijriWidgetReceiver : GlanceAppWidgetReceiver() {
 
 class HijriWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode get() = SizeMode.Exact
+
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
@@ -586,6 +581,13 @@ class ClockWidgetReceiver : GlanceAppWidgetReceiver() {
 class ClockWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode get() = SizeMode.Exact
 
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
         val widgetId = appWidgetIdFor(context, id)
@@ -629,6 +631,13 @@ class JourneyWidgetReceiver : GlanceAppWidgetReceiver() {
 class JourneyWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode get() = SizeMode.Exact
 
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = PrayerSnapshotLoader.load(context)
         val widgetId = appWidgetIdFor(context, id)
@@ -662,7 +671,7 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
             )
             Spacer(GlanceModifier.defaultWeight())
             Text(
-                text = "باقي ${snapshot.remainingHours}:${snapshot.remainingMinutes.toString().padStart(2, '0')}",
+                text = "باقي على ${snapshot.nextLabel}",
                 style = TextStyle(color = color(Gold), fontSize = if (tier == WidgetTier.COMPACT) 8.sp else 10.sp, fontWeight = FontWeight.Bold)
             )
         }
