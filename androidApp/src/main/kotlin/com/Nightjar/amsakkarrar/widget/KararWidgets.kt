@@ -98,14 +98,6 @@ private fun launchIntent(context: Context): Intent =
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
 
-private fun configIntent(context: Context, appWidgetId: Int): Intent =
-    Intent(context, WidgetConfigActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        }
-    }
-
 /** الصلوات الست الظاهرة في الودجت (نفس مربعات HTML). */
 private val WIDGET_PRAYERS = listOf("imsak", "fajr", "dhuhr", "asr", "maghrib", "isha")
 
@@ -135,7 +127,7 @@ private fun WidgetFrame(
     context: Context,
     appWidgetId: Int,
     tier: WidgetTier,
-    center: Boolean = false,
+    center: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val background = Color(WidgetStyleStore.backgroundArgb(context, appWidgetId))
@@ -143,12 +135,14 @@ private fun WidgetFrame(
     val radius = tierCorner(tier)
     val pad = tierPadding(tier)
 
+    // لا زر إعدادات داخل الودجت (كان ⚙ يزاحم المحتوى ويسرق مساحة).
+    // الخلفية تُضبط من شاشة «الودجتات» داخل التطبيق أو بالضغط المطوّل على
+    // الودجت ← «تعديل» (widgetFeatures=reconfigurable).
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(border)
-            .cornerRadius(radius),
-        contentAlignment = Alignment.TopEnd
+            .cornerRadius(radius)
     ) {
         Column(
             modifier = GlanceModifier
@@ -158,29 +152,12 @@ private fun WidgetFrame(
                 .cornerRadius(radius - 1.dp)
                 .padding(pad)
                 .clickable(actionStartActivity(launchIntent(context))),
+            // المحتوى يُوزَّع على كامل ارتفاع الودجت بدل الالتصاق بالأعلى،
+            // فلا يبقى فراغ أسفل البطاقة.
             verticalAlignment = if (center) Alignment.Vertical.CenterVertically else Alignment.Vertical.Top,
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
             content = content
         )
-        // زر إعدادات الخلفية داخل كل ودجت — مادة / زجاجي / Blur / شفاف / ليلي
-        Box(
-            modifier = GlanceModifier
-                .padding(if (tier == WidgetTier.COMPACT) 4.dp else 6.dp)
-                .width(if (tier == WidgetTier.COMPACT) 18.dp else 22.dp)
-                .height(if (tier == WidgetTier.COMPACT) 18.dp else 22.dp)
-                .background(Color(0x40000000))
-                .cornerRadius(50.dp)
-                .clickable(actionStartActivity(configIntent(context, appWidgetId))),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "⚙",
-                style = TextStyle(
-                    color = color(TextSecondary),
-                    fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp
-                )
-            )
-        }
     }
 }
 

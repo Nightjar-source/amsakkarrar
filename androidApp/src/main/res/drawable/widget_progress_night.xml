@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- شريط تقدم الودجت (ليلي) — نفس لون الإشعار الحي بالضبط (#80A1D4)
+     حتى يبدو شريط الودجت وشريط الإشعار شيئًا واحدًا. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <solid android:color="#66000000" />
+            <corners android:radius="99dp" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle">
+                <solid android:color="#FF80A1D4" />
+                <corners android:radius="99dp" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

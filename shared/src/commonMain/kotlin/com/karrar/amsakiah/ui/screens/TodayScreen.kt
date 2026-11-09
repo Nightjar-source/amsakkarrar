@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -52,8 +51,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,15 +103,20 @@ import kotlin.math.roundToInt
  *
  * لا يوجد شريط عنوان ولا زر إعدادات أسفل القوس؛ فتح الضبط من شريحة المدينة،
  * وفتح التقويم من الزر الوحيد تحت القوس.
+ *
+ * زر التقويم يفتح **تقويم القوس** (نافذة شهرية قصيرة) كما في `amsak3d.tsx`،
+ * لا تبويب التقويم الكامل؛ ومن داخل النافذة يمكن الانتقال إلى تقويم السنوات.
  */
 @Composable
 fun TodayScreen(
     state: AppState,
     weather: WeatherInfo?,
-    onOpenCalendar: () -> Unit,
+    onOpenFullCalendar: () -> Unit,
     onOpenSettings: () -> Unit,
     contentPadding: PaddingValues
 ) {
+    // نافذة تقويم القوس — تُفتح من زر التقويم تحت القوس.
+    var showArcCalendar by rememberSaveable { mutableStateOf(false) }
     val settings = state.settings
     val zone = remember(settings.timeZoneId) { PrayerCalculator.zoneOf(settings) }
     val nowLdt: LocalDateTime = remember(state.now, zone) { state.now.toLocalDateTime(zone) }
@@ -278,7 +284,7 @@ fun TodayScreen(
                 targetId = targetId,
                 targetIsTomorrow = targetIsTomorrow,
                 compact = compact,
-                onOpenCalendar = onOpenCalendar,
+                onOpenCalendar = { showArcCalendar = true },
                 onPrayerClick = { id ->
                     if (countdownIds.isNotEmpty()) {
                         val index = countdownIds.indexOf(id)
@@ -287,6 +293,18 @@ fun TodayScreen(
                 }
             )
         }
+    }
+
+    // تقويم القوس (V7) — نافذة سفلية فوق شاشة اليوم مباشرة.
+    if (showArcCalendar) {
+        ArcCalendarSheet(
+            state = state,
+            onDismiss = { showArcCalendar = false },
+            onOpenFullCalendar = {
+                showArcCalendar = false
+                onOpenFullCalendar()
+            }
+        )
     }
 }
 
@@ -566,12 +584,12 @@ private fun CountdownSection(
                 val active = index == currentActive
                 val width by animateDpAsState(
                     targetValue = if (active) 28.dp else 8.dp,
-                    animationSpec = tween(KararTokens.Motion.slowMs, easing = KararTokens.Motion.Fluid),
+                    animationSpec = KararTokens.Motion.spatial(),
                     label = "countdown-dot-width"
                 )
                 val color by animateColorAsState(
                     targetValue = if (active) Color(0xFFFFD700) else Color.White.copy(alpha = 0.20f),
-                    animationSpec = tween(KararTokens.Motion.normalMs, easing = KararTokens.Motion.Fluid),
+                    animationSpec = KararTokens.Motion.effects(),
                     label = "countdown-dot-color"
                 )
                 Box(
@@ -603,12 +621,12 @@ private fun CountdownDigit(value: String, compact: Boolean) {
             transitionSpec = {
                 (
                     slideInVertically(
-                        animationSpec = tween(350, easing = KararTokens.Motion.Fluid)
-                    ) { full -> full } + fadeIn(tween(200))
+                        animationSpec = KararTokens.Motion.spatial()
+                    ) { full -> full } + fadeIn(KararTokens.Motion.effects())
                     ).togetherWith(
                     slideOutVertically(
-                        animationSpec = tween(350, easing = KararTokens.Motion.Fluid)
-                    ) { full -> -full } + fadeOut(tween(200))
+                        animationSpec = KararTokens.Motion.spatial()
+                    ) { full -> -full } + fadeOut(KararTokens.Motion.effects())
                 )
             },
             label = "countdown-digit"
@@ -775,22 +793,22 @@ private fun PrayerCard(
     val shape = RoundedCornerShape(if (compact) 20.dp else 24.dp)
     val scale by animateFloatAsState(
         targetValue = if (active) 1.1f else 1f,
-        animationSpec = tween(KararTokens.Motion.slowMs, easing = KararTokens.Motion.Fluid),
+        animationSpec = KararTokens.Motion.spatial(),
         label = "prayer-card-scale"
     )
     val lift by animateDpAsState(
         targetValue = if (active) (-10).dp else 0.dp,
-        animationSpec = tween(KararTokens.Motion.slowMs, easing = KararTokens.Motion.Fluid),
+        animationSpec = KararTokens.Motion.spatial(),
         label = "prayer-card-lift"
     )
     val background by animateColorAsState(
         targetValue = if (active) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f),
-        animationSpec = tween(KararTokens.Motion.slowMs, easing = KararTokens.Motion.Fluid),
+        animationSpec = KararTokens.Motion.effects(),
         label = "prayer-card-bg"
     )
     val borderColor by animateColorAsState(
         targetValue = if (active) Color.White.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.05f),
-        animationSpec = tween(KararTokens.Motion.slowMs, easing = KararTokens.Motion.Fluid),
+        animationSpec = KararTokens.Motion.effects(),
         label = "prayer-card-border"
     )
 

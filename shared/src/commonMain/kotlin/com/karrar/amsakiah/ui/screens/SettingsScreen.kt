@@ -1,12 +1,6 @@
 package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,7 +25,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
@@ -45,10 +41,14 @@ import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -72,19 +72,21 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.karrar.amsakiah.core.astronomy.CityDatabase
 import com.karrar.amsakiah.core.astronomy.OfflineCities
 import com.karrar.amsakiah.core.astronomy.OfflineCity
 import com.karrar.amsakiah.core.audio.SoundTestBridge
 import com.karrar.amsakiah.core.permissions.rememberPermissionController
 import com.karrar.amsakiah.core.settings.AppSettings
+import com.karrar.amsakiah.core.settings.ThemeMode
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.state.PrayerMeta
 import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -152,35 +154,36 @@ fun SettingsScreen(
                 icon = Icons.Filled.LocationOn,
                 initiallyOpen = true
             ) {
-                GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                "${settings.cityName}، ${settings.countryName}",
-                                color = KararColors.TextPrimary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                when {
-                                    settings.useGps -> CityDatabase.proximityLabel(state.nearby).ifBlank { "محدّد عبر GPS" }
-                                    settings.locationSource == "ip" -> "استشعار تلقائي عبر IP — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
-                                    else -> "اختيار يدوي — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
-                                },
-                                color = KararColors.TextMuted,
-                                fontSize = 10.sp
-                            )
-                            if (state.lastLocationError != null) {
-                                Text(state.lastLocationError ?: "", color = KararColors.Danger, fontSize = 10.sp)
-                            }
-                            if (state.locationServiceDisabled) {
-                                Spacer(Modifier.height(6.dp))
-                                SmallAction("تشغيل خدمة الموقع") { state.openSystemLocationSettings() }
-                            }
+                // بلا بطاقة داخلية: المحتوى جزء من النافذة نفسها (العنوان مدمج).
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "${settings.cityName}، ${settings.countryName}",
+                            color = KararColors.TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            when {
+                                settings.useGps -> CityDatabase.proximityLabel(state.nearby).ifBlank { "محدّد عبر GPS" }
+                                settings.locationSource == "ip" -> "استشعار تلقائي عبر IP — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
+                                else -> "اختيار يدوي — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
+                            },
+                            color = KararColors.TextMuted,
+                            fontSize = 10.sp
+                        )
+                        if (state.lastLocationError != null) {
+                            Text(state.lastLocationError ?: "", color = KararColors.Danger, fontSize = 10.sp)
                         }
-                        SmallAction("تغيير") { showCityPicker = true }
+                        if (state.locationServiceDisabled) {
+                            Spacer(Modifier.height(6.dp))
+                            SmallAction("تشغيل خدمة الموقع") { state.openSystemLocationSettings() }
+                        }
                     }
-                    Spacer(Modifier.height(10.dp))
+                    SmallAction("تغيير") { showCityPicker = true }
                 }
                 DstModeSelector(
                     current = settings.dstMode,
@@ -282,10 +285,10 @@ fun SettingsScreen(
 
         // ==================== العدّاد ====================
         item {
-            SettingsAccordion(title = "العدّاد التنازلي والإشعار الحي", icon = Icons.Filled.Notifications) {
+            SettingsAccordion(title = "الإشعار الحي للعدّاد (اختياري)", icon = Icons.Filled.Notifications) {
                 ToggleRow(
                     title = "الإشعار الحي (العدّاد)",
-                    subtitle = "عدّاد حي في شريط الإشعارات يتحدّث تلقائيًا",
+                    subtitle = "اختياري — عدّاد حي بشريط تقدم في شريط الإشعارات، يتحدّث تلقائيًا",
                     checked = settings.liveNotification,
                     onChange = { c -> state.update { it.copy(liveNotification = c) } }
                 )
@@ -305,11 +308,12 @@ fun SettingsScreen(
             }
         }
 
-        // ==================== الأذان والتذكير ====================
+        // ==================== الإشعارات (اثنان فقط، وكلاهما اختياري) ====================
         item {
-            SettingsAccordion(title = "الأذان والتذكير", icon = Icons.Filled.Notifications) {
+            SettingsAccordion(title = "إشعار الأذان", icon = Icons.Filled.Notifications) {
                 ToggleRow(
-                    title = "تنبيه الأذان عند دخول الوقت",
+                    title = "بطاقة الأذان عند دخول الوقت",
+                    subtitle = "اختياري — بطاقة واحدة لكل صلاة، وصوت الأذان مرة واحدة",
                     checked = settings.adhanEnabled,
                     onChange = { c -> state.update { it.copy(adhanEnabled = c) } }
                 )
@@ -325,31 +329,6 @@ fun SettingsScreen(
                     },
                     onAll = { state.update { it.copy(adhanPrayers = PrayerMeta.order) } },
                     onNone = { state.update { it.copy(adhanPrayers = emptyList()) } }
-                )
-                ToggleRow(
-                    title = "تذكير قبل الوقت",
-                    subtitle = "قبل ${settings.reminderMinutes} دقيقة",
-                    checked = settings.reminderEnabled,
-                    onChange = { c -> state.update { it.copy(reminderEnabled = c) } }
-                )
-                StepperRow(
-                    title = "دقائق التذكير",
-                    value = settings.reminderMinutes,
-                    step = 5,
-                    onChange = { v -> state.update { it.copy(reminderMinutes = v.coerceIn(0, 60)) } }
-                )
-                PrayerSelectionCard(
-                    title = "أوقات التذكير",
-                    subtitle = "اختر الأوقات التي يصلك قبلها التنبيه — أو الكل.",
-                    selected = settings.reminderPrayers,
-                    accent = Color(0xFFFFB74D),
-                    onToggle = { id ->
-                        state.update { s ->
-                            s.copy(reminderPrayers = s.reminderPrayers.togglePrayer(id, PrayerMeta.order))
-                        }
-                    },
-                    onAll = { state.update { it.copy(reminderPrayers = PrayerMeta.order) } },
-                    onNone = { state.update { it.copy(reminderPrayers = emptyList()) } }
                 )
                 ToggleRow(
                     title = "الاهتزاز مع الأذان",
@@ -433,6 +412,10 @@ fun SettingsScreen(
         // ==================== الطقس والمظهر ====================
         item {
             SettingsAccordion(title = "الطقس والمظهر", icon = Icons.Filled.WbSunny) {
+                ThemeModeRow(
+                    current = settings.themeMode,
+                    onChange = { mode -> state.update { it.copy(themeMode = mode) } }
+                )
                 ToggleRow(
                     title = "الطقس (يتطلب إنترنت)",
                     subtitle = "تأثيرات خفيفة خلف القوس، ولا تؤثر على المواقيت",
@@ -809,6 +792,13 @@ private fun HeroMethodButton(
 // الأقسام المنسدلة
 // =====================================================================
 
+/**
+ * قسم منسدل في الضبط.
+ *
+ * الآن هو **نافذة واحدة**: العنوان داخل الإطار نفسه، والمحتوى يُطوى داخلها
+ * فتتقلّص النافذة وتتوسّع ككتلة واحدة (بدل بطاقة عنوان منفصلة فوق محتوى
+ * عائم). المنطق كله في [MergedAccordion] المشترك مع الفقه والتسبيح.
+ */
 @Composable
 private fun SettingsAccordion(
     title: String,
@@ -816,67 +806,13 @@ private fun SettingsAccordion(
     initiallyOpen: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    var open by rememberSaveable(title) { mutableStateOf(initiallyOpen) }
-    val rotation by animateFloatAsState(
-        targetValue = if (open) 180f else 0f,
-        animationSpec = tween(KararTokens.Motion.normalMs, easing = KararTokens.Motion.Fluid),
-        label = "settings-chevron"
+    MergedAccordion(
+        title = title,
+        icon = icon,
+        initiallyOpen = initiallyOpen,
+        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp),
+        content = content
     )
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(KararColors.CardSoft)
-                .border(1.dp, KararColors.Border, RoundedCornerShape(18.dp))
-                .clickable { open = !open }
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(KararColors.GoldSoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = KararColors.Gold, modifier = Modifier.size(17.dp))
-            }
-            Spacer(Modifier.width(10.dp))
-            Text(
-                title,
-                color = KararColors.TextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                Icons.Filled.ExpandMore,
-                contentDescription = if (open) "إغلاق" else "فتح",
-                tint = if (open) KararColors.Gold else KararColors.TextMuted,
-                modifier = Modifier
-                    .size(20.dp)
-                    .rotate(rotation)
-            )
-        }
-        AnimatedVisibility(
-            visible = open,
-            enter = expandVertically(
-                animationSpec = tween(KararTokens.Motion.normalMs, easing = KararTokens.Motion.Fluid)
-            ) + fadeIn(tween(180)),
-            exit = shrinkVertically(
-                animationSpec = tween(KararTokens.Motion.fastMs, easing = KararTokens.Motion.Fluid)
-            ) + fadeOut(tween(140))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                content = content
-            )
-        }
-    }
 }
 
 // =====================================================================
@@ -1207,67 +1143,158 @@ private fun OffsetCell(
 // اختيار المدينة
 // =====================================================================
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
-    var query by remember { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
     var results by remember { mutableStateOf<List<OfflineCity>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // انتظار قصير يجعل الكتابة السريعة تُلغي البحث السابق (debounce)؛
+    // كل القراءة/الفك/الفرز على Dispatchers.Default داخل CityDatabase.
     LaunchedEffect(query) {
-        results = if (query.isBlank()) {
-            CityDatabase.popular(60, preferredCountry = state.settings.countryName)
-        } else {
-            CityDatabase.search(query, 60, preferredCountry = state.settings.countryName)
-        }
+        loading = true
+        delay(220)
+        val loaded = runCatching {
+            if (query.isBlank()) {
+                CityDatabase.popular(60, preferredCountry = state.settings.countryName)
+            } else {
+                CityDatabase.search(query, 60, preferredCountry = state.settings.countryName)
+            }
+        }.getOrElse { emptyList() }
+        results = loaded
+        loading = false
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        GlassCard(
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = KararColors.Card,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.86f),
-            corner = 24.dp,
-            color = KararColors.Card,
-            contentPadding = PaddingValues(0.dp)
+                .fillMaxHeight(0.92f)
+                .padding(horizontal = 16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Filled.Search, contentDescription = null, tint = KararColors.Gold, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                androidx.compose.material3.OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("اسم المدينة أو الدولة", fontSize = 12.sp) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "اختيار المدينة",
+                        color = KararColors.TextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        if (loading) "جارٍ البحث في المدن الأوفلاين…"
+                        else "النتائج: ${results.size} — ${state.settings.countryName}",
+                        color = KararColors.TextMuted,
+                        fontSize = 10.sp
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(KararColors.GoldSoft)
+                        .clickable {
+                            scope.launch {
+                                state.detectLocation()
+                                onDismiss()
+                            }
+                        }
+                        .padding(horizontal = 12.dp, vertical = 7.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.MyLocation,
+                            contentDescription = null,
+                            tint = KararColors.Gold,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "موقعي",
+                            color = KararColors.Gold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
-            // مفتاح العنصر يعتمد على الترتيب لا على الاسم، حتى لا يتكرر المفتاح
-            // إذا وُجدت مدينتان متطابقتان في القاعدة (سبب انهيار سابق).
-            LazyColumn(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
-                itemsIndexed(results) { index, city ->
+
+            Spacer(Modifier.height(10.dp))
+
+            androidx.compose.material3.OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("اسم المدينة أو الدولة…", fontSize = 12.sp) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = null,
+                        tint = KararColors.Gold,
+                        modifier = Modifier.size(16.dp)
+                    )
+                },
+                trailingIcon = {
+                    if (loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = KararColors.Gold
+                        )
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp)
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                items(results, key = { it.stableId }) { city ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable {
                                 state.selectCity(city)
-                                scope.launch { state.prepareCities() }
+                                scope.launch { runCatching { state.prepareCities() } }
                                 onDismiss()
                             }
-                            .padding(vertical = 10.dp),
+                            .padding(horizontal = 8.dp, vertical = 11.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("📍", fontSize = 14.sp)
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            "${city.name}، ${city.country}",
-                            color = KararColors.TextPrimary,
-                            fontSize = 13.sp,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                city.name,
+                                color = KararColors.TextPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                buildString {
+                                    append(city.country)
+                                    if (city.region.isNotBlank() && city.region != city.name) {
+                                        append(" • ").append(city.region)
+                                    }
+                                    if (city.isProvince) append(" • محافظة/ولاية")
+                                },
+                                color = KararColors.TextMuted,
+                                fontSize = 9.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                         Text(
                             city.timeZoneId.substringAfterLast('/').replace('_', ' '),
                             color = KararColors.TextMuted,
@@ -1362,6 +1389,59 @@ private fun PrayerSelectionCard(
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
             Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+
+@Composable
+private fun ThemeModeRow(
+    current: String,
+    onChange: (String) -> Unit
+) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("المظهر", color = KararColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    "يتغيّر التطبيق كاملًا فورًا — بلا إعادة تشغيل",
+                    color = KararColors.TextMuted,
+                    fontSize = 9.sp
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                ThemeMode.all.forEach { mode ->
+                    val selected = current == mode
+                    val icon = when (mode) {
+                        ThemeMode.LIGHT -> Icons.Filled.WbSunny
+                        ThemeMode.DARK -> Icons.Filled.DarkMode
+                        else -> Icons.Filled.BrightnessAuto
+                    }
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(if (selected) KararColors.Gold else KararColors.CardSoft)
+                            .clickable { onChange(mode) }
+                            .padding(horizontal = 9.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            icon,
+                            contentDescription = ThemeMode.label(mode),
+                            tint = if (selected) KararColors.OnGold else KararColors.TextSecondary,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        AnimatedVisibility(visible = selected) {
+                            Text(
+                                ThemeMode.label(mode),
+                                color = KararColors.OnGold,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

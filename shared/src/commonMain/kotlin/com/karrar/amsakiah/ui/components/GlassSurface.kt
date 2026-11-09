@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 
 /** نغمة سطح الزجاج. */
@@ -38,18 +39,20 @@ fun GlassSurface(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     content: @Composable BoxScope.() -> Unit
 ) {
+    // الألوان من اللوحة الحالية (فاتح/داكن) حتى يبقى الزجاج مقروءًا في الوضعين.
+    val palette = com.karrar.amsakiah.ui.theme.LocalKararPalette.current
     val base = when (tone) {
-        GlassTone.Dark -> KararTokens.Glass.dark
-        GlassTone.DarkSoft -> KararTokens.Glass.darkSoft
-        GlassTone.Light -> KararTokens.Glass.light
+        GlassTone.Dark -> palette.glass
+        GlassTone.DarkSoft -> palette.glassSoft
+        GlassTone.Light -> palette.glass
     }
     val topTint = when (tone) {
-        GlassTone.Light -> Color(0x33FFFFFF)
-        else -> KararTokens.Glass.highlightStrong
+        GlassTone.Light -> palette.highlightStrong
+        else -> palette.highlightStrong
     }
     val bottomTint = when (tone) {
-        GlassTone.Light -> Color(0x14FFFFFF)
-        else -> Color(0x08FFFFFF)
+        GlassTone.Light -> palette.highlight
+        else -> palette.highlight.copy(alpha = palette.highlight.alpha * 0.4f)
     }
 
     Box(
@@ -57,8 +60,8 @@ fun GlassSurface(
             .shadow(
                 elevation = elevation,
                 shape = shape,
-                ambientColor = Color.Black.copy(alpha = 0.45f),
-                spotColor = Color.Black.copy(alpha = 0.55f)
+                ambientColor = palette.shadow,
+                spotColor = palette.shadow
             )
             .clip(shape)
             .background(base)
@@ -66,10 +69,7 @@ fun GlassSurface(
             .border(
                 width = borderWidth,
                 brush = Brush.verticalGradient(
-                    listOf(
-                        KararTokens.Glass.borderStrong,
-                        KararTokens.Glass.border
-                    )
+                    listOf(palette.borderStrong, palette.border)
                 ),
                 shape = shape
             )
@@ -84,13 +84,14 @@ fun glassFill(
     shape: Shape = RoundedCornerShape(KararTokens.Radius.pill),
     tone: GlassTone = GlassTone.DarkSoft
 ): Modifier {
+    val palette = com.karrar.amsakiah.ui.theme.LocalKararPalette.current
     val base = when (tone) {
-        GlassTone.Dark -> KararTokens.Glass.dark
-        GlassTone.DarkSoft -> KararTokens.Glass.darkSoft
-        GlassTone.Light -> KararTokens.Glass.light
+        GlassTone.Dark -> palette.glass
+        GlassTone.DarkSoft -> palette.glassSoft
+        GlassTone.Light -> palette.glass
     }
     return Modifier
         .clip(shape)
         .background(base)
-        .border(1.dp, KararTokens.Glass.border, shape)
+        .border(1.dp, palette.border, shape)
 }

@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      الثيم الأساسي داكن دائمًا (التطبيق ليلي فقط، لا يوجد وضع فاتح).
-      Parent داكن مقصود: يضبط ألوان أيقونات شريط الحالة/التنقل، ويمنع وميض
-      الإطار الأول الفاتح قبل رسم Compose، ويوحّد مؤشر تحديد النص.
+      الوضع الفاتح (الافتراضي على النظام): خلفية دافئة مطابقة لبداية اللوحة
+      الفاتحة (#FFFBF4) حتى لا يظهر وميض داكن خلف Compose. شاشة البداية لها
+      ثيمها الخاص الداكن (Theme.Caliq.Splash) فتبقى متصلة بالسبلاش المتحرك.
     -->
-    <style name="Theme.Caliq" parent="@android:style/Theme.Material.NoActionBar">
+    <style name="Theme.Caliq" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-        <item name="android:windowBackground">@drawable/splash_background</item>
-        <!-- لا يسمح للنظام بتفتيح واجهتنا الداكنة تلقائيًا -->
+        <item name="android:windowBackground">@drawable/app_background_light</item>
+        <!-- لا يسمح للنظام بتعتيم/تفتيح واجهتنا تلقائيًا -->
         <item name="android:forceDarkAllowed">false</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
 
-    <!-- Splash screen theme (shows while app loads) -->
+    <!-- Splash screen theme (نفس الهوية الداكنة في الوضعين للوصل السلس) -->
     <style name="Theme.Caliq.Splash" parent="Theme.SplashScreen">
         <item name="android:windowBackground">@drawable/splash_background</item>
         <item name="windowSplashScreenBackground">@drawable/splash_background</item>

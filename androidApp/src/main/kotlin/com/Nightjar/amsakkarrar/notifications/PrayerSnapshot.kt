@@ -54,7 +54,16 @@ data class PrayerSnapshot(
     val maghribText: String,
     /** الصلاة التي تأتي بعد الصلاة القادمة (تستخدم في إشعار الأذان) */
     val afterLabel: String,
-    val afterTime: String
+    val afterTime: String,
+    /**
+     * لحظة إنشاء اللقطة على `SystemClock.elapsedRealtime()`.
+     *
+     * لماذا؟ اللقطة تُخزَّن في كاش 10 ثوانٍ، و`Chronometer` في الودجت
+     * يُضبط على أساس `remainingSeconds` المحسوبة وقت البناء. بدون طرح الفارق
+     * يتأخر العدّاد حتى 10 ثوانٍ عن الحقيقة؛ نطرح الفارق فيبقى مطابقًا للإشعار
+     * الحي ولساعة الجهاز.
+     */
+    val generatedAtElapsed: Long = 0L
 )
 
 object PrayerSnapshotLoader {
@@ -164,7 +173,8 @@ object PrayerSnapshotLoader {
             fajrText = PrayerCalculator.formatHour(fajr).first,
             maghribText = PrayerCalculator.formatHour(maghrib).first,
             afterLabel = PrayerMeta.label(afterId),
-            afterTime = "$afterH $afterM"
+            afterTime = "$afterH $afterM",
+            generatedAtElapsed = android.os.SystemClock.elapsedRealtime()
         )
     }
 

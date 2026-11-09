@@ -2,8 +2,6 @@ package com.karrar.amsakiah
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
@@ -15,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
@@ -29,6 +26,7 @@ import com.karrar.amsakiah.core.weather.fetchWeather
 import com.karrar.amsakiah.ui.navigation.AppShell
 import com.karrar.amsakiah.ui.splash.SplashScreen
 import com.karrar.amsakiah.ui.theme.KararTheme
+import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.delay
 
 @Composable
@@ -41,7 +39,7 @@ fun App() {
         onDispose { state.dispose() }
     }
 
-    // تهيئة قاعدة المدن الأوفلاين
+    // تهيئة قاعدة المدن الأوفلاين (على خيط خلفي داخل CityDatabase)
     LaunchedEffect(Unit) {
         state.prepareCities()
     }
@@ -59,9 +57,10 @@ fun App() {
         }
     }
 
-    // إخفاء شاشة البداية بعد 3 ثوانٍ (ليظهر التوقيع بعد اكتمال دخول العنوان)
+    // مدة السبلاش الدنيا: 1.2 ثانية حتى تكتمل حركة الشعار، ثم يتلاشى بسلاسة.
+    // (سبلاش النظام يبقى حتى أول إطار فعلي عبر StartupGate، فلا وميض بينهما.)
     LaunchedEffect(Unit) {
-        delay(3000)
+        delay(1200)
         showSplash = false
     }
 
@@ -88,7 +87,8 @@ fun App() {
         }
     }
 
-    KararTheme {
+    // الوضع (تلقائي/فاتح/مظلم) يُقرأ من الإعدادات فيتبدّل فورًا بلا إعادة تشغيل.
+    KararTheme(mode = state.settings.themeMode) {
         // حجم الخط المختار من الضبط يُطبَّق عالميًا على كل النصوص.
         val baseDensity = LocalDensity.current
         val scaledFont = baseDensity.fontScale * state.settings.fontScale
@@ -96,12 +96,14 @@ fun App() {
             LocalLayoutDirection provides LayoutDirection.Rtl,
             LocalDensity provides Density(baseDensity.density, scaledFont)
         ) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF050A15))) {
+            // لا طبقة خلفية صلبة هنا: الشل يرسم خلفية واحدة full-bleed خلف
+            // أشرطة النظام، والمحتوى وحده يُزاح — فلا كتل لونية على الحواف.
+            Box(Modifier.fillMaxSize()) {
                 AppShell(state = state, weather = weather)
 
                 AnimatedVisibility(
                     visible = showSplash,
-                    exit = fadeOut(animationSpec = tween(500))
+                    exit = fadeOut(animationSpec = KararTokens.Motion.effects())
                 ) {
                     SplashScreen()
                 }

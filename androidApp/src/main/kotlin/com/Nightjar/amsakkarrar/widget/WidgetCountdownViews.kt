@@ -28,7 +28,14 @@ fun countdownRemoteViews(
 
     views.setTextViewText(R.id.widget_chrono_label, "باقي على ${snapshot.nextLabel}")
 
-    val remainingMillis = snapshot.remainingSeconds.coerceAtLeast(1) * 1000L
+    // تصحيح الانحراف: اللقطة قد تكون من كاش عمره ثوانٍ؛ نطرح الفارق حتى يطابق
+    // عدّاد الودجت الإشعار الحي وساعة الجهاز بالثانية.
+    val driftMs = if (snapshot.generatedAtElapsed > 0L) {
+        (SystemClock.elapsedRealtime() - snapshot.generatedAtElapsed).coerceAtLeast(0L)
+    } else {
+        0L
+    }
+    val remainingMillis = (snapshot.remainingSeconds * 1000L - driftMs).coerceAtLeast(1_000L)
     views.setChronometer(
         R.id.widget_chrono,
         SystemClock.elapsedRealtime() + remainingMillis,
@@ -40,13 +47,16 @@ fun countdownRemoteViews(
 
     if (!compact) {
         views.setTextViewText(R.id.widget_chrono_target, "موعد ${snapshot.nextTime} • ${snapshot.city}")
-        // شريط تقدم أصلي داخل الودجت — يتحدّث مع كل دورة WorkManager أو تغيّر الصلاة.
-        views.setProgressBar(
-            R.id.widget_chrono_progress,
-            100,
-            (snapshot.periodProgress * 100f).toInt().coerceIn(0, 100),
-            false
-        )
+        // شريط تقدم أصلي داخل الودجت — نسبة واحدة مع الإشعار الحي، ولون واحد
+        // (نهاري/ليلي) بنفس لون accent في NotificationDesign.
+        val percent = (snapshot.periodProgress * 100f).toInt().coerceIn(0, 100)
+        val dayId = R.id.widget_chrono_progress_day
+        val nightId = R.id.widget_chrono_progress_night
+        val visibleId = if (snapshot.isDaytime) dayId else nightId
+        val hiddenId = if (snapshot.isDaytime) nightId else dayId
+        views.setViewVisibility(visibleId, android.view.View.VISIBLE)
+        views.setViewVisibility(hiddenId, android.view.View.GONE)
+        views.setProgressBar(visibleId, 100, percent, false)
         // طرفا الشريط (widgetsnotifications.html: منتصف الليل ← الإمساك).
         views.setTextViewText(R.id.widget_progress_start, snapshot.periodStartLabel)
         views.setTextViewText(R.id.widget_progress_end, snapshot.periodEndLabel)

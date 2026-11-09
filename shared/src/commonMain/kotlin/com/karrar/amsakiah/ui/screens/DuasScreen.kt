@@ -36,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +50,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.core.data.ShiaDuasLibrary
-import com.karrar.amsakiah.ui.components.DuaFloatingPlayer
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.player.DuaPlayerController
@@ -68,20 +66,23 @@ import com.karrar.amsakiah.ui.theme.KararTokens
 @Composable
 fun DuasScreen(
     contentPadding: PaddingValues,
-    onDetailVisibilityChanged: (Boolean) -> Unit = {}
+    player: DuaPlayerController,
+    backSignal: Int = 0,
+    onDetailVisibilityChanged: (Boolean) -> Unit = {},
+    onDetailTitleChanged: (String?) -> Unit = {}
 ) {
     var selectedId by remember { mutableStateOf<String?>(null) }
     val selected = ShiaDuasLibrary.byId(selectedId)
-    val player = remember { DuaPlayerController() }
 
-    // إبلاغ الشل بحالة التفاصيل لتقليص الإزاحة وإخفاء شريط العنوان المزدوج
-    LaunchedEffect(selected != null) {
+    // الشل يعرض اسم الدعاء في شريط العنوان الموحّد نفسه (لا شريط ثانٍ).
+    LaunchedEffect(selected?.id) {
+        onDetailTitleChanged(selected?.title)
         onDetailVisibilityChanged(selected != null)
     }
 
-    // إيقاف الصوت وتحرير المشغّل الأصلي عند مغادرة قسم الأدعية
-    DisposableEffect(Unit) {
-        onDispose { player.release() }
+    // زر الرجوع في الشريط الموحّد يغلق التفاصيل ويعيد الفهرس.
+    LaunchedEffect(backSignal) {
+        if (backSignal > 0) selectedId = null
     }
 
     PlatformBackHandler(enabled = selected != null) { selectedId = null }
@@ -115,7 +116,7 @@ fun DuasScreen(
             if (item == null) {
                 DuaList(
                     contentPadding = contentPadding,
-                    bottomInset = if (player.hasTrack) 118.dp else 0.dp,
+                    bottomInset = if (player.hasTrack) KararTokens.Size.playerDockHeight else 0.dp,
                     onSelect = { selectedId = it.id },
                     onPlay = { player.play(it) },
                     player = player
@@ -129,15 +130,6 @@ fun DuasScreen(
                 )
             }
         }
-
-        // المشغل العائم البيضوي — يبقى فوق المحتوى
-        DuaFloatingPlayer(
-            controller = player,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp)
-                .padding(bottom = contentPadding.calculateBottomPadding() + 10.dp)
-        )
     }
 }
 

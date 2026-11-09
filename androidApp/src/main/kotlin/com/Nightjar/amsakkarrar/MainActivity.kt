@@ -15,6 +15,7 @@ import com.karrar.amsakiah.App
 import com.karrar.amsakiah.core.AndroidAppContext
 import com.karrar.amsakiah.core.audio.SoundTestBridge
 import com.karrar.amsakiah.core.state.SettingsChangeBus
+import com.karrar.amsakiah.ui.startup.StartupGate
 import com.Nightjar.amsakkarrar.notifications.AdhanService
 import com.Nightjar.amsakkarrar.notifications.LiveNotificationManager
 import com.Nightjar.amsakkarrar.notifications.NotificationChannels
@@ -54,7 +55,9 @@ class MainActivity : ComponentActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        // نُبقي سبلاش النظام حتى ترسم شاشة البداية الثانية أول إطار لها،
+        // فيحدث الوصل بينهما على نفس الخلفية بلا وميض ولا قفزة أيقونة.
+        installSplashScreen().setKeepOnScreenCondition { !StartupGate.contentReady }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 

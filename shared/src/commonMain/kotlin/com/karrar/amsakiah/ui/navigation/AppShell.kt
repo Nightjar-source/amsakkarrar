@@ -1,11 +1,17 @@
 package com.karrar.amsakiah.ui.navigation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,10 +19,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -43,14 +49,18 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -59,23 +69,25 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import androidx.savedstate.serialization.SavedStateConfiguration
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.adaptive.NavigationLayout
 import com.karrar.amsakiah.ui.adaptive.rememberAppAdaptiveLayout
+import com.karrar.amsakiah.ui.components.DuaPlayerOverlay
 import com.karrar.amsakiah.ui.components.GlassSurface
+import com.karrar.amsakiah.ui.platform.PlatformBackHandler
+import com.karrar.amsakiah.ui.platform.isIosUi
+import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.screens.CalendarScreen
 import com.karrar.amsakiah.ui.screens.DuasScreen
 import com.karrar.amsakiah.ui.screens.FiqhScreen
@@ -84,20 +96,20 @@ import com.karrar.amsakiah.ui.screens.ShrinesQiblaScreen
 import com.karrar.amsakiah.ui.screens.TasbihScreen
 import com.karrar.amsakiah.ui.screens.TodayScreen
 import com.karrar.amsakiah.ui.screens.WidgetsScreen
+import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclassesOfSealed
+import com.karrar.amsakiah.ui.theme.LocalKararPalette
 
 /**
- * الشل الرئيسي — Material 3 Expressive + Compose Adaptive + Navigation 3.
+ * الشل الرئيسي — Material 3 Expressive + Compose Adaptive.
  *
- * مبادئ التنفيذ:
- * - لا يوجد `windowInsetsPadding` على الجذر؛ الخلفية تمتد خلف أشرطة النظام
- *   والنوافذ، والإزاحة تُطبّق على المحتوى فقط.
- * - شريط سفلي عائم على الهواتف، وشريط جانبي عائم على العروض المتوسطة/الواسعة.
- * - شريط عنوان عائم بأزرار دائرية منفصلة، ويختفي على شاشة «اليوم» كما في V7.
- * - الـback stack مملوك لنا عبر Navigation 3، مع حفظ الحالة.
+ * - **حالة تبويب صريحة** (`currentTab`) بدل استبدال جذر back stack: الانتقال
+ *   إلى «اليوم» يعمل من أي تبويب دائمًا.
+ * - **شريط عنوان موحّد واحد**: نفس الشريط يبقى ثابتًا، والعنوان وحده يتغيّر
+ *   بحركة عند تبديل التبويب أو فتح دعاء (بلا شريط ثانٍ ولا كتل لونية).
+ * - **خلفية واحدة full-bleed** خلف أشرطة النظام، والمحتوى وحده يُزاح.
+ * - **مشغّل أدعية واحد** مرفوع إلى الشل: شريط مدمج ≤ 30dp، ويمكن فصله ليصبح
+ *   كرة عائمة تُسحب إلى أي مكان.
  */
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -107,23 +119,36 @@ fun AppShell(
     modifier: Modifier = Modifier
 ) {
     val layout = rememberAppAdaptiveLayout()
-    val backStack = rememberAppBackStack()
-    val currentRoute = backStack.lastOrNull() as? AppRoute ?: AppRoute.Today
-    val currentDestination = currentRoute.toDestination()
 
-    // تفاصيل الدعاء تُدار داخل شاشة الأدعية؛ نخفي شريط الشل ونقلّص الإزاحة.
+    // ---------- حالة التنقل: Navigation 3 (State-driven) ----------
+    // الـback stack نفسه هو الحالة: SnapshotStateList يحفظه عبر rememberNavBackStack
+    // (بعد عملية قتل/دوران الشاشة)، وكل تنقل هو تعديل على هذه القائمة فقط.
+    val backStack = rememberNavBackStack(appNavConfiguration, AppRoute.Today)
+    val currentRoute: AppRoute = backStack.lastOrNull() as? AppRoute ?: AppRoute.Today
+    val currentTab = currentRoute.toDestination() ?: AppDestination.TODAY
+    val widgetsOpen = currentRoute == AppRoute.Widgets
+    // اتجاه الانتقال (1 للأمام، -1 للخلف) لتحديد حركة المنصة الأصلية.
+    var navDirection by remember { mutableIntStateOf(1) }
+
     var duaDetailOpen by remember { mutableStateOf(false) }
-    LaunchedEffect(currentRoute) {
-        if (currentRoute != AppRoute.Duas) duaDetailOpen = false
+    var duaDetailTitle by remember { mutableStateOf<String?>(null) }
+    var duaBackSignal by remember { mutableIntStateOf(0) }
+
+    // مشغّل واحد لكل التطبيق — يبقى يعمل عبر التنقل ويُحرَّر عند إغلاق الشل.
+    val player = remember { DuaPlayerController() }
+    DisposableEffect(player) {
+        onDispose { player.release() }
     }
 
-    // الاتحاد المطلوب رسميًا: الحالة + شريط النافذة + فتحة الشاشة.
+    val isToday = currentRoute == AppRoute.Today && !duaDetailOpen
+    val showTopBar = !isToday
+
+    // ---------- الإنسِتس ----------
     val topInsets = WindowInsets.statusBars
         .union(WindowInsets.captionBar)
         .union(WindowInsets.displayCutout)
     val bottomInsets = WindowInsets.navigationBars
         .union(WindowInsets.displayCutout)
-
     val statusTop = topInsets.asPaddingValues().calculateTopPadding()
     val navigationBottom = bottomInsets.asPaddingValues().calculateBottomPadding()
 
@@ -133,56 +158,79 @@ fun AppShell(
     val cutoutEnd = cutout.calculateEndPadding(layoutDirection)
 
     val settings = state.settings
-    val hijri = remember(settings.hijriOffset, state.now) {
-        PrayerCalculator.hijriFor(settings, PrayerCalculator.todayDate(settings))
+    // الخفة: الشل يقرأ المؤقّت (كل ثانية) داخل قيمة مشتقّة لا تُبلّغ إلا عند
+    // تغيّر اليوم. قبل ذلك كان كل نبض ثانية يعيد تركيب الشل وNavDisplay معه.
+    val today by remember {
+        derivedStateOf {
+            state.now // اعتماد صريح على المؤقّت لإعادة الحساب
+            PrayerCalculator.todayDate(state.settings)
+        }
+    }
+    val hijri = remember(today, settings.hijriOffset) {
+        PrayerCalculator.hijriFor(settings, today)
     }
 
-    val isToday = currentRoute == AppRoute.Today
-    val showTopBar = !isToday && !(currentRoute == AppRoute.Duas && duaDetailOpen)
+    // ارتفاع شريط التنقل السفلي + هوامشه — يُحجز للمحتوى والمشغّل.
+    val navBarReserve = navigationBottom + 12.dp + KararTokens.Size.navBarHeight
 
     val contentTop = when {
         isToday -> statusTop + 6.dp
-        currentRoute == AppRoute.Duas && duaDetailOpen -> statusTop + 6.dp
         else -> statusTop + KararTokens.Size.contentTopGap
     }
     val contentPadding = PaddingValues(
         start = cutoutStart,
         top = contentTop,
         end = cutoutEnd,
-        bottom = navigationBottom + KararTokens.Size.contentBottomGap
+        bottom = navBarReserve + 36.dp +
+            if (player.hasTrack) KararTokens.Size.playerDockHeight + 10.dp else 0.dp
     )
 
-    fun selectDestination(destination: AppDestination) {
-        val target = destination.toRoute()
-        if (target == currentRoute) return
-        // نفرّغ أي شاشات فرعية ثم نستبدل الجذر، حتى يعمل الانتقال إلى «اليوم»
-        // من أي شاشة (بما فيها شاشة فُتحت من الضبط) دون بقاء عنصر قديم.
-        while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-        if (backStack.isEmpty()) {
-            backStack.add(target)
-        } else if (backStack[0] != target) {
-            backStack[0] = target
+    fun select(destination: AppDestination) {
+        val route = destination.toRoute()
+        if (backStack.size == 1 && backStack[0] == route) return
+        navDirection = if (destination.ordinal >= currentTab.ordinal) 1 else -1
+        // التبويبات تُستبدل في جذر الـback stack (لا تتكدّس)، وأي شاشة فرعية تُغلق.
+        //
+        // الخفة: كل تعديل على SnapshotStateList يوقظ NavDisplay؛ مسح الشاشات
+        // الفرعية ثم تبديل الجذر داخل لقطة واحدة يعني إعادة تركيب واحدة وحركة
+        // واحدة، بدل سلسلة حركات متتالية عند العودة من شاشة فرعية.
+        Snapshot.withMutableSnapshot {
+            if (backStack.size > 1) backStack.subList(1, backStack.size).clear()
+            if (backStack.isEmpty()) backStack.add(route) else backStack[0] = route
         }
     }
 
-    fun push(route: AppRoute) {
-        if (backStack.lastOrNull() != route) backStack.add(route)
+    fun openSettings() = select(AppDestination.SETTINGS)
+
+    /** «الودجتات» شاشة فرعية تُدفع فوق الضبط — ليست تبويبًا ثامنًا. */
+    fun openWidgets() {
+        if (backStack.lastOrNull() == AppRoute.Widgets) return
+        navDirection = 1
+        duaDetailOpen = false
+        duaDetailTitle = null
+        backStack.add(AppRoute.Widgets)
     }
 
-    fun pop() {
-        if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+    fun back() {
+        when {
+            // تفاصيل الدعاء أولًا: تُدار داخل شاشة الأدعية نفسها.
+            duaDetailOpen -> duaBackSignal++
+            backStack.size > 1 -> {
+                navDirection = -1
+                backStack.removeAt(backStack.lastIndex)
+            }
+            else -> Unit
+        }
     }
 
-    fun openWidgets() = push(AppRoute.Widgets)
+    // NavDisplay يتولى زر الرجوع النظامي؛ نُبقي معالجًا احتياطيًا لتغطية iOS
+    // وتفاصيل الدعاء في الوقت نفسه (لا يُستدعى اثنان لنفس الضغطة).
+    PlatformBackHandler(enabled = duaDetailOpen || backStack.size > 1) { back() }
 
+    // ---------- الهيكل ----------
     Box(modifier = modifier.fillMaxSize()) {
-        // خلفية أساسية تمنع أي وميض أبيض أثناء الانتقالات.
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(KararTokens.Backdrop.top)
-        )
-
+        // خلفية واحدة فقط: سماوية في «اليوم» (ترسمها الشاشة full-bleed)،
+        // وتدرج اللوحة الحالية في بقية الشاشات — فلا كتل لونية على الحواف.
         if (!isToday) {
             AppBackdrop()
         }
@@ -190,128 +238,129 @@ fun AppShell(
         Row(Modifier.fillMaxSize()) {
             if (layout.navigationLayout != NavigationLayout.BOTTOM_BAR) {
                 SideNavigation(
-                    current = currentDestination,
+                    current = currentTab,
                     expanded = layout.navigationLayout == NavigationLayout.DRAWER,
-                    onSelect = ::selectDestination
+                    onSelect = ::select
                 )
             }
 
+            // لا BoxWithConstraints هنا: كل SubcomposeLayout إضافي يؤجّل تركيب
+            // الشل بالكامل عند كل قياس. القيد بالأعراض يُعبَّر عنه بمُعدِّلات
+            // عادية، فيبقى مسار القياس خفيفًا أثناء الانتقالات وتغيير الحجم.
             Box(Modifier.weight(1f).fillMaxHeight()) {
-                // أقصى عرض للمحتوى: الشاشات العادية تُوسّط على 1024dp كما في المرجع
-                // (`max-w-5xl`)، وشاشة «اليوم» تبقى full-bleed لأن سماءها خلفية كاملة.
-                BoxWithConstraints(Modifier.fillMaxSize()) {
-                    val contentWidth = if (isToday) maxWidth else minOf(maxWidth, KararTokens.Size.contentMaxWidth)
-                    NavDisplay(
-                        backStack = backStack,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .width(contentWidth)
-                            .fillMaxHeight(),
-                    onBack = ::pop,
-                    transitionSpec = {
-                        // M3 Expressive: نابض مكاني للانزلاق + نابض تأثيرات للتلاشي.
-                        (
-                            slideInHorizontally(
-                                animationSpec = KararTokens.Motion.spatial()
-                            ) { it / 3 } + fadeIn(KararTokens.Motion.effects())
-                            ).togetherWith(
-                            slideOutHorizontally(
-                                animationSpec = KararTokens.Motion.spatial(
-                                    KararTokens.Motion.SpatialStiffnessFast
-                                )
-                            ) { -it / 4 } + fadeOut(
-                                KararTokens.Motion.effects(KararTokens.Motion.EffectsStiffnessFast)
-                            )
-                        )
-                    },
-                    popTransitionSpec = {
-                        (
-                            slideInHorizontally(
-                                animationSpec = KararTokens.Motion.spatial()
-                            ) { -it / 3 } + fadeIn(KararTokens.Motion.effects())
-                            ).togetherWith(
-                            slideOutHorizontally(
-                                animationSpec = KararTokens.Motion.spatial(
-                                    KararTokens.Motion.SpatialStiffnessFast
-                                )
-                            ) { it / 4 } + fadeOut(
-                                KararTokens.Motion.effects(KararTokens.Motion.EffectsStiffnessFast)
-                            )
-                        )
-                    },
+                val contentModifier = if (isToday) {
+                    Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth()
+                } else {
+                    Modifier
+                        .fillMaxHeight()
+                        .widthIn(max = KararTokens.Size.contentMaxWidth)
+                        .fillMaxWidth()
+                }
+
+                // Nav3: كل شاشة Scene مبني من الـback stack؛ الانتقالات نابضية
+                // وتتبع اتجاه المنصة (أندرويد shared-axis / iOS Cupertino).
+                NavDisplay(
+                    backStack = backStack,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .then(contentModifier),
+                    contentAlignment = Alignment.TopCenter,
+                    onBack = ::back,
+                    // الخفة: بلا SizeTransform — لا يُعاد قياس/قصّ المشهد بين الشاشات،
+                    // والشاشات هنا كلها بعرض واحد أصلًا، فإلغاؤه يوفّر طبقة قصّ لكل إطار.
+                    sizeTransform = null,
+                    transitionSpec = { sceneTransition(navDirection) },
+                    popTransitionSpec = { sceneTransition(-navDirection) },
                     entryProvider = entryProvider {
-                        entry<AppRoute.Today> {
+                        entry(AppRoute.Today) {
                             TodayScreen(
                                 state = state,
                                 weather = weather,
-                                onOpenCalendar = { push(AppRoute.Calendar) },
-                                onOpenSettings = { push(AppRoute.Settings) },
+                                onOpenFullCalendar = { select(AppDestination.CALENDAR) },
+                                onOpenSettings = ::openSettings,
                                 contentPadding = contentPadding
                             )
                         }
-                        entry<AppRoute.Settings> {
+                        entry(AppRoute.Settings) {
                             SettingsScreen(
                                 state = state,
                                 contentPadding = contentPadding,
                                 onOpenWidgets = ::openWidgets
                             )
                         }
-                        entry<AppRoute.Calendar> {
+                        entry(AppRoute.Calendar) {
                             CalendarScreen(state = state, contentPadding = contentPadding)
                         }
-                        entry<AppRoute.Qibla> {
+                        entry(AppRoute.Qibla) {
                             ShrinesQiblaScreen(state = state, contentPadding = contentPadding)
                         }
-                        entry<AppRoute.Duas> {
+                        entry(AppRoute.Duas) {
                             DuasScreen(
                                 contentPadding = contentPadding,
-                                onDetailVisibilityChanged = { duaDetailOpen = it }
+                                player = player,
+                                backSignal = duaBackSignal,
+                                onDetailVisibilityChanged = { open ->
+                                    duaDetailOpen = open
+                                    if (!open) duaDetailTitle = null
+                                },
+                                onDetailTitleChanged = { duaDetailTitle = it }
                             )
                         }
-                        entry<AppRoute.Tasbih> {
+                        entry(AppRoute.Tasbih) {
                             TasbihScreen(state = state, contentPadding = contentPadding)
                         }
-                        entry<AppRoute.Fiqh> {
+                        entry(AppRoute.Fiqh) {
                             FiqhScreen(state = state, contentPadding = contentPadding)
                         }
-                        entry<AppRoute.Widgets> {
+                        entry(AppRoute.Widgets) {
                             WidgetsScreen(state = state, contentPadding = contentPadding)
                         }
                     }
                 )
-                }
 
                 if (showTopBar) {
-                    FloatingTopBar(
-                        title = when (currentRoute) {
-                            AppRoute.Widgets -> "الودجتات"
-                            else -> currentDestination?.title ?: "التطبيق"
+                    UnifiedTopBar(
+                        title = when {
+                            widgetsOpen -> "الودجتات"
+                            currentTab == AppDestination.DUAS && duaDetailTitle != null -> duaDetailTitle!!
+                            else -> currentTab.title
                         },
-                        subtitle = when (currentRoute) {
-                            AppRoute.Widgets -> "أشكال الودجت وخلفياتها"
-                            AppRoute.Today -> ""
+                        subtitle = when {
+                            widgetsOpen -> "أشكال الودجت وخلفياتها"
+                            currentTab == AppDestination.DUAS && duaDetailTitle != null -> "الأدعية والمناجاة"
                             else -> "${hijri.day} ${hijri.monthName} ${hijri.year} هـ"
                         },
-                        canGoBack = backStack.size > 1,
-                        onBack = ::pop,
-                        actionIcon = if (currentRoute == AppRoute.Settings) Icons.Filled.Widgets else Icons.Filled.Tune,
-                        actionLabel = if (currentRoute == AppRoute.Settings) "الودجتات" else "الضبط",
+                        canGoBack = backStack.size > 1 || duaDetailOpen,
+                        onBack = ::back,
+                        actionIcon = if (currentTab == AppDestination.SETTINGS) Icons.Filled.Widgets else Icons.Filled.Tune,
+                        actionLabel = if (currentTab == AppDestination.SETTINGS) "الودجتات" else "الضبط",
                         onAction = {
-                            if (currentRoute == AppRoute.Settings) openWidgets()
-                            else selectDestination(AppDestination.SETTINGS)
+                            if (currentTab == AppDestination.SETTINGS) openWidgets() else openSettings()
                         },
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = statusTop + 8.dp, start = 12.dp, end = 12.dp)
+                            .padding(top = statusTop + 8.dp, start = 12.dp + cutoutStart, end = 12.dp + cutoutEnd)
                     )
                 }
             }
         }
 
+        // مشغّل واحد: مدمج فوق شريط التنقل، أو كرة عائمة تُسحب.
+        if (player.hasTrack) {
+            DuaPlayerOverlay(
+                controller = player,
+                bottomReserve = navBarReserve,
+                horizontalPadding = 12.dp + cutoutStart,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
         if (layout.navigationLayout == NavigationLayout.BOTTOM_BAR) {
             FloatingBottomBar(
-                current = currentDestination,
-                onSelect = ::selectDestination,
+                current = currentTab,
+                onSelect = ::select,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
@@ -324,37 +373,50 @@ fun AppShell(
     }
 }
 
-/** بناء الـback stack الرسمي مع إعداد التسلسل متعدد المنصات. */
-@Composable
-private fun rememberAppBackStack() = rememberNavBackStack(
-    remember {
-        SavedStateConfiguration {
-            serializersModule = SerializersModule {
-                polymorphic(NavKey::class) {
-                    subclassesOfSealed<AppRoute>()
-                }
-            }
-        }
-    },
-    AppRoute.Today
-)
+/**
+ * انتقالات المنصة لشاشات Nav3:
+ * - أندرويد: M3 Expressive shared-axis خفيف (انزلاق 1/8 عرض + تلاشٍ نابض).
+ * - iOS: انزلاق Cupertino كامل العرض للشاشات الفرعية، وتلاشٍ للتبويبات.
+ *
+ * الخفة: لا تكبير/تصغير (scale) في الانتقال — كل scale يفرض طبقة رسم
+ * إضافية على كل شاشة أثناء الحركة. الانزلاق القصير + التلاشي يحققان الإحساس
+ * نفسه بكتابة بكسل أقل، فيبقى التنقل ثابت الإطارات على الأجهزة المتوسطة.
+ *
+ * [direction] = 1 للأمام (دفع/تبويب أعلى)، -1 للخلف (سحب/تبويب أدنى).
+ */
+private fun sceneTransition(direction: Int): ContentTransform {
+    val travel: (Int) -> Int = { full -> if (direction >= 0) full else -full }
+    return when {
+        isIosUi -> (
+            slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { travel(it) } +
+                fadeIn(animationSpec = KararTokens.Motion.effects())
+            ).togetherWith(
+            slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -travel(it) / 3 } +
+                fadeOut(animationSpec = KararTokens.Motion.effects())
+        )
+        else -> (
+            slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { travel(it) / 8 } +
+                fadeIn(animationSpec = KararTokens.Motion.effects())
+            ).togetherWith(
+            slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -travel(it) / 12 } +
+                fadeOut(animationSpec = KararTokens.Motion.effects())
+        )
+    }
+}
 
-/** خلفية الشاشات غير السماوية: تدرج داكن + توهجان ناعمان بلا كتل لونية. */
+/** خلفية الشاشات غير السماوية: تدرج اللوحة الحالية + توهجان ناعمان. */
 @Composable
 private fun AppBackdrop() {
+    val palette = LocalKararPalette.current
     Box(
         Modifier
             .fillMaxSize()
             .drawBehind {
-                drawRect(
-                    Brush.verticalGradient(
-                        listOf(KararTokens.Backdrop.top, KararTokens.Backdrop.bottom)
-                    )
-                )
+                drawRect(Brush.verticalGradient(listOf(palette.backgroundTop, palette.backgroundBottom)))
                 val radius = size.maxDimension * 0.62f
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(KararTokens.Backdrop.tealGlow, Color.Transparent),
+                        colors = listOf(palette.tealGlow, Color.Transparent),
                         center = Offset(size.width * 0.12f, size.height * 0.10f),
                         radius = radius
                     ),
@@ -363,7 +425,7 @@ private fun AppBackdrop() {
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(KararTokens.Backdrop.indigoGlow, Color.Transparent),
+                        colors = listOf(palette.indigoGlow, Color.Transparent),
                         center = Offset(size.width * 0.88f, size.height * 0.82f),
                         radius = radius
                     ),
@@ -374,14 +436,17 @@ private fun AppBackdrop() {
     )
 }
 
-/** شريط العنوان العائم: زر رجوع دائري + كبسولة العنوان + زر إجراء دائري. */
+/**
+ * شريط العنوان الموحّد: زر رجوع دائري + كبسولة عنوان واحدة + زر إجراء.
+ * العنوان وحده يتبدّل داخل نفس الكبسولة بحركة انزلاق نابضة.
+ */
 @Composable
-private fun FloatingTopBar(
+private fun UnifiedTopBar(
     title: String,
     subtitle: String,
     canGoBack: Boolean,
     onBack: () -> Unit,
-    actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    actionIcon: ImageVector,
     actionLabel: String,
     onAction: () -> Unit,
     modifier: Modifier = Modifier
@@ -402,6 +467,7 @@ private fun FloatingTopBar(
             )
         }
 
+
         GlassSurface(
             modifier = Modifier
                 .weight(1f)
@@ -416,18 +482,33 @@ private fun FloatingTopBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    AnimatedContent(
+                        targetState = title,
+                        transitionSpec = {
+                            (
+                                slideInVertically(animationSpec = KararTokens.Motion.spatial()) { -it / 2 } +
+                                    fadeIn(animationSpec = KararTokens.Motion.effects())
+                                ).togetherWith(
+                                slideOutVertically(animationSpec = KararTokens.Motion.spatial()) { it / 2 } +
+                                    fadeOut(animationSpec = KararTokens.Motion.effects())
+                            )
+                        },
+                        label = "topbar-title",
+                        contentAlignment = Alignment.CenterStart
+                    ) { current ->
+                        Text(
+                            text = current,
+                            color = KararColors.TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     if (subtitle.isNotBlank()) {
                         Text(
                             text = subtitle,
-                            color = Color(0xFFB9C0D4),
+                            color = KararColors.TextSecondary,
                             fontSize = 10.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -436,9 +517,8 @@ private fun FloatingTopBar(
                 }
                 Text(
                     text = "☾",
-                    color = KararTokens.Accent.gold.copy(alpha = 0.9f),
-                    fontSize = 22.sp,
-                    textAlign = TextAlign.Center
+                    color = KararColors.Gold.copy(alpha = 0.9f),
+                    fontSize = 22.sp
                 )
             }
         }
@@ -454,7 +534,7 @@ private fun FloatingTopBar(
 /** زر دائري زجاجي منفصل. */
 @Composable
 private fun CircleGlassButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit
 ) {
@@ -473,114 +553,138 @@ private fun CircleGlassButton(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = Color.White.copy(alpha = 0.92f),
+                tint = KararColors.TextPrimary.copy(alpha = 0.92f),
                 modifier = Modifier.size(21.dp)
             )
         }
     }
 }
 
-/** الشريط السفلي العائم — M3 Expressive: عرض ثابت لكل وجهة، بلا توسّع أو تمرير. */
+/**
+ * الشريط السفلي: العنصر النشط يتمدّد أفقيًا ويُظهر عنوانه على خلفية
+ * متدرجة teal→indigo، وغير النشط أيقونة فقط. كل ذلك بنوابض مكانية.
+ */
 @Composable
 private fun FloatingBottomBar(
-    current: AppDestination?,
+    current: AppDestination,
     onSelect: (AppDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassSurface(
+    BoxWithConstraints(
         modifier = modifier
             .widthIn(max = KararTokens.Size.navBarMaxWidth)
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        elevation = 24.dp,
-        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+            .fillMaxWidth()
+    ) {
+        val unselected = 40.dp
+        val pad = 6.dp
+        val selectedWidth = (maxWidth - pad * 2 - unselected * (AppDestination.entries.size - 1))
+            .coerceIn(64.dp, 108.dp)
+
+        GlassSurface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(26.dp),
+            elevation = 24.dp,
+            contentPadding = PaddingValues(horizontal = pad, vertical = pad)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AppDestination.entries.forEach { destination ->
+                    BottomNavItem(
+                        destination = destination,
+                        selected = destination == current,
+                        width = if (destination == current) selectedWidth else unselected,
+                        onClick = { onSelect(destination) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomNavItem(
+    destination: AppDestination,
+    selected: Boolean,
+    width: androidx.compose.ui.unit.Dp,
+    onClick: () -> Unit
+) {
+    val animatedWidth by animateDpAsState(
+        targetValue = width,
+        animationSpec = KararTokens.Motion.spatial(),
+        label = "nav-width"
+    )
+    val indicator by animateColorAsState(
+        targetValue = if (selected) KararColors.Teal else Color.Transparent,
+        animationSpec = KararTokens.Motion.effects(),
+        label = "nav-indicator"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) Color.White else KararColors.Teal.copy(alpha = 0.78f),
+        animationSpec = KararTokens.Motion.effects(),
+        label = "nav-content"
+    )
+    val gradient = Brush.linearGradient(
+        listOf(KararColors.Teal, KararColors.Violet)
+    )
+
+    Box(
+        modifier = Modifier
+            .width(animatedWidth)
+            .height(KararTokens.Size.navItem)
+            .clip(RoundedCornerShape(18.dp))
+            .then(
+                if (selected) Modifier.background(gradient) else Modifier
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            AppDestination.entries.forEach { destination ->
-                BottomNavItem(
-                    destination = destination,
-                    selected = destination == current,
-                    onClick = { onSelect(destination) },
-                    modifier = Modifier.weight(1f)
+            Icon(
+                imageVector = destination.icon,
+                contentDescription = destination.title,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp)
+            )
+            AnimatedVisibility(
+                visible = selected,
+                enter = fadeIn(KararTokens.Motion.effects()) +
+                    slideInHorizontally(KararTokens.Motion.spatial()) { it / 2 },
+                exit = fadeOut(KararTokens.Motion.effects()) +
+                    slideOutHorizontally(KararTokens.Motion.spatial()) { it / 2 }
+            ) {
+                Text(
+                    text = destination.shortTitle,
+                    color = contentColor,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip
                 )
             }
         }
     }
 }
 
-/**
- * عنصر الشريط السفلي على نمط `ShortNavigationBar` في M3 Expressive:
- * مؤشّر كبسولي خلف الأيقونة + الاسم أسفلها دائمًا.
- *
- * عرض كل عنصر ثابت (`weight`)، لذلك لا يتغيّر حجم الشريط ولا تتحرك
- * بقية الأيقونات عند تغيير الوجهة، وتبقى كل الأيقونات قابلة للنقر.
- */
-@Composable
-private fun BottomNavItem(
-    destination: AppDestination,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val indicator by animateColorAsState(
-        targetValue = if (selected) KararTokens.Accent.gold else Color.Transparent,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "nav-indicator"
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (selected) Color(0xFF241A00) else Color.White.copy(alpha = 0.72f),
-        animationSpec = KararTokens.Motion.effects(),
-        label = "nav-content"
-    )
-
-    Column(
-        modifier = modifier
-            .height(KararTokens.Size.navItem)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 3.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .width(38.dp)
-                .height(25.dp)
-                .clip(CircleShape)
-                .background(indicator),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = destination.icon,
-                contentDescription = destination.title,
-                tint = contentColor,
-                modifier = Modifier.size(19.dp)
-            )
-        }
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = destination.shortTitle,
-            color = contentColor,
-            fontSize = 9.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-/** الشريط الجانبي العائم — Rail على العروض المتوسطة، وDrawer موسّع على الواسعة. */
+/** الشريط الجانبي — Rail على المتوسط، وDrawer موسّع على الواسع، بتوسّع نابض. */
 @Composable
 private fun SideNavigation(
-    current: AppDestination?,
+    current: AppDestination,
     expanded: Boolean,
     onSelect: (AppDestination) -> Unit
 ) {
-    val width = if (expanded) KararTokens.Size.drawerWidth else KararTokens.Size.railWidth
+    val targetWidth = if (expanded) KararTokens.Size.drawerWidth else KararTokens.Size.railWidth
+    val width by animateDpAsState(
+        targetValue = targetWidth,
+        animationSpec = KararTokens.Motion.spatial(),
+        label = "side-width"
+    )
     Box(
         modifier = Modifier
             .fillMaxHeight()
@@ -620,13 +724,13 @@ private fun SideNavItem(
     onClick: () -> Unit
 ) {
     val background by animateColorAsState(
-        targetValue = if (selected) KararTokens.Accent.gold else Color.Transparent,
-        animationSpec = tween(KararTokens.Motion.normalMs, easing = KararTokens.Motion.Fluid),
+        targetValue = if (selected) KararColors.Teal.copy(alpha = 0.22f) else Color.Transparent,
+        animationSpec = KararTokens.Motion.effects(),
         label = "rail-bg"
     )
     val contentColor by animateColorAsState(
-        targetValue = if (selected) Color(0xFF241A00) else Color.White.copy(alpha = 0.72f),
-        animationSpec = tween(KararTokens.Motion.normalMs, easing = KararTokens.Motion.Fluid),
+        targetValue = if (selected) KararColors.Teal else KararColors.TextSecondary,
+        animationSpec = KararTokens.Motion.effects(),
         label = "rail-fg"
     )
 
@@ -647,7 +751,7 @@ private fun SideNavItem(
             tint = contentColor,
             modifier = Modifier.size(20.dp)
         )
-        if (expanded) {
+        AnimatedVisibility(visible = expanded) {
             Text(
                 text = destination.shortTitle,
                 color = contentColor,

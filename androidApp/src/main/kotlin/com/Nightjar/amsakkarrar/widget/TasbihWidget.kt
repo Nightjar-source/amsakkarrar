@@ -48,17 +48,17 @@ import kotlinx.datetime.toLocalDateTime
 private val Sky = Color(0xFF38BDF8)
 private val White = Color(0xFFF8FAFC)
 private val Muted = Color(0xFF94A3B8)
-private val Gold = Color(0xFFFFD700)
 private val Danger = Color(0xFFEF5350)
 
 private fun color(value: Color): ColorProvider = ColorProvider(value)
 
 /**
  * ودجت المسبحة — 2×2:
- * - الضغط على الودجت يزيد العداد ويحفظه في الإعدادات (WorkManager/الودجت الأخرى تتزامن).
+ * - الضغط على الودجت يزيد العداد ويحفظه في الإعدادات فورًا (تزامن فوري).
  * - زر تصفير سريع.
- * - زر ⚙ لفتح إعدادات الخلفية (Material / Blur / شفاف).
  * - زر «التطبيق» لفتح التطبيق.
+ * - لا يوجد زر ⚙ داخل الودجت: الخلفية تُضبط من شاشة «الودجتات» في التطبيق
+ *   أو بالضغط المطوّل على الودجت ← «تعديل».
  */
 class TasbihWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = TasbihWidget()
@@ -107,12 +107,6 @@ private fun TasbihWidgetContent(context: Context, settings: AppSettings, appWidg
     val openApp = Intent(context, MainActivity::class.java).apply {
         action = Intent.ACTION_MAIN
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-    }
-    val openSettings = Intent(context, WidgetConfigActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        if (appWidgetId != android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID) {
-            putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        }
     }
 
     Box(
@@ -217,16 +211,6 @@ private fun TasbihWidgetContent(context: Context, settings: AppSettings, appWidg
                         .padding(horizontal = 6.dp, vertical = 3.dp)
                         .clickable(actionRunCallback<TasbihResetAction>()),
                     style = TextStyle(color = color(Danger), fontSize = 7.sp, fontWeight = FontWeight.Bold)
-                )
-                Spacer(GlanceModifier.width(5.dp))
-                Text(
-                    text = "⚙",
-                    modifier = GlanceModifier
-                        .background(card)
-                        .cornerRadius(50.dp)
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
-                        .clickable(actionStartActivity(openSettings)),
-                    style = TextStyle(color = color(Gold), fontSize = 9.sp)
                 )
                 Spacer(GlanceModifier.width(5.dp))
                 Text(

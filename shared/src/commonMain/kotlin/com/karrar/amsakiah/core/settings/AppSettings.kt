@@ -46,21 +46,23 @@ data class AppSettings(
      */
     val imsakMode: String = "ramadan_auto",
 
-    // ---------- الإشعارات ----------
+    // ---------- الإشعارات (إشعاران فقط، وكلاهما اختياري) ----------
+    /** بطاقة الأذان عند دخول الوقت — اختيارية. */
     val adhanEnabled: Boolean = true,
     /** الأوقات التي يُرفع عندها الأذان (اختيار محدّد أو الكل) */
     val adhanPrayers: List<String> = listOf("fajr", "dhuhr", "asr", "maghrib", "isha"),
-    val reminderEnabled: Boolean = true,
-    /** الأوقات التي يُرسل قبلها تنبيه التذكير */
-    val reminderPrayers: List<String> = listOf("fajr", "dhuhr", "asr", "maghrib", "isha"),
-    val reminderMinutes: Int = 15,
+    /** الإشعار الحي للعدّاد التنازلي بشريط التقدم — اختياري. */
     val liveNotification: Boolean = true,
     /** الأوقات التي يدور حولها العدّاد والإشعار الحي (اختيار محدّد أو الكل) */
     val livePrayers: List<String> = listOf("imsak", "fajr", "dhuhr", "asr", "maghrib", "isha", "midnight"),
     val vibration: Boolean = true,
 
     // ---------- المظهر ----------
-    val darkTheme: Boolean = true,
+    /**
+     * وضع المظهر: `system` (تلقائي حسب النظام) / `light` / `dark`.
+     * يُقرأ في `App.kt` → `KararTheme(mode)` فيتبدّل التطبيق كاملًا فورًا.
+     */
+    val themeMode: String = ThemeMode.SYSTEM,
     val fontScale: Float = 1f,
 
     // ---------- أخرى ----------
@@ -94,4 +96,23 @@ data class AppSettings(
 
 object SettingsDefaults {
     val instance = AppSettings()
+}
+
+/**
+ * أوضاع المظهر الثلاثة — قيم نصية لتبقى قابلة للحفظ والترحيل.
+ *
+ * `SYSTEM`: يتبع النظام لحظيًا، `LIGHT`: فاتح دائمًا، `DARK`: مظلم دائمًا.
+ */
+object ThemeMode {
+    const val SYSTEM = "system"
+    const val LIGHT = "light"
+    const val DARK = "dark"
+
+    val all: List<String> = listOf(SYSTEM, LIGHT, DARK)
+
+    fun label(mode: String): String = when (mode) {
+        LIGHT -> "فاتح"
+        DARK -> "مظلم"
+        else -> "تلقائي"
+    }
 }

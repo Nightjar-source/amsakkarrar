@@ -27,7 +27,6 @@ object NotificationDesign {
 
     const val LIVE_ID = 3100
     const val PRAYER_ID = 3101
-    const val FALLBACK_ID = 3102
 
     fun contentIntent(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
@@ -121,11 +120,7 @@ object NotificationDesign {
         channel: String = NotificationChannels.ADHAN,
         timeoutAfterMs: Long = 2 * 60 * 60 * 1000L
     ): Notification {
-        val views = RemoteViews(context.packageName, R.layout.notification_prayer)
-        views.setTextViewText(R.id.prayer_name, prayerLabel)
-        views.setTextViewText(R.id.prayer_current, currentTime)
-        views.setTextViewText(R.id.prayer_next_label, "الصلاة القادمة ($nextLabel)")
-        views.setTextViewText(R.id.prayer_next_time, nextTime)
+        val views = prayerViews(context, prayerLabel, currentTime, nextLabel, nextTime)
 
         return NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notif_small)
@@ -142,4 +137,66 @@ object NotificationDesign {
             .setContentIntent(contentIntent(context))
             .build()
     }
+
+    /**
+     * بطاقة **التشغيل** أثناء الأذان — نفس تصميم بطاقة الوصول بالحرف، لكن على
+     * قناة صامتة (الصوت يعزفه `AdhanService` نفسه) ومعها زر «إيقاف الأذان».
+     *
+     * تستخدم [PRAYER_ID] نفسها، فتحل محل بطاقة الوصول بدل أن تتكدّس معها:
+     * **بطاقة واحدة لكل حدث** كما هو مطلوب.
+     */
+    fun buildPlaying(
+        context: Context,
+        prayerLabel: String,
+        currentTime: String,
+        nextLabel: String,
+        nextTime: String,
+        preview: Boolean = false
+    ): Notification {
+        val views = prayerViews(context, prayerLabel, currentTime, nextLabel, nextTime)
+        val stopIntent = stopIntent(context)
+
+        return NotificationCompat.Builder(context, NotificationChannels.ADHAN)
+            .setSmallIcon(R.drawable.ic_notif_small)
+            .setContentTitle(if (preview) "تجربة صوت الأذان" else "الأذان — $prayerLabel")
+            .setCustomContentView(views)
+            .setCustomBigContentView(views)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setOngoing(false)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setColor(0xFFFFD700.toInt())
+            .setColorized(true)
+            .setContentIntent(contentIntent(context))
+            // سحب البطاقة يوقف الصوت والخدمة معًا — لا يبقى إشعار عالق.
+            .setDeleteIntent(stopIntent)
+            .addAction(R.drawable.ic_notif_small, "إيقاف الأذان", stopIntent)
+            .build()
+    }
+
+    private fun prayerViews(
+        context: Context,
+        prayerLabel: String,
+        currentTime: String,
+        nextLabel: String,
+        nextTime: String
+    ): RemoteViews = RemoteViews(context.packageName, R.layout.notification_prayer).apply {
+        setTextViewText(R.id.prayer_name, prayerLabel)
+        setTextViewText(R.id.prayer_current, currentTime)
+        setTextViewText(
+            R.id.prayer_next_label,
+            if (nextLabel.isBlank()) "الصلاة القادمة" else "الصلاة القادمة ($nextLabel)"
+        )
+        setTextViewText(R.id.prayer_next_time, nextTime)
+    }
+
+    private fun stopIntent(context: Context): PendingIntent = PendingIntent.getService(
+        context,
+        902,
+        Intent(context, AdhanService::class.java).apply { action = AdhanService.ACTION_STOP },
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
 }

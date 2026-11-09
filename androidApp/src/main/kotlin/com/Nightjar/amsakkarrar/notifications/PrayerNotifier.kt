@@ -1,75 +1,24 @@
 package com.Nightjar.amsakkarrar.notifications
 
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import androidx.core.app.NotificationCompat
-import com.Nightjar.amsakkarrar.MainActivity
-import com.Nightjar.amsakkarrar.R
 
+/**
+ * إشعار الأذان — النوع الثاني والأخير من إشعارات التطبيق.
+ *
+ * التطبيق ينشر **إشعارين فقط**، وكلاهما اختياري من الضبط:
+ * 1) الإشعار الحي للعدّاد التنازلي بشريط التقدم ([NotificationDesign.LIVE_ID]).
+ * 2) بطاقة الأذان ([NotificationDesign.PRAYER_ID]).
+ *
+ * لذلك لا يوجد معرّف ثالث هنا: البطاقة الصامتة التي تنشرها [AdhanService]،
+ * ونسخة الصوت الاحتياطية عند فشل الخدمة، كلتاهما تستخدم [NotificationDesign.PRAYER_ID]
+ * فتحل إحداهما محل الأخرى بدل أن تتكدّس بطاقتان لحدث واحد.
+ */
 object PrayerNotifier {
 
-    fun showReminder(context: Context, prayerLabel: String, minutes: Int) {
-        NotificationChannels.createAll(context)
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        val contentIntent = PendingIntent.getActivity(
-            context,
-            1000,
-            Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val title = "باقي $minutes دقيقة على $prayerLabel"
-        val notification = NotificationCompat.Builder(context, NotificationChannels.REMINDER)
-            .setSmallIcon(R.drawable.ic_notif_small)
-            .setContentTitle(title)
-            .setContentText("استعد للصلاة — تقبل الله طاعتكم")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("$title. استعد للصلاة — تقبل الله طاعتكم")
-            )
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-            .setTimeoutAfter(30 * 60 * 1000L)
-            .setContentIntent(contentIntent)
-            .build()
-
-        runCatching { manager.notify(REMINDER_ID, notification) }
-    }
-
     /**
-     * إشعار دخول وقت الصلاة — مطابق لتصميم `widgetsnotifications.html`:
-     * «حان الآن موعد …» + «تقبل الله طاعتكم» + الوقت الحالي والصلاة القادمة.
-     */
-    fun showAdhanArrived(context: Context, prayerLabel: String) {
-        NotificationChannels.createAll(context)
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        // بطاقة وصول جديدة تُلغي أي بطاقة احتياطية قديمة من صلاة سابقة.
-        clearFallback(context)
-        val snapshot = runCatching { PrayerSnapshotLoader.load(context) }.getOrNull()
-
-        val entries = snapshot?.entries.orEmpty()
-        val index = entries.indexOfFirst { it.label == prayerLabel }.let { if (it < 0) 0 else it }
-        val current = entries.getOrNull(index)?.time ?: snapshot?.nextTime ?: "--:--"
-        val next = entries.getOrNull((index + 1) % entries.size.coerceAtLeast(1))
-
-        val notification = NotificationDesign.buildPrayer(
-            context = context,
-            prayerLabel = prayerLabel,
-            currentTime = current,
-            nextLabel = next?.label ?: snapshot?.afterLabel ?: "",
-            nextTime = next?.time ?: snapshot?.afterTime ?: "--:--"
-        )
-
-        runCatching { manager.notify(NotificationDesign.PRAYER_ID, notification) }
-    }
-
-    /**
-     * احتياط الصوت: إشعار على قناة تحمل adhan.mp3 نفسه.
-     * يُستدعى فقط إذا فشل تشغيل AdhanService أو فتح ملف الصوت.
+     * احتياط الصوت: إشعار على قناة تحمل `adhan.mp3` نفسه.
+     * يُستدعى فقط إذا فشل تشغيل [AdhanService] أو فتح ملف الصوت.
      */
     fun showAdhanFallback(context: Context, prayerLabel: String) {
         NotificationChannels.createAll(context)
@@ -90,20 +39,14 @@ object PrayerNotifier {
             // لا مهلة: قد يكون ملف الأذان طويلًا، ويجب ألا يُزال أثناء الصوت.
             timeoutAfterMs = 0L
         )
-        // بطاقة واحدة فقط: أزل بطاقة الوصول الصامتة قبل نشر نسخة الصوت الاحتياطية.
-        runCatching { manager.cancel(NotificationDesign.PRAYER_ID) }
-        runCatching { manager.notify(NotificationDesign.FALLBACK_ID, notification) }
+        runCatching { manager.notify(NotificationDesign.PRAYER_ID, notification) }
     }
 
-    /** إزالة بطاقة الصوت الاحتياطية عند نجاح تشغيل الخدمة أو دخول صلاة جديدة. */
+    /** إزالة بطاقة الأذان (احتياطية أو صامتة) — لا بطاقة عالقة. */
     fun clearFallback(context: Context) {
         runCatching {
             context.getSystemService(NotificationManager::class.java)
-                ?.cancel(NotificationDesign.FALLBACK_ID)
+                ?.cancel(NotificationDesign.PRAYER_ID)
         }
     }
-
-    const val REMINDER_ID = 3001
-    @Deprecated("استخدم NotificationDesign.PRAYER_ID")
-    const val ADHAN_ID = 3002
 }

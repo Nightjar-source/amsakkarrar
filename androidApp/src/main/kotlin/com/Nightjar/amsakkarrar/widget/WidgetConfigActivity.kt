@@ -175,7 +175,7 @@ private fun WidgetConfigScreen(
             }
             Spacer(Modifier.height(14.dp))
             Text(
-                "اختر النمط المناسب لشاشتك. يمكنك الرجوع هنا في أي وقت من زر ⚙ داخل الودجت أو بالضغط المطوّل عليه.",
+                "اختر النمط المناسب لشاشتك. يمكنك الرجوع هنا في أي وقت من شاشة «الودجتات» داخل التطبيق أو بالضغط المطوّل على الودجت ثم «تعديل».",
                 color = KararColors.TextSecondary,
                 fontSize = 11.sp,
                 lineHeight = 18.sp
@@ -221,7 +221,7 @@ private fun WidgetConfigScreen(
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                "ملاحظة: بعض إصدارات One UI تسمح بالضغط المطوّل ← «تعديل» مباشرةً، وبعض المشغّلات تكتفي بزر ⚙ داخل الودجت.",
+                "ملاحظة: بعض إصدارات One UI تسمح بالضغط المطوّل ← «تعديل» مباشرةً، وبعض المشغّلات تفتح هذه الشاشة من قائمة إعدادات الودجت.",
                 color = KararColors.TextMuted,
                 fontSize = 9.sp,
                 lineHeight = 14.sp,

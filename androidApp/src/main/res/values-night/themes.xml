@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      نسخة الوضع الليلي مطابقة تمامًا للثيم الأساسي (التطبيق داكن في الحالتين).
-      أُبقيت لمنع أي اختلاف في الألوان عند تفعيل الوضع الليلي على النظام.
+      الوضع المظلم: خلفية #070B13 مطابقة لأول لون في لوحة الوضع الداكن،
+      وأيقونات أشرطة فاتحة. شاشة البداية نفسها داكنة في الحالتين.
     -->
     <style name="Theme.Caliq" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
@@ -13,5 +13,13 @@
         <item name="android:windowBackground">@drawable/splash_background</item>
         <item name="android:forceDarkAllowed">false</item>
         <item name="android:windowActionModeOverlay">true</item>
+    </style>
+
+    <style name="Theme.Caliq.Splash" parent="Theme.SplashScreen">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="windowSplashScreenBackground">@drawable/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_safe</item>
+        <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.Caliq</item>
     </style>
 </resources>

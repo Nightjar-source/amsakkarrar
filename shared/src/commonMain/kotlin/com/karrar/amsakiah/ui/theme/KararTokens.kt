@@ -49,6 +49,8 @@ object KararTokens {
         val navBarHeight = 64.dp
         val navBarMaxWidth = 560.dp
         val navItem = 52.dp
+        /** ارتفاع شريط مشغّل الأدعية المدمج (≤ 30dp كما في المتطلبات). */
+        val playerDockHeight = 28.dp
         val touchTarget = 48.dp
         val circleButton = 52.dp
         val railWidth = 76.dp

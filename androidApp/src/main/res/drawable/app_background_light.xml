@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- خلفية الإطار الأول في الوضع الفاتح — مطابقة لأول لون في اللوحة الفاتحة -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FFFBF4" />
+</shape>

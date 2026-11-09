@@ -10,9 +10,11 @@ import com.karrar.amsakiah.core.location.createLocationProvider
 import com.karrar.amsakiah.core.location.fetchIpLocation
 import com.karrar.amsakiah.core.settings.AppSettings
 import com.karrar.amsakiah.core.settings.SettingsStorage
+import com.karrar.amsakiah.core.settings.ThemeMode
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
 /**
  * حالة التطبيق المركزية — مصدر الحقيقة الوحيد لكل الشاشات.
@@ -64,8 +66,35 @@ class AppState {
         SettingsChangeBus.removeListener(externalSync)
     }
 
+    /**
+     * تحميل الإعدادات مع ترحيل `darkTheme` القديم إلى [ThemeMode].
+     *
+     * الملفات المحفوظة قبل إضافة `themeMode` لا تحتوي المفتاح؛ إن كان
+     * `darkTheme=true` (وهو الافتراضي القديم) نُرحّله إلى الوضع المظلم حتى لا
+     * تتغيّر هوية المستخدمين القدامى فجأة، وإلا نتبع النظام.
+     */
     private fun loadSettings(): AppSettings = runCatching {
-        SettingsStorage.read()?.let { json.decodeFromString<AppSettings>(it) }
+        val raw = SettingsStorage.read() ?: return@runCatching null
+        val decoded = json.decodeFromString<AppSettings>(raw)
+        val hasThemeMode = runCatching {
+            json.parseToJsonElement(raw).jsonObject.containsKey("themeMode")
+        }.getOrDefault(false)
+        val migrated = if (hasThemeMode) {
+            decoded
+        } else {
+            // القيمة القديمة الافتراضية كانت darkTheme=true ⇒ الوضع المظلم.
+            val wasDark = Regex("\"darkTheme\"\\s*:\\s*(true|false)")
+                .find(raw)?.groupValues?.get(1) != "false"
+            decoded.copy(themeMode = if (wasDark) ThemeMode.DARK else ThemeMode.SYSTEM)
+        }
+        // حذف البيانات القديمة المحفوظة: مفاتيح التذكير (إشعار ثالث أُلغي)
+        // و`darkTheme` (استُبدل بـthemeMode وأُزيل من النموذج). نعيد كتابة
+        // الملف نظيفًا مرة واحدة حتى لا تبقى أي بيانات ميتة عند المستخدم.
+        val legacyKeys = listOf("reminderEnabled", "reminderPrayers", "reminderMinutes", "darkTheme")
+        if (legacyKeys.any { raw.contains("\"$it\"") }) {
+            runCatching { SettingsStorage.write(json.encodeToString(AppSettings.serializer(), migrated)) }
+        }
+        migrated
     }.getOrNull() ?: AppSettings()
 
     fun tick() {

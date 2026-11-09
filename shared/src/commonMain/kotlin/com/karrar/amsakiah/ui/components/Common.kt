@@ -78,7 +78,7 @@ fun InfoChip(
     icon: ImageVector? = null,
     modifier: Modifier = Modifier,
     textColor: Color = KararColors.TextPrimary,
-    container: Color = Color(0x14FFFFFF),
+    container: Color = KararColors.CardSoft,
     border: Color = KararColors.Border
 ) {
     Row(

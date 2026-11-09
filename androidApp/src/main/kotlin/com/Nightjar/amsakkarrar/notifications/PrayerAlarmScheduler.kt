@@ -14,8 +14,11 @@ import kotlinx.datetime.toInstant
 import kotlin.math.roundToInt
 
 /**
- * جدولة الأذان والتذكير بالمنبهات الدقيقة لسبعة أيام قادمة،
+ * جدولة الأذان فقط (اختياري من الضبط) بالمنبهات الدقيقة لسبعة أيام قادمة،
  * وإعادة الجدولة عند الإقلاع أو تغيير الوقت/المنطقة الزمنية.
+ *
+ * لا يوجد إشعار تذكير منفصل: إشعارات التطبيق اثنان فقط — العدّاد الحي
+ * وبطاقة الأذان — وكلاهما اختياري.
  */
 class PrayerAlarmScheduler(private val context: Context) {
 
@@ -27,17 +30,15 @@ class PrayerAlarmScheduler(private val context: Context) {
         val zone = PrayerCalculator.zoneOf(settings)
         val today = PrayerCalculator.todayDate(settings)
 
-        // إلغاء كل ما سبق جدولته
+        // إلغاء كل ما سبق جدولته (بما فيه منبهات التذكير الملغاة من الإصدارات القديمة)
         for (day in 0..DAYS_AHEAD) {
             for (index in PrayerMeta.order.indices) {
                 cancelAdhan(day, index)
-                cancelReminder(day, index)
+                cancelLegacyReminder(day, index)
             }
         }
 
         val adhanIds = settings.adhanPrayers.toSet()
-        // أوقات التذكير يختارها المستخدم في الضبط (يمكن اختيار وقت محدّد أو الكل)
-        val reminderIds = PrayerMeta.order.filter { it in settings.reminderPrayers }
 
         for (day in 0..DAYS_AHEAD) {
             val date = today.plus(DatePeriod(days = day))
@@ -54,10 +55,6 @@ class PrayerAlarmScheduler(private val context: Context) {
 
                 if (settings.adhanEnabled && id in adhanIds) {
                     scheduleAdhan(day, index, id, triggerAt)
-                }
-                if (settings.reminderEnabled && id in reminderIds) {
-                    val reminderAt = triggerAt - settings.reminderMinutes * 60_000L
-                    if (reminderAt > now + 2000) scheduleReminder(day, index, id, reminderAt)
                 }
             }
         }
@@ -79,21 +76,6 @@ class PrayerAlarmScheduler(private val context: Context) {
         setExact(pending, triggerAt)
     }
 
-    private fun scheduleReminder(day: Int, index: Int, prayerId: String, triggerAt: Long) {
-        val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
-            action = PrayerAlarmReceiver.ACTION_REMINDER
-            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER, PrayerMeta.label(prayerId))
-            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_ID, prayerId)
-        }
-        val pending = PendingIntent.getBroadcast(
-            context,
-            reminderRequestCode(day, index),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        setExact(pending, triggerAt)
-    }
-
     private fun setExact(pending: PendingIntent, triggerAt: Long) {
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
@@ -109,8 +91,12 @@ class PrayerAlarmScheduler(private val context: Context) {
     private fun cancelAdhan(day: Int, index: Int) =
         cancel(PrayerAlarmReceiver.ACTION_ADHAN, adhanRequestCode(day, index))
 
-    private fun cancelReminder(day: Int, index: Int) =
-        cancel(PrayerAlarmReceiver.ACTION_REMINDER, reminderRequestCode(day, index))
+    /**
+     * إلغاء منبهات التذكير التي جدولتها الإصدارات السابقة (requestCode 5000+).
+     * ضروري عند التحديث حتى لا يبقى إشعار ثالث قديم يعمل في الخلفية.
+     */
+    private fun cancelLegacyReminder(day: Int, index: Int) =
+        cancel(LEGACY_REMINDER_ACTION, reminderRequestCode(day, index))
 
     /**
      * يجب أن يطابق الـIntent المُجدول في **العمل** (action) وليس فقط
@@ -135,6 +121,7 @@ class PrayerAlarmScheduler(private val context: Context) {
 
     companion object {
         const val DAYS_AHEAD = 6
+        private const val LEGACY_REMINDER_ACTION = "com.Nightjar.amsakkarrar.REMINDER"
         private fun adhanRequestCode(day: Int, index: Int) = day * 100 + index
         private fun reminderRequestCode(day: Int, index: Int) = 5000 + day * 100 + index
     }

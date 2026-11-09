@@ -1,5 +1,6 @@
 package com.karrar.amsakiah.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -7,92 +8,100 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.core.settings.ThemeMode
+import com.karrar.amsakiah.ui.platform.ApplySystemBarAppearance
 
-/** لوحة ألوان V7 — ليل أزرق عميق + ذهبي رمضاني */
+/**
+ * ألوان التطبيق الدلالية — تقرأ من اللوحة الحالية (فاتح/داكن).
+ *
+ * كل `val` هنا دالة `@Composable` تُعاد قراءتها عند تغيير الوضع، لذلك يكفي
+ * تبديل `themeMode` في الإعدادات لتتبدّل كل الواجهة فورًا دون إعادة تشغيل.
+ */
 object KararColors {
-    val BackgroundTop = Color(0xFF050A15)
-    val BackgroundBottom = Color(0xFF0A1120)
-    val Card = Color(0xFF1A2030)
-    val CardSoft = Color(0x14FFFFFF)
-    val Gold = KararTokens.Accent.gold
-    val GoldDeep = KararTokens.Accent.goldDeep
-    val GoldSoft = KararTokens.Accent.goldSoft
-    val Purple = Color(0xFFA18CD1)
-    val Cyan = Color(0xFF00F2FE)
-    val Pink = Color(0xFFFBC2EB)
-    val TextPrimary = Color(0xFFF5F5F7)
-    val TextSecondary = Color(0xFFB9C0D4)
-    val TextMuted = Color(0xFF7C8598)
-    val Border = KararTokens.Glass.border
-    val Success = Color(0xFF4CAF50)
-    val Danger = Color(0xFFEF5350)
-
-    // أسطح إضافية للثيم الفاتح والداكن
-    val SurfaceDark = Color(0xFF111827)
-    val SurfaceDarkHigh = Color(0xFF1B2436)
-    val SurfaceLight = Color(0xFFFFFBF2)
-    val OnLight = Color(0xFF1C1B16)
+    val BackgroundTop: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.backgroundTop
+    val BackgroundBottom: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.backgroundBottom
+    val Card: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.surface
+    val CardSoft: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.surfaceSoft
+    val SurfaceHigh: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.surfaceHigh
+    val Gold: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.gold
+    val GoldDeep: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.goldDeep
+    val GoldSoft: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.goldSoft
+    val OnGold: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.onGold
+    val Purple: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.purple
+    val Cyan: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.cyan
+    val Pink: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.pink
+    val Teal: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.teal
+    val Violet: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.violet
+    val TextPrimary: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.textPrimary
+    val TextSecondary: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.textSecondary
+    val TextMuted: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.textMuted
+    val Border: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.border
+    val Success: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.success
+    val Danger: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.danger
+    val IsDark: Boolean @Composable @ReadOnlyComposable get() = LocalKararPalette.current.isDark
 }
 
-/** المخطط الداكن — التصميم الأساسي للتطبيق. */
+/** المخطط الداكن — هوية V7 الليلية. */
 private val KararDarkScheme = darkColorScheme(
-    primary = KararColors.Gold,
-    onPrimary = Color(0xFF241A00),
+    primary = KararDarkPalette.gold,
+    onPrimary = KararDarkPalette.onGold,
     primaryContainer = Color(0xFF5C4300),
     onPrimaryContainer = Color(0xFFFFE08A),
-    secondary = KararColors.Purple,
+    secondary = KararDarkPalette.purple,
     onSecondary = Color(0xFF1A1030),
     secondaryContainer = Color(0xFF3B2A63),
     onSecondaryContainer = Color(0xFFE9DDFF),
-    tertiary = KararTokens.Accent.teal,
+    tertiary = KararDarkPalette.teal,
     onTertiary = Color(0xFF00201B),
     tertiaryContainer = Color(0xFF004D44),
     onTertiaryContainer = Color(0xFFB8FFEF),
-    background = KararColors.BackgroundTop,
-    onBackground = KararColors.TextPrimary,
-    surface = KararColors.Card,
-    onSurface = KararColors.TextPrimary,
-    surfaceVariant = KararColors.SurfaceDarkHigh,
-    onSurfaceVariant = KararColors.TextSecondary,
+    background = KararDarkPalette.backgroundTop,
+    onBackground = KararDarkPalette.textPrimary,
+    surface = KararDarkPalette.surface,
+    onSurface = KararDarkPalette.textPrimary,
+    surfaceVariant = KararDarkPalette.surfaceHigh,
+    onSurfaceVariant = KararDarkPalette.textSecondary,
     surfaceContainerLowest = Color(0xFF070B13),
     surfaceContainerLow = Color(0xFF0B1120),
     surfaceContainer = Color(0xFF111827),
     surfaceContainerHigh = Color(0xFF1A2334),
     surfaceContainerHighest = Color(0xFF232D42),
-    outline = KararColors.Border,
+    outline = KararDarkPalette.border,
     outlineVariant = Color(0x14FFFFFF),
-    error = KararColors.Danger,
+    error = KararDarkPalette.danger,
     onError = Color(0xFF2B0000),
     inverseSurface = Color(0xFFF3EFE6),
     inverseOnSurface = Color(0xFF1C1B16),
     scrim = Color.Black
 )
 
-/** المخطط الفاتح — بديل اختياري مع الحفاظ على الهوية الذهبية. */
+/** المخطط الفاتح — M3 Expressive، أسطح دافئة ونفس ذهبي الهوية (مغمّق للتباين). */
 private val KararLightScheme = lightColorScheme(
-    primary = Color(0xFF7A5900),
-    onPrimary = Color.White,
+    primary = KararLightPalette.gold,
+    onPrimary = KararLightPalette.onGold,
     primaryContainer = Color(0xFFFFE08A),
     onPrimaryContainer = Color(0xFF261A00),
-    secondary = Color(0xFF5B4A7E),
+    secondary = KararLightPalette.purple,
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFE9DDFF),
     onSecondaryContainer = Color(0xFF1A1030),
-    tertiary = Color(0xFF00695E),
+    tertiary = KararLightPalette.teal,
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFB8FFEF),
     onTertiaryContainer = Color(0xFF00201B),
-    background = KararColors.SurfaceLight,
-    onBackground = KararColors.OnLight,
-    surface = Color(0xFFFFFDF7),
-    onSurface = KararColors.OnLight,
+    background = KararLightPalette.backgroundTop,
+    onBackground = KararLightPalette.textPrimary,
+    surface = KararLightPalette.surface,
+    onSurface = KararLightPalette.textPrimary,
     surfaceVariant = Color(0xFFEFE8DA),
-    onSurfaceVariant = Color(0xFF4C4639),
+    onSurfaceVariant = KararLightPalette.textSecondary,
     surfaceContainerLowest = Color.White,
     surfaceContainerLow = Color(0xFFFFF8EC),
     surfaceContainer = Color(0xFFF7F0E2),
@@ -100,7 +109,7 @@ private val KararLightScheme = lightColorScheme(
     surfaceContainerHighest = Color(0xFFE8E0D0),
     outline = Color(0xFF7C7668),
     outlineVariant = Color(0xFFD5CDBD),
-    error = Color(0xFFB3261E),
+    error = KararLightPalette.danger,
     onError = Color.White
 )
 
@@ -134,33 +143,29 @@ private val KararShapes = Shapes(
 /**
  * ثيم التطبيق الموحّد.
  *
- * @param darkTheme التصميم الأساسي داكن؛ يُمرَّر `false` عند إضافة الوضع الفاتح
- *   الكامل للشاشات لاحقًا.
- */
-/**
- * ثيم التطبيق الموحّد.
- *
- * @param darkTheme التصميم الأساسي داكن؛ يُمرَّر `false` عند إضافة الوضع الفاتح
- *   الكامل للشاشات لاحقًا.
- *
- * ملاحظة توافق (تم التحقق منها في CMP 1.12.2): واجهات Material 3 Expressive
- * الرسمية (`MaterialExpressiveTheme` و`MotionScheme`) ما زالت `internal` في
- * حزمة JetBrains المشتركة، لذلك نطبّق رموز Expressive نفسها يدويًا:
- *  - حركة Spring بنوعيها Spatial/Effects (انظر `KararTokens.Motion`).
- *  - أشكال كبيرة ناعمة وكبسولات (انظر `KararShapes`).
- *  - مكوّنات M3 القياسية مع ألوان كرار.
- * عند فتح الواجهة في نسخة CMP قادمة، يُستبدل `MaterialTheme` بـ
- * `MaterialExpressiveTheme(..., motionScheme = MotionScheme.expressive())`.
+ * @param mode `system` (تلقائي حسب النظام) / `light` / `dark`.
  */
 @Composable
 fun KararTheme(
-    darkTheme: Boolean = true,
+    mode: String = ThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) KararDarkScheme else KararLightScheme,
-        typography = KararTypography,
-        shapes = KararShapes,
-        content = content
-    )
+    val dark = when (mode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        else -> isSystemInDarkTheme()
+    }
+    val palette = if (dark) KararDarkPalette else KararLightPalette
+
+    // أيقونات شريط الحالة/التنقل تتبع الوضع الفعلي، لا وضع النظام فقط.
+    ApplySystemBarAppearance(lightBackground = !dark)
+
+    CompositionLocalProvider(LocalKararPalette provides palette) {
+        MaterialTheme(
+            colorScheme = if (dark) KararDarkScheme else KararLightScheme,
+            typography = KararTypography,
+            shapes = KararShapes,
+            content = content
+        )
+    }
 }

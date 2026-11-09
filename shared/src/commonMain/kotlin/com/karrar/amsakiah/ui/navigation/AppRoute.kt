@@ -1,7 +1,11 @@
 package com.karrar.amsakiah.ui.navigation
 
 import androidx.navigation3.runtime.NavKey
+import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 
 /**
  * مسارات Navigation 3.
@@ -36,6 +40,27 @@ sealed interface AppRoute : NavKey {
     /** شاشة فرعية تُفتح من الضبط — ليست تبويبًا ثامنًا. */
     @Serializable
     data object Widgets : AppRoute
+}
+
+/**
+ * إعداد `rememberNavBackStack` لاسترجاع الـback stack بعد قتل العملية.
+ *
+ * Navigation 3 يطلب تسجيلًا صريحًا لكل نوع من `NavKey` (تعددية مفتوحة)،
+ * وهذا ما يجعل الحالة تبقى بعد إعادة إنشاء النشاط على أندرويد وiOS.
+ */
+val appNavConfiguration: SavedStateConfiguration = SavedStateConfiguration {
+    serializersModule = SerializersModule {
+        polymorphic(NavKey::class) {
+            subclass(AppRoute.Today::class, AppRoute.Today.serializer())
+            subclass(AppRoute.Settings::class, AppRoute.Settings.serializer())
+            subclass(AppRoute.Calendar::class, AppRoute.Calendar.serializer())
+            subclass(AppRoute.Qibla::class, AppRoute.Qibla.serializer())
+            subclass(AppRoute.Duas::class, AppRoute.Duas.serializer())
+            subclass(AppRoute.Tasbih::class, AppRoute.Tasbih.serializer())
+            subclass(AppRoute.Fiqh::class, AppRoute.Fiqh.serializer())
+            subclass(AppRoute.Widgets::class, AppRoute.Widgets.serializer())
+        }
+    }
 }
 
 /** تحويل وجهة شريط التنقل إلى مسار. */

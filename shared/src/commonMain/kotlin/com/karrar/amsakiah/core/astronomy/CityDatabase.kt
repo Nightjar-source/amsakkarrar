@@ -1,6 +1,10 @@
 package com.karrar.amsakiah.core.astronomy
 
 import com.karrar.amsakiah.resources.Res
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.offsetAt
@@ -39,6 +43,9 @@ data class OfflineCity(
     val display: String
         get() = if (isProvince) "$name (محافظة/ولاية)، $country" else "$name، $country"
 
+    /** مفتاح ثابت فريد للقوائم (بلا تكرار حتى مع أسماء متطابقة). */
+    val stableId: String get() = "$name|$country|$lat|$lon|$kind"
+
     /** فرق التوقيت بالساعات عن UTC في اللحظة الحالية */
     fun offsetHoursNow(): Double = runCatching {
         TimeZone.of(timeZoneId).offsetAt(Clock.System.now()).totalSeconds / 3600.0
@@ -51,12 +58,18 @@ data class NearbyCity(val city: OfflineCity, val distanceKm: Double)
 
 /**
  * قاعدة المدن العالمية — تُقرأ من مورد أوفلاين (files/cities.json) مرة واحدة.
+ *
+ * **أمان الخيوط:** الملف 9.1MB ويُفكّ إلى عشرات آلاف الكائنات؛ لذلك كل القراءة
+ * والفكّ والفرز والبحث تجري على [Dispatchers.Default] خلف [Mutex]، مع
+ * `Deferred` ضمني عبر القفل: أول استدعاء يفكّ، والبقية تنتظر ثم تقرأ الكاش.
+ * هذا يمنع تجمّد الخيط الرئيسي (سبب انهيار حوار المدينة سابقًا).
  */
 object CityDatabase {
 
     private const val RES_PATH = "files/cities.json"
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val mutex = Mutex()
 
     private var cache: List<OfflineCity>? = null
     private var sortedByPop: List<OfflineCity>? = null
@@ -73,17 +86,23 @@ object CityDatabase {
 
     suspend fun load(): List<OfflineCity> {
         cache?.let { return it }
-        val loaded = runCatching {
-            val bytes = Res.readBytes(RES_PATH)
-            json.decodeFromString<List<OfflineCity>>(bytes.decodeToString())
-        }.getOrNull()
-        // إزالة التكرار: GeoNames يحتوي صفوفًا متطابقة الاسم/الدولة/الإحداثيات،
-        // وتكرار المفاتيح يُسقط LazyColumn في شاشة اختيار المدينة.
-        val result = (if (loaded.isNullOrEmpty()) fallback else loaded)
-            .distinctBy { "${it.name}|${it.country}|${it.lat}|${it.lon}" }
-        cache = result
-        sortedByPop = result.sortedByDescending { it.population }
-        return result
+        return mutex.withLock {
+            cache?.let { return@withLock it }
+            val result = withContext(Dispatchers.Default) {
+                runCatching {
+                    val bytes = Res.readBytes(RES_PATH)
+                    json.decodeFromString<List<OfflineCity>>(bytes.decodeToString())
+                }.getOrNull()
+                    .let { loaded -> if (loaded.isNullOrEmpty()) fallback else loaded }
+                    // إزالة التكرار: GeoNames يحتوي صفوفًا متطابقة الاسم/الدولة/الإحداثيات.
+                    .distinctBy { it.stableId }
+            }
+            cache = result
+            sortedByPop = withContext(Dispatchers.Default) {
+                result.sortedByDescending { it.population }
+            }
+            result
+        }
     }
 
     /**
@@ -94,12 +113,17 @@ object CityDatabase {
      */
     suspend fun popular(limit: Int = 4000, preferredCountry: String? = null): List<OfflineCity> {
         load()
-        val all = sortedByPop.orEmpty()
-        val country = preferredCountry?.trim()
-        if (country.isNullOrEmpty()) return all.take(limit)
-        val local = all.filter { it.country == country }
-        val rest = all.filter { it.country != country }
-        return (local + rest).take(limit)
+        return withContext(Dispatchers.Default) {
+            val all = sortedByPop.orEmpty()
+            val country = preferredCountry?.trim()
+            if (country.isNullOrEmpty()) {
+                all.take(limit)
+            } else {
+                val local = all.filter { it.country == country }
+                val rest = all.filter { it.country != country }
+                (local + rest).take(limit)
+            }
+        }
     }
 
     /**
@@ -110,53 +134,61 @@ object CityDatabase {
      */
     suspend fun nearest(lat: Double, lon: Double): NearbyCity? {
         val cities = load()
-        if (cities.isEmpty()) return null
-        var best: OfflineCity? = null
-        var bestDist = Double.MAX_VALUE
-        for (city in cities) {
-            if (city.isProvince) continue
-            // فحص سريع لتقليل الحسابات
-            val dLat = abs(city.lat - lat)
-            if (dLat * 111.0 > bestDist) continue
-            val d = haversine(lat, lon, city.lat, city.lon)
-            if (d < bestDist) {
-                bestDist = d
-                best = city
+        return withContext(Dispatchers.Default) {
+            var best: OfflineCity? = null
+            var bestDist = Double.MAX_VALUE
+            for (city in cities) {
+                if (city.isProvince) continue
+                // فحص سريع لتقليل الحسابات
+                val dLat = abs(city.lat - lat)
+                if (dLat * 111.0 > bestDist) continue
+                val d = haversine(lat, lon, city.lat, city.lon)
+                if (d < bestDist) {
+                    bestDist = d
+                    best = city
+                }
             }
+            best?.let { NearbyCity(it, bestDist) }
         }
-        val found = best ?: return null
-        return NearbyCity(found, bestDist)
     }
 
-    /** بحث نصي بالعربية أو الإنجليزية */
+    /** بحث نصي بالعربية أو الإنجليزية — على خيط خلفي مع تفضيل الدولة والبداية. */
     suspend fun search(query: String, limit: Int = 40, preferredCountry: String? = null): List<OfflineCity> {
         val q = normalize(query).trim()
         if (q.length < 2) return emptyList()
         val all = load()
         val country = preferredCountry?.trim().orEmpty()
-        return all.asSequence()
-            .filter {
-                normalize(it.name).contains(q) ||
-                    normalize(it.country).contains(q) ||
-                    normalize(it.region).contains(q)
-            }
-            .sortedWith(compareByDescending<OfflineCity> { normalize(it.name).startsWith(q) }
-                .thenByDescending { country.isNotEmpty() && it.country == country }
-                .thenByDescending { it.population })
-            .take(limit)
-            .toList()
+        return withContext(Dispatchers.Default) {
+            all.asSequence()
+                .filter {
+                    normalize(it.name).contains(q) ||
+                        normalize(it.country).contains(q) ||
+                        normalize(it.region).contains(q)
+                }
+                .sortedWith(
+                    compareByDescending<OfflineCity> { normalize(it.name).startsWith(q) }
+                        .thenByDescending { country.isNotEmpty() && it.country == country }
+                        .thenByDescending { it.population }
+                )
+                .take(limit)
+                .toList()
+        }
     }
 
     /** كل مدن دولة معينة */
     suspend fun byCountry(country: String, limit: Int = 300): List<OfflineCity> =
-        load().asSequence()
-            .filter { it.country == country }
-            .sortedByDescending { it.population }
-            .take(limit)
-            .toList()
+        withContext(Dispatchers.Default) {
+            load().asSequence()
+                .filter { it.country == country }
+                .sortedByDescending { it.population }
+                .take(limit)
+                .toList()
+        }
 
     suspend fun countries(): List<String> =
-        load().map { it.country }.distinct().sorted()
+        withContext(Dispatchers.Default) {
+            load().map { it.country }.distinct().sorted()
+        }
 
     fun haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371.0

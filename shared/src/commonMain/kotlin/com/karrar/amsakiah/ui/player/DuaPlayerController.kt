@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.karrar.amsakiah.core.audio.AudioPlayer
+import com.karrar.amsakiah.core.audio.PlaybackCoordinator
 import com.karrar.amsakiah.core.audio.createAudioPlayer
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 
@@ -67,6 +68,10 @@ class DuaPlayerController {
         positionMs = 0L
         durationMs = 0L
 
+        // مالك صوت واحد: أي أذان/تشغيل آخر يتوقف قبل بدء هذا الدعاء.
+        PlaybackCoordinator.requestPlayback(this)
+        PlaybackCoordinator.register(this) { pause() }
+
         player.play(res)
         playing = player.isPlaying()
         // المدة تُقرأ من المشغّل الأصلي بعد التجهيز مباشرة
@@ -87,6 +92,8 @@ class DuaPlayerController {
 
     fun resume() {
         if (resource == null) return
+        PlaybackCoordinator.requestPlayback(this)
+        PlaybackCoordinator.register(this) { pause() }
         player.resume()
         playing = player.isPlaying()
         sync()
@@ -127,6 +134,7 @@ class DuaPlayerController {
     }
 
     fun close() {
+        PlaybackCoordinator.unregister(this)
         player.stop()
         resource = null
         currentId = null

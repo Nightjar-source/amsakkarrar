@@ -19,11 +19,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -37,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.ui.components.GlassCard
-import com.karrar.amsakiah.ui.components.formatPlayerTime
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
@@ -55,74 +52,35 @@ fun DuaDetailScreen(
     player: DuaPlayerController,
     onBack: () -> Unit
 ) {
-    Column(
+    // عمود قراءة مُوسّط بعرض مريح على التابلت/الحاسوب بدل تمدّد النص لعرض النافذة.
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(
                 top = contentPadding.calculateTopPadding(),
                 bottom = contentPadding.calculateBottomPadding()
-            )
+            ),
+        contentAlignment = Alignment.TopCenter
     ) {
-        DuaTopBar(item = item, onBack = onBack)
-
-        // عمود قراءة مُوسّط بعرض مريح على التابلت/الحاسوب بدل تمدّد النص لعرض النافذة.
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            androidx.compose.foundation.lazy.LazyColumn(
-                modifier = Modifier
-                    .widthIn(max = KararTokens.Size.readingMaxWidth)
-                    .fillMaxHeight(),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 4.dp,
-                    bottom = if (player.hasTrack) 150.dp else 28.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                item {
-                    DuaHeaderCard(item = item, player = player)
-                }
-
-                item {
-                    DuaTextCard(item)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DuaTopBar(item: ShiaDuaItem, onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
+        androidx.compose.foundation.lazy.LazyColumn(
             modifier = Modifier
-                .size(40.dp)
-                .background(Color(0x1AFFFFFF), CircleShape)
-                .clickable(onClick = onBack),
-            contentAlignment = Alignment.Center
+                .widthIn(max = KararTokens.Size.readingMaxWidth)
+                .fillMaxHeight(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 4.dp,
+                bottom = 28.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "رجوع",
-                tint = KararColors.TextPrimary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                item.title,
-                color = KararColors.Gold,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-            Text(item.category, color = KararColors.TextMuted, fontSize = 10.sp)
+            item {
+                DuaHeaderCard(item = item, player = player)
+            }
+
+            item {
+                DuaTextCard(item)
+            }
         }
     }
 }
@@ -131,11 +89,6 @@ private fun DuaTopBar(item: ShiaDuaItem, onBack: () -> Unit) {
 private fun DuaHeaderCard(item: ShiaDuaItem, player: DuaPlayerController) {
     val isCurrent = player.currentId == item.id
     val isPlaying = isCurrent && player.playing
-    val fraction = if (isCurrent && player.durationMs > 0L) {
-        (player.positionMs.toFloat() / player.durationMs.toFloat()).coerceIn(0f, 1f)
-    } else {
-        0f
-    }
 
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
@@ -154,11 +107,11 @@ private fun DuaHeaderCard(item: ShiaDuaItem, player: DuaPlayerController) {
         }
 
         if (item.hasAudio) {
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
+                        .size(28.dp)
                         .background(
                             Brush.linearGradient(listOf(KararColors.Gold, KararColors.Pink)),
                             CircleShape
@@ -169,15 +122,15 @@ private fun DuaHeaderCard(item: ShiaDuaItem, player: DuaPlayerController) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (isPlaying) "إيقاف مؤقت" else "تشغيل",
-                        tint = Color(0xFF241A00),
-                        modifier = Modifier.size(24.dp)
+                        tint = KararColors.OnGold,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = if (isPlaying) {
-                            "يعمل الآن — من المشغّل الأصلي"
+                            "يعمل الآن — المشغّل أسفل الشاشة"
                         } else if (isCurrent) {
                             "متوقف مؤقتًا — اضغط للمتابعة"
                         } else {
@@ -185,44 +138,14 @@ private fun DuaHeaderCard(item: ShiaDuaItem, player: DuaPlayerController) {
                         },
                         color = if (isCurrent) KararColors.Gold else KararColors.TextPrimary,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         maxLines = 1
                     )
-
-                    if (isCurrent) {
-                        Spacer(Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = { fraction },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(5.dp)
-                                .background(Color(0x22FFFFFF), RoundedCornerShape(50)),
-                            color = KararColors.Gold,
-                            trackColor = Color(0x22FFFFFF)
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                formatPlayerTime(player.positionMs),
-                                color = KararColors.TextMuted,
-                                fontSize = 9.sp
-                            )
-                            Text(
-                                formatPlayerTime(player.durationMs),
-                                color = KararColors.TextMuted,
-                                fontSize = 9.sp
-                            )
-                        }
-                    } else {
-                        Text(
-                            "تسجيل صوتي أوفلاين — بدون إنترنت",
-                            color = KararColors.TextMuted,
-                            fontSize = 10.sp
-                        )
-                    }
+                    Text(
+                        "تسجيل صوتي أوفلاين — بدون إنترنت",
+                        color = KararColors.TextMuted,
+                        fontSize = 9.sp
+                    )
                 }
             }
         }

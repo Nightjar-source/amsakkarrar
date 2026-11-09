@@ -2,22 +2,21 @@ package com.Nightjar.amsakkarrar.notifications
 
 import android.app.Notification
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import androidx.core.app.NotificationCompat
-import com.Nightjar.amsakkarrar.MainActivity
-import com.Nightjar.amsakkarrar.R
 import com.karrar.amsakiah.core.audio.PlaybackCoordinator
 
 /**
@@ -42,6 +41,18 @@ class AdhanService : Service() {
     private var focusRequest: Any? = null
     private var preview = false
 
+    /** الصلاة التي يعزف أذانها الآن — لمنع إعادة التشغيل من الصفر. */
+    private var currentPrayer: String? = null
+
+    private val handler by lazy { Handler(Looper.getMainLooper()) }
+
+    /**
+     * حرس وقت: يوقف الخدمة بعد انتهاء مدة الملف + هامش، فلا يبقى إشعار أو
+     * صوت عالقًا حتى لو فشل `setOnCompletionListener` (بعض الأجهزة لا تناديه
+     * عند إخراج الصوت من مسار ALARM).
+     */
+    private val watchdog = Runnable { stopPlayback() }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -56,6 +67,15 @@ class AdhanService : Service() {
 
         // إنشاء القنوات مضمون حتى لو بدأت الخدمة قبل فتح التطبيق.
         NotificationChannels.createAll(this)
+
+        // إعادة إرسال الأمر نفسه (منبه مكرر أو إعادة تشغيل النظام للخدمة)
+        // يجب ألا تقطع الأذان الجاري وتعيده من الثانية صفر.
+        if (!preview && currentPrayer == prayer && player?.isPlaying == true) {
+            // نؤكد حالة الخدمة الأمامية فقط (مطلوب بعد كل startForegroundService).
+            startForegroundSafely(prayer, preview)
+            return START_NOT_STICKY
+        }
+
         if (!startForegroundSafely(prayer, preview)) {
             // بلا خدمة أمامية قد يقتل النظام الصوت بلا إشعار — الأفضل الاحتياط.
             PrayerNotifier.showAdhanFallback(this, prayer)
@@ -91,6 +111,7 @@ class AdhanService : Service() {
 
         requestAudioFocus()
         player = mp
+        currentPrayer = prayer
         mp.setOnCompletionListener { stopPlayback() }
         mp.setOnErrorListener { _, _, _ ->
             PrayerNotifier.showAdhanFallback(this, prayer)
@@ -101,12 +122,34 @@ class AdhanService : Service() {
         runCatching { mp.start() }.onFailure {
             PrayerNotifier.showAdhanFallback(this, prayer)
             stopPlayback()
+            return
         }
+
+        // حرس وقت: المدة الفعلية + 5 ثوانٍ كهامش.
+        val durationMs = runCatching { mp.duration.toLong() }.getOrDefault(0L)
+        handler.removeCallbacks(watchdog)
+        if (durationMs > 0L) handler.postDelayed(watchdog, durationMs + 5_000L)
     }
 
+    /**
+     * إعلان الخدمة أمامية بنوع `mediaPlayback` صراحةً.
+     *
+     * أندرويد 14+ (وأشد في 16/17) يتحقق من النوع المعلن في البيان؛ تمريره
+     * هنا عبر `ServiceCompat` يضمن عدم رمي `MissingForegroundServiceType`
+     * ويوحّد السلوك من API 24 حتى 37+.
+     */
     private fun startForegroundSafely(prayer: String, isPreview: Boolean): Boolean =
         runCatching {
-            startForeground(NOTIFICATION_ID, buildNotification(prayer, isPreview))
+            val notification = buildNotification(prayer, isPreview)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
         }.isSuccess
 
     private fun requestAudioFocus() {
@@ -178,6 +221,8 @@ class AdhanService : Service() {
 
     private fun stopPlayback() {
         PlaybackCoordinator.unregister(audioOwner)
+        handler.removeCallbacks(watchdog)
+        currentPrayer = null
         releasePlayer()
         abandonAudioFocus()
         runCatching { vibrator?.cancel() }
@@ -197,46 +242,32 @@ class AdhanService : Service() {
         stopSelf()
     }
 
+    /**
+     * بطاقة **واحدة** لكل حدث: خدمة الأذان تنشر بطاقة التشغيل بالمعرّف نفسه
+     * [NotificationDesign.PRAYER_ID] الذي نشرته بطاقة الوصول، فتحل محلها بدل
+     * أن تظهر بطاقتان متتاليتان (كان سابقًا 4001 + 3101).
+     */
     private fun buildNotification(prayer: String, isPreview: Boolean): Notification {
-        val openIntent = PendingIntent.getActivity(
-            this,
-            2001,
-            Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val snapshot = runCatching { PrayerSnapshotLoader.load(this) }.getOrNull()
+        val entries = snapshot?.entries.orEmpty()
+        val index = entries.indexOfFirst { it.label == prayer }.let { if (it < 0) 0 else it }
+        val current = entries.getOrNull(index)?.time ?: snapshot?.nextTime ?: "--:--"
+        val next = entries.getOrNull((index + 1) % entries.size.coerceAtLeast(1))
 
-        val stopIntent = PendingIntent.getService(
-            this,
-            2002,
-            Intent(this, AdhanService::class.java).apply { action = ACTION_STOP },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return NotificationDesign.buildPlaying(
+            context = this,
+            prayerLabel = prayer,
+            currentTime = current,
+            nextLabel = next?.label ?: snapshot?.afterLabel.orEmpty(),
+            nextTime = next?.time ?: snapshot?.afterTime ?: "--:--",
+            preview = isPreview
         )
-
-        val title = if (isPreview) "تجربة صوت الأذان" else "الأذان — $prayer"
-        return NotificationCompat.Builder(this, NotificationChannels.PLAYBACK)
-            .setSmallIcon(R.drawable.ic_notif_small)
-            .setContentTitle(title)
-            .setContentText("الله أكبر — تقبل الله طاعتكم")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("حان الآن موعد $prayer. الله أكبر — تقبل الله طاعتكم.")
-            )
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            // غير مستمر: يمكن سحبه. سحبه يستدعي deleteIntent فيوقف الصوت
-            // والخدمة معًا — بدل أن يبقى الإشعار عالقًا أو الصوت بلا تحكم.
-            .setOngoing(false)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setContentIntent(openIntent)
-            .setDeleteIntent(stopIntent)
-            .addAction(R.drawable.ic_notif_small, "إيقاف الأذان", stopIntent)
-            .build()
     }
 
     override fun onDestroy() {
         PlaybackCoordinator.unregister(audioOwner)
+        handler.removeCallbacks(watchdog)
+        currentPrayer = null
         runCatching { vibrator?.cancel() }
         vibrator = null
         runCatching {
@@ -254,11 +285,21 @@ class AdhanService : Service() {
         super.onDestroy()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // الحالة الوحيدة التي نوقف فيها الأذان عند إزالة المهمة: ألا يكون هناك
+        // صوت فعلي (خدمة بلا مشغّل = إشعار عالق). الأذان الجاري يكمل حتى
+        // نهايته ثم يوقف نفسه عبر onCompletion/الحرس.
+        if (player?.isPlaying != true) stopPlayback()
+        super.onTaskRemoved(rootIntent)
+    }
+
     companion object {
         const val EXTRA_PRAYER = "prayer"
         const val EXTRA_VIBRATE = "vibrate"
         const val ACTION_STOP = "com.Nightjar.amsakkarrar.STOP_ADHAN"
         const val ACTION_PREVIEW = "com.Nightjar.amsakkarrar.PREVIEW_ADHAN"
-        const val NOTIFICATION_ID = 4001
+
+        /** معرّف واحد موحّد مع بطاقة الوصول — بطاقة واحدة لكل حدث. */
+        const val NOTIFICATION_ID = NotificationDesign.PRAYER_ID
     }
 }

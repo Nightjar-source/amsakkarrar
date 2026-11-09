@@ -89,15 +89,28 @@
         android:textColor="#99B9C0D4"
         android:textSize="8sp" />
 
+    <!-- شريط تقدم موحّد مع الإشعار الحي: نفس اللون ونفس النسبة.
+         نسختان (نهاري/ليلي) بنفس ارتفاع شريط Glance، وتُظهر البرمجية واحدة. -->
     <ProgressBar
-        android:id="@+id/widget_chrono_progress"
+        android:id="@+id/widget_chrono_progress_day"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="10dp"
+        android:layout_height="8dp"
         android:layout_marginTop="6dp"
         android:max="100"
         android:progress="0"
-        android:progressDrawable="@drawable/widget_progress" />
+        android:progressDrawable="@drawable/widget_progress_day" />
+
+    <ProgressBar
+        android:id="@+id/widget_chrono_progress_night"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="6dp"
+        android:max="100"
+        android:progress="0"
+        android:visibility="gone"
+        android:progressDrawable="@drawable/widget_progress_night" />
 
     <!-- طرفا شريط التقدم: منتصف الليل ← الإمساك -->
     <LinearLayout

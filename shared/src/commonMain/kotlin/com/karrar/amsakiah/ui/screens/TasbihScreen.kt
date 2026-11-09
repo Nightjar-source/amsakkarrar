@@ -70,6 +70,7 @@ import com.karrar.amsakiah.core.feedback.playTasbihClick
 import com.karrar.amsakiah.core.feedback.playTasbihComplete
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.theme.KararColors
 import kotlinx.datetime.Clock
@@ -426,6 +427,8 @@ private fun TasbihCounterTab(
         label = "tasbihScale"
     )
     val progress = (count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
+    // تُقرأ ألوان الثيم قبل Canvas (القراءة داخل draw lambda غير مسموحة).
+    val progressGold = KararColors.Gold
 
     Text(
         dhikr.text,
@@ -478,7 +481,7 @@ private fun TasbihCounterTab(
             if (progress > 0f) {
                 drawArc(
                     brush = Brush.sweepGradient(
-                        listOf(Sky, Violet, KararColors.Gold, Sky),
+                        listOf(Sky, Violet, progressGold, Sky),
                         center = center
                     ),
                     startAngle = -90f,
@@ -573,49 +576,45 @@ private fun TasbihListTab(
     onAdd: () -> Unit,
     onDelete: (Int) -> Unit
 ) {
-    SectionTitle("تسبيح فاطمة الزهراء (ع)")
-    Spacer(Modifier.height(8.dp))
-    items.forEachIndexed { index, dhikr ->
-        if (index <= 2) {
-            DhikrRow(
-                index = index,
-                dhikr = dhikr,
-                selected = index == selectedIndex,
-                onClick = { onSelect(index) }
+    // تجميع ديناميكي حسب `group` مع الحفاظ على ترتيب أول ظهور للمجموعة.
+    // الفائدة: أي ذكر جديد يظهر داخل مجموعته التي أُنشئ فيها (لا في «أذكاري»
+    // دائمًا)، والأذكار الجاهزة تبقى في مجموعاتها كما هي.
+    val grouped = items.withIndex().groupBy(
+        keySelector = { it.value.group.ifBlank { TasbihPresets.CUSTOM_GROUP } },
+        valueTransform = { it.index }
+    )
+    // حالة الطي/الفرد يحفظها كل MergedAccordion باسم مجموعته.
+    grouped.forEach { (group, indices) ->
+        // كل مجموعة «نافذة منسدلة» واحدة: العنوان والعدد مدمجان في إطار
+        // المجموعة، والأذكار تُفرد داخله وتُطوى بنابض (لا عنوان منفصل).
+        MergedAccordion(
+            title = group,
+            titleColor = KararColors.Gold,
+            trailingText = "${indices.size}",
+            icon = null,
+            container = Color(0x141E293B),
+            borderColor = Color(0x1FFFFFFF),
+            corner = 16.dp,
+            initiallyOpen = true,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                start = 10.dp,
+                end = 10.dp,
+                top = 6.dp,
+                bottom = 10.dp
             )
-            Spacer(Modifier.height(8.dp))
-        }
-    }
-    Spacer(Modifier.height(6.dp))
-    SectionTitle("مأثورات وأذكار أخرى")
-    Spacer(Modifier.height(8.dp))
-    items.forEachIndexed { index, dhikr ->
-        if (index in 3 until presetCount) {
-            DhikrRow(
-                index = index,
-                dhikr = dhikr,
-                selected = index == selectedIndex,
-                onClick = { onSelect(index) }
-            )
-            Spacer(Modifier.height(8.dp))
-        }
-    }
-    if (items.size > presetCount) {
-        Spacer(Modifier.height(6.dp))
-        SectionTitle("أذكاري (${items.size - presetCount})")
-        Spacer(Modifier.height(8.dp))
-        items.forEachIndexed { index, dhikr ->
-            if (index >= presetCount) {
+        ) {
+            indices.forEach { index ->
                 DhikrRow(
                     index = index,
-                    dhikr = dhikr,
+                    dhikr = items[index],
                     selected = index == selectedIndex,
                     onClick = { onSelect(index) },
-                    onDelete = { onDelete(index) }
+                    onDelete = if (index >= presetCount) ({ onDelete(index) }) else null
                 )
                 Spacer(Modifier.height(8.dp))
             }
         }
+        Spacer(Modifier.height(10.dp))
     }
     Spacer(Modifier.height(4.dp))
     Row(

@@ -1,6 +1,5 @@
 package com.karrar.amsakiah.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,10 +21,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -38,6 +34,7 @@ import com.karrar.amsakiah.core.astronomy.OfflineCities
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
@@ -158,7 +155,6 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
     val times = remember(settings) {
         PrayerCalculator.timesFor(settings, PrayerCalculator.todayDate(settings))
     }
-    var expandedArticle by remember { mutableStateOf<Int?>(null) }
 
     // عمود قراءة مُوسّط على الشاشات العريضة (تابلت/حاسوب) بعرض مريح للنص الطويل.
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -285,42 +281,19 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
         item { SectionTitle("الفقه والمعايير") }
         items(articles.size) { index ->
             val article = articles[index]
-            val expanded = expandedArticle == index
-            GlassCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expandedArticle = if (expanded) null else index },
-                corner = 18.dp
+            // نافذة منسدلة واحدة: العنوان مدمج داخل الإطار والمحتوى يُفرد داخله.
+            MergedAccordion(
+                title = article.title,
+                titleColor = KararColors.Gold,
+                corner = 18.dp,
+                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 14.dp)
             ) {
-                // رأس المقال: العنوان + سهم يدور عند الفتح
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        article.title,
-                        color = KararColors.Gold,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        Icons.Filled.ExpandMore,
-                        contentDescription = if (expanded) "إخفاء المقال" else "عرض المقال",
-                        tint = KararColors.Gold,
-                        modifier = Modifier
-                            .size(18.dp)
-                            .rotate(if (expanded) 180f else 0f)
-                    )
-                }
-                AnimatedVisibility(visible = expanded) {
-                    Column {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            article.body,
-                            color = KararColors.TextSecondary,
-                            fontSize = 12.sp,
-                            lineHeight = 22.sp
-                        )
-                    }
-                }
+                Text(
+                    article.body,
+                    color = KararColors.TextSecondary,
+                    fontSize = 12.sp,
+                    lineHeight = 22.sp
+                )
             }
         }
     }

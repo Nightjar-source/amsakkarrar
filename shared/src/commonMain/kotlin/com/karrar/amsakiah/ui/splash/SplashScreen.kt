@@ -1,7 +1,6 @@
 package com.karrar.amsakiah.ui.splash
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -24,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.resources.Res
 import com.karrar.amsakiah.resources.app_icon
+import com.karrar.amsakiah.ui.startup.StartupGate
+import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.PI
@@ -142,18 +144,46 @@ fun SplashScreen(modifier: Modifier = Modifier) {
     val iconAnim = remember { Animatable(0f) }
     val titleAnim = remember { Animatable(0f) }
     val signatureAnim = remember { Animatable(0f) }
+
+    // الوصل مع سبلاش النظام: بعد أول إطار مرسوم لهذه الشاشة نسمح للنظام
+    // بإزالة سبلاشه، فلا يظهر فراغ/وميض بين الشاشتين.
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        StartupGate.markContentReady()
+    }
+
     LaunchedEffect(Unit) {
         launch {
             kotlinx.coroutines.delay(80)
-            iconAnim.animateTo(1f, tween(1200, easing = FastOutSlowInEasing))
+            // نابض بطيء بلا ارتداد: يصل بسلاسة ثم يستقر، فلا «توقّف مفاجئ»
+            // في نهاية الدخول عند الوصل مع الشاشة الثانية.
+            iconAnim.animateTo(
+                1f,
+                KararTokens.Motion.spatial(
+                    stiffness = KararTokens.Motion.SpatialStiffnessSlow,
+                    dampingRatio = 1f
+                )
+            )
         }
         launch {
             kotlinx.coroutines.delay(300)
-            titleAnim.animateTo(1f, tween(1400, easing = FastOutSlowInEasing))
+            titleAnim.animateTo(
+                1f,
+                KararTokens.Motion.effects(
+                    stiffness = KararTokens.Motion.EffectsStiffnessSlow,
+                    dampingRatio = 1f
+                )
+            )
         }
         launch {
             kotlinx.coroutines.delay(1100)
-            signatureAnim.animateTo(1f, tween(1000, easing = LinearEasing))
+            signatureAnim.animateTo(
+                1f,
+                KararTokens.Motion.effects(
+                    stiffness = KararTokens.Motion.EffectsStiffnessSlow,
+                    dampingRatio = 1f
+                )
+            )
         }
     }
 
