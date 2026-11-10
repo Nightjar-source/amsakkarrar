@@ -90,10 +90,11 @@ private fun DuaHeaderCard(item: ShiaDuaItem, player: DuaPlayerController) {
     val isCurrent = player.currentId == item.id
     val isPlaying = isCurrent && player.playing
 
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        corner = 22.dp,
-        contentPadding = PaddingValues(16.dp)
+    // بلا سطح ممتلئ: العنوان يذوب في خلفية الشاشة (edge-to-edge) ويُفصل بخط شعري.
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 12.dp)
     ) {
         Text(item.title, color = KararColors.Gold, fontSize = 19.sp, fontWeight = FontWeight.Bold)
         if (item.subtitle.isNotBlank()) {
@@ -159,17 +160,18 @@ private fun DuaPill(text: String, color: Color) {
         color = color,
         fontSize = 10.sp,
         modifier = Modifier
-            .background(Color(0x14FFFFFF), RoundedCornerShape(50))
+            .background(KararColors.CardSoft, RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     )
 }
 
 @Composable
 private fun DuaTextCard(item: ShiaDuaItem) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        corner = 24.dp,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp)
+    // نص الدعاء على خلفية الشاشة مباشرة — بلا بطاقة ممتلئة (edge-to-edge).
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 6.dp)
     ) {
         val paragraphs = remember(item.id) {
             item.arabicText.lines().map { it.trim() }.filter { it.isNotEmpty() }

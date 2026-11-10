@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -171,6 +172,31 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
     val passedCount = remember(days, today) { days.count { it.date < today } }
     val remainingCount = days.size - passedCount
 
+    // ---- الشكل الثاني: تقويم السنوات ----
+    // يُفتح بالضغط على قيمة السنة، ويعرض اثنتي عشرة سنة في شبكة، ويقفز
+    // مباشرة إلى الشهر الحالي من السنة المختارة. مسار مستقل تمامًا عن
+    // تقويم الشهر (الشكل الأول) الذي يأتي من شاشة القوس.
+    var yearsMode by rememberSaveable { mutableStateOf(false) }
+    var yearsRangeStart by rememberSaveable {
+        mutableIntStateOf(((todayHijri.year - 5) / 12) * 12 + 1)
+    }
+
+    if (yearsMode) {
+        YearPicker(
+            contentPadding = contentPadding,
+            hijri = mode == CalendarMode.HIJRI,
+            selectedYear = if (mode == CalendarMode.HIJRI) hijriYear else gregYear,
+            rangeStart = yearsRangeStart,
+            onRangeShift = { yearsRangeStart += it },
+            onPick = { year ->
+                if (mode == CalendarMode.HIJRI) hijriYear = year else gregYear = year
+                yearsMode = false
+            },
+            onClose = { yearsMode = false }
+        )
+        return
+    }
+
     // شبكة تكيّفية: عمود واحد على الهاتف، عمودان على التابلت، وثلاثة على
     // الحاسوب/الشاشات العريضة — دون تغيير تسلسل الأيام (RTL يتبع LayoutDirection).
     LazyVerticalGrid(
@@ -221,13 +247,13 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
                     Spacer(Modifier.weight(1f))
                     Box(
                         modifier = Modifier
-                            .background(Color(0x1A2DD4BF), RoundedCornerShape(50))
+                            .background(KararColors.Teal.copy(alpha = 0.12f), RoundedCornerShape(50))
                             .clickable { resetToToday() }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
                             "اليوم",
-                            color = KararTokens.Accent.teal,
+                            color = KararColors.Teal,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -288,7 +314,12 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
                         value = if (mode == CalendarMode.HIJRI) "$hijriYear" else "$gregYear",
                         modifier = Modifier.weight(1f),
                         onMinus = { shiftYear(-1) },
-                        onPlus = { shiftYear(1) }
+                        onPlus = { shiftYear(1) },
+                        onValueClick = {
+                            yearsRangeStart =
+                                (((if (mode == CalendarMode.HIJRI) hijriYear else gregYear) - 5) / 12) * 12 + 1
+                            yearsMode = true
+                        }
                     )
                     CalendarStepper(
                         label = "الشهر",
@@ -328,17 +359,128 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
 
 private enum class CalendarMode { HIJRI, GREGORIAN }
 
+/**
+ * الشكل الثاني للتقويم: شبكة السنوات.
+ *
+ * لماذا شكل مستقل؟ المطلوب أن يكون للتقويم مسارَان واضحان:
+ *  - من شاشة القوس: بطاقة الشهر الحالي القصيرة (`ArcCalendarSheet`).
+ *  - من شريط التنقل: تقويم الشهر الكامل، ومنه شبكة السنوات هذه للقفز السريع.
+ *
+ * الشبكة تعرض 12 سنة (هجرية أو ميلادية حسب الوضع) بأزرار كبيرة، مع سهمَي
+ * تنقّل لنطاق الاثنتي عشرة سنة التالي/السابق، وزر رجوع للتقويم الشهري.
+ */
+@Composable
+private fun YearPicker(
+    contentPadding: PaddingValues,
+    hijri: Boolean,
+    selectedYear: Int,
+    rangeStart: Int,
+    onRangeShift: (Int) -> Unit,
+    onPick: (Int) -> Unit,
+    onClose: () -> Unit
+) {
+    val span = 12
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 78.dp),
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = contentPadding.calculateTopPadding() + 8.dp,
+            bottom = contentPadding.calculateBottomPadding() + 8.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight) { onRangeShift(-span) }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            if (hijri) "السنوات الهجرية" else "السنوات الميلادية",
+                            color = KararColors.TextPrimary,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            "$rangeStart — ${rangeStart + span - 1}",
+                            color = KararColors.TextMuted,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowLeft) { onRangeShift(span) }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "اختر سنة للانتقال إلى تقويمها الشهري",
+                        color = KararColors.TextMuted,
+                        fontSize = 10.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .background(KararColors.CardSoft, RoundedCornerShape(50))
+                            .border(1.dp, KararColors.Border, RoundedCornerShape(50))
+                            .clickable(onClick = onClose)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            "رجوع",
+                            color = KararColors.Teal,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        items(count = span, key = { index -> rangeStart + index }) { index ->
+            val year = rangeStart + index
+            val isSelected = year == selectedYear
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.4f)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(if (isSelected) KararColors.Gold else KararColors.CardSoft)
+                    .border(
+                        width = 1.dp,
+                        color = if (isSelected) KararColors.Gold else KararColors.Border,
+                        shape = RoundedCornerShape(18.dp)
+                    )
+                    .clickable { onPick(year) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$year",
+                    color = if (isSelected) KararColors.OnGold else KararColors.TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ModePill(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .background(
-                if (selected) KararTokens.Accent.teal else Color(0x0FFFFFFF),
+                if (selected) KararColors.Teal else KararColors.CardSoft,
                 RoundedCornerShape(50)
             )
             .border(
                 1.dp,
-                if (selected) Color.Transparent else Color(0x1FFFFFFF),
+                if (selected) Color.Transparent else KararColors.Border,
                 RoundedCornerShape(50)
             )
             .clickable(onClick = onClick)
@@ -359,12 +501,13 @@ private fun CalendarStepper(
     value: String,
     modifier: Modifier = Modifier,
     onMinus: () -> Unit,
-    onPlus: () -> Unit
+    onPlus: () -> Unit,
+    onValueClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
-            .background(Color(0x0AFFFFFF), RoundedCornerShape(14.dp))
-            .border(1.dp, Color(0x12FFFFFF), RoundedCornerShape(14.dp))
+            .background(KararColors.CardSoft, RoundedCornerShape(14.dp))
+            .border(1.dp, KararColors.Border, RoundedCornerShape(14.dp))
             .padding(horizontal = 8.dp, vertical = 7.dp)
     ) {
         Text(label, color = KararColors.TextMuted, fontSize = 9.sp)
@@ -377,7 +520,13 @@ private fun CalendarStepper(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        // الضغط على السنة يفتح تقويم السنوات (الشكل الثاني) —
+                        // بلا زر إضافي يزاحم الصف على الشاشات الضيقة.
+                        if (onValueClick != null) Modifier.clickable(onClick = onValueClick) else Modifier
+                    )
             )
             StepChip("+", onPlus)
         }
@@ -389,7 +538,7 @@ private fun StepChip(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(26.dp)
-            .background(Color(0x1AFFFFFF), CircleShape)
+            .background(KararColors.CardSoft, CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -405,7 +554,7 @@ private fun MonthArrow(
     Box(
         Modifier
             .size(36.dp)
-            .background(Color(0x14FFFFFF), CircleShape)
+            .background(KararColors.CardSoft, CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -425,13 +574,13 @@ private fun CalendarStatChip(label: String, value: Int, highlighted: Boolean) {
                         listOf(Color(0x33FFD700), Color(0x1AFF9800))
                     )
                 } else {
-                    SolidColor(Color(0x1AFFFFFF))
+                    SolidColor(KararColors.CardSoft)
                 },
                 shape = shape
             )
             .border(
                 1.dp,
-                if (highlighted) Color(0x66FFD700) else Color(0x33FFFFFF),
+                if (highlighted) Color(0x66FFD700) else KararColors.Border,
                 shape
             )
             .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -440,7 +589,7 @@ private fun CalendarStatChip(label: String, value: Int, highlighted: Boolean) {
     ) {
         Text(
             label,
-            color = if (highlighted) Color(0xE6FFE9A8) else Color.White.copy(alpha = 0.70f),
+            color = if (highlighted) KararColors.Gold else KararColors.TextMuted,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
@@ -477,7 +626,12 @@ private fun DayCard(
             .clip(shape)
             .background(
                 brush = if (isToday) {
-                    Brush.linearGradient(listOf(Color(0x26FFFFFF), Color(0x0DFFFFFF)))
+                    Brush.linearGradient(
+                        listOf(
+                            KararColors.Gold.copy(alpha = 0.14f),
+                            KararColors.CardSoft
+                        )
+                    )
                 } else {
                     SolidColor(KararColors.CardSoft)
                 },
@@ -485,7 +639,7 @@ private fun DayCard(
             )
             .border(
                 1.dp,
-                if (isToday) Color(0x99FFD700) else Color(0x0DFFFFFF),
+                if (isToday) Color(0x99FFD700) else KararColors.Border,
                 shape
             )
             .padding(16.dp)
@@ -506,14 +660,14 @@ private fun DayCard(
                     Modifier
                         .size(32.dp)
                         .background(
-                            if (isToday) KararColors.Gold else Color(0x1AFFFFFF),
+                            if (isToday) KararColors.Gold else KararColors.CardSoft,
                             CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = (if (mode == CalendarMode.HIJRI) day.hijriDay else day.date.dayOfMonth).toString(),
-                        color = if (isToday) Color(0xFF241A00) else KararColors.TextPrimary,
+                        color = if (isToday) KararColors.OnGold else KararColors.TextPrimary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         style = TextStyle(textDirection = TextDirection.Ltr)
@@ -540,7 +694,7 @@ private fun DayCard(
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "${day.date.dayOfMonth} - ${day.date.monthNumber} - ${day.date.year} م",
-                    color = Color.White.copy(alpha = 0.70f),
+                    color = KararColors.TextMuted,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
@@ -548,7 +702,7 @@ private fun DayCard(
                 )
                 Text(
                     text = PrayerCalculator.gregorianMonths[day.date.monthNumber - 1],
-                    color = Color.White.copy(alpha = 0.45f),
+                    color = KararColors.TextMuted,
                     fontSize = 9.sp,
                     maxLines = 1,
                     softWrap = false,
@@ -562,7 +716,7 @@ private fun DayCard(
             Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color(0x1AFFFFFF))
+                .background(KararColors.Border)
         )
         Spacer(Modifier.height(12.dp))
 
@@ -595,14 +749,15 @@ private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Mod
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0x4D000000))
+            .background(KararColors.CardSoft)
+            .border(1.dp, KararColors.Border, RoundedCornerShape(12.dp))
             .padding(horizontal = 6.dp, vertical = 8.dp)
     ) {
         // أيقونة مائية كبيرة أسفل الخلية (10% كما في المرجع).
         Icon(
             imageVector = KararIcons.prayer(id),
             contentDescription = null,
-            tint = Color.White.copy(alpha = 0.10f),
+            tint = KararColors.Gold.copy(alpha = 0.10f),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .offset(x = 8.dp, y = 8.dp)
@@ -624,7 +779,7 @@ private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Mod
                 )
                 Text(
                     text = shortLabel(id),
-                    color = Color.White.copy(alpha = 0.80f),
+                    color = KararColors.TextSecondary,
                     fontSize = 9.sp,
                     maxLines = 1,
                     softWrap = false
@@ -637,7 +792,7 @@ private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Mod
             ) {
                 Text(
                     text = time,
-                    color = Color.White,
+                    color = KararColors.TextPrimary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -646,7 +801,7 @@ private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Mod
                 )
                 Text(
                     text = shortAmPm,
-                    color = Color.White.copy(alpha = 0.50f),
+                    color = KararColors.TextMuted,
                     fontSize = 7.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 1.dp)

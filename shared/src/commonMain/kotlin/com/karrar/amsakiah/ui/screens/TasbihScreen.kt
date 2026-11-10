@@ -199,7 +199,7 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(Color(0x1FEF5350))
+                    .background(KararColors.Danger.copy(alpha = 0.12f))
                     .clickable { showResetConfirm = true },
                 contentAlignment = Alignment.Center
             ) {
@@ -379,8 +379,8 @@ private fun TasbihTabs(selected: Int, onSelect: (Int) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0x14FFFFFF))
-            .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(16.dp))
+            .background(KararColors.CardSoft)
+            .border(1.dp, KararColors.Border, RoundedCornerShape(16.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -436,7 +436,7 @@ private fun TasbihCounterTab(
 
     Text(
         dhikr.text,
-        color = Color(0xFFE2E8F0),
+        color = KararColors.TextPrimary,
         fontSize = 26.sp,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
@@ -514,7 +514,8 @@ private fun TasbihCounterTab(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = count.toString(),
-                    color = Color.White,
+                    // الرقم على سطح من اللوحة ⇒ نص اللوحة لا أبيض ثابت.
+                    color = KararColors.TextPrimary,
                     fontSize = 78.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -550,7 +551,7 @@ private fun TasbihCounterTab(
             .fillMaxWidth()
             .height(8.dp)
             .clip(RoundedCornerShape(50))
-            .background(Color(0x1F38BDF8))
+            .background(Sky.copy(alpha = 0.12f))
     ) {
         Box(
             modifier = Modifier
@@ -596,8 +597,8 @@ private fun TasbihListTab(
             titleColor = KararColors.Gold,
             trailingText = "${indices.size}",
             icon = null,
-            container = Color(0x141E293B),
-            borderColor = Color(0x1FFFFFFF),
+            container = KararColors.CardSoft,
+            borderColor = KararColors.Border,
             corner = 16.dp,
             initiallyOpen = true,
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -625,8 +626,8 @@ private fun TasbihListTab(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(Color(0x1A38BDF8))
-            .border(1.dp, Color(0x5538BDF8), RoundedCornerShape(18.dp))
+            .background(Sky.copy(alpha = 0.12f))
+            .border(1.dp, Sky.copy(alpha = 0.34f), RoundedCornerShape(18.dp))
             .clickable(onClick = onAdd)
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
@@ -648,10 +649,10 @@ private fun DhikrRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(if (selected) Sky.copy(alpha = 0.13f) else Color(0x0DFFFFFF))
+            .background(if (selected) Sky.copy(alpha = 0.13f) else KararColors.CardSoft)
             .border(
                 1.dp,
-                if (selected) Sky.copy(alpha = 0.7f) else Color(0x14FFFFFF),
+                if (selected) Sky.copy(alpha = 0.7f) else KararColors.Border,
                 RoundedCornerShape(18.dp)
             )
             .clickable(onClick = onClick)
@@ -662,7 +663,7 @@ private fun DhikrRow(
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
-                .background(if (selected) Sky else Color(0x1FFFFFFF)),
+                .background(if (selected) Sky else KararColors.CardSoft),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -676,7 +677,7 @@ private fun DhikrRow(
         Column(Modifier.weight(1f)) {
             Text(
                 dhikr.text,
-                color = if (selected) Sky else Color(0xFFE2E8F0),
+                color = if (selected) Sky else KararColors.TextPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -692,7 +693,7 @@ private fun DhikrRow(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(CircleShape)
-                    .background(Color(0x1FEF5350))
+                    .background(KararColors.Danger.copy(alpha = 0.12f))
                     .clickable(onClick = onDelete),
                 contentAlignment = Alignment.Center
             ) {
@@ -721,7 +722,7 @@ private fun TasbihStatsTab(
     GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             StatColumn("اليوم", dayCount, Sky)
-            StatColumn("الإجمالي", total, Color(0xFFE2E8F0))
+            StatColumn("الإجمالي", total, KararColors.TextPrimary)
             StatColumn("الدورات", rounds, Violet)
         }
     }
@@ -805,7 +806,7 @@ private fun TasbihSettingsTab(
     GlassCard(modifier = Modifier.fillMaxWidth(), corner = 22.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("حذف كل بيانات المسبحة", color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text("حذف كل بيانات المسبحة", color = KararColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Text("اليوم والإجمالي والدورات", color = KararColors.TextMuted, fontSize = 10.sp)
             }
             SmallPill("حذف", danger = true, onClick = onResetAll)
@@ -822,7 +823,7 @@ private fun TasbihToggleRow(
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = KararColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = KararColors.TextMuted, fontSize = 10.sp, lineHeight = 15.sp)
         }
         Switch(
@@ -885,11 +886,11 @@ private fun AddDhikrDialog(
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             corner = 24.dp,
-            color = Color(0xF2132033),
+            color = KararColors.Card,
             borderColor = Sky.copy(alpha = 0.35f),
             contentPadding = PaddingValues(20.dp)
         ) {
-            Text("إضافة تسبيح جديد", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text("إضافة تسبيح جديد", color = KararColors.TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(
                 "اكتب الذكر وحدّد عدده، وسيُضاف إلى قائمتك الخاصة.",
                 color = KararColors.TextMuted,
@@ -967,7 +968,7 @@ private fun CompletionDialog(
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             corner = 28.dp,
-            color = Color(0xF2132033),
+            color = KararColors.Card,
             borderColor = Sky.copy(alpha = 0.4f),
             contentPadding = PaddingValues(24.dp)
         ) {
@@ -987,11 +988,11 @@ private fun CompletionDialog(
                         }
                 )
                 Spacer(Modifier.height(12.dp))
-                Text("أحسنت!", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Text("أحسنت!", color = KararColors.TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "لقد أتممت التسبيح $target مرة",
-                    color = Color(0xFFE2E8F0),
+                    color = KararColors.TextPrimary,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
                 )
@@ -1024,7 +1025,7 @@ private fun CompletionDialog(
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("تغيير التسبيح", color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("تغيير التسبيح", color = KararColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1043,11 +1044,11 @@ private fun TasbihConfirmDialog(
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             corner = 24.dp,
-            color = Color(0xF2132033),
-            borderColor = Color(0x33FFFFFF),
+            color = KararColors.Card,
+            borderColor = KararColors.Border,
             contentPadding = PaddingValues(20.dp)
         ) {
-            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = KararColors.TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Text(message, color = KararColors.TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
             Spacer(Modifier.height(16.dp))
@@ -1061,7 +1062,7 @@ private fun TasbihConfirmDialog(
                         .padding(vertical = 11.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("إلغاء", color = Color(0xFFE2E8F0), fontSize = 12.sp)
+                    Text("إلغاء", color = KararColors.TextPrimary, fontSize = 12.sp)
                 }
                 Box(
                     modifier = Modifier

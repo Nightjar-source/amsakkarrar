@@ -175,10 +175,10 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     corner = 20.dp,
-                    color = Color(0x33FF9800),
-                    borderColor = Color(0x66FFB74D)
+                    color = KararColors.Gold.copy(alpha = 0.14f),
+                    borderColor = KararColors.Gold.copy(alpha = 0.40f)
                 ) {
-                    Text("⚠️ تنبيه فلكي", color = Color(0xFFFFB74D), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("⚠️ تنبيه فلكي", color = KararColors.GoldDeep, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Text(
                         "خط عرض منطقتك أعلى من 47.5° وشمس الصيف لا تغيب بما يكفي لظهور الفجر أو العشاء فلكيًا. " +
                             "يُطبَّق حاليًا: ${PrayerCalculator.highLatFor(settings.highLatRule).titleAr}",
@@ -240,13 +240,13 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
                     val selected = settings.asrMethod == code
                     Box(
                         Modifier
-                            .background(if (selected) KararColors.Gold else Color(0x14FFFFFF), RoundedCornerShape(50))
+                            .background(if (selected) KararColors.Gold else KararColors.CardSoft, RoundedCornerShape(50))
                             .clickable { state.update { it.copy(asrMethod = code) } }
                             .padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
                             label,
-                            color = if (selected) Color(0xFF241A00) else KararColors.TextSecondary,
+                            color = if (selected) KararColors.OnGold else KararColors.TextSecondary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -263,7 +263,7 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
                 Modifier
                     .fillMaxWidth()
                     .background(
-                        if (selected) Color(0x1AFFD700) else Color(0x0DFFFFFF),
+                        if (selected) KararColors.Gold.copy(alpha = 0.12f) else KararColors.CardSoft,
                         RoundedCornerShape(14.dp)
                     )
                     .clickable { state.update { it.copy(highLatRule = rule.code) } }

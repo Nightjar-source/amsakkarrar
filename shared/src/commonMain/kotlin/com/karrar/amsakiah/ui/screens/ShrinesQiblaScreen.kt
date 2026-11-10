@@ -289,10 +289,10 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(if (isSelected) siteColor.copy(alpha = 0.13f) else Color(0x0DFFFFFF))
+                    .background(if (isSelected) siteColor.copy(alpha = 0.13f) else KararColors.CardSoft)
                     .border(
                         1.dp,
-                        if (isSelected) siteColor.copy(alpha = 0.65f) else Color(0x14FFFFFF),
+                        if (isSelected) siteColor.copy(alpha = 0.65f) else KararColors.Border,
                         RoundedCornerShape(18.dp)
                     )
                     .clickable { selected = site }
@@ -363,6 +363,11 @@ private fun CompassRose(
     selected: HolySite,
     modifier: Modifier = Modifier
 ) {
+    // الألوان تُقرأ خارج نطاق الرسم (Canvas) — لا وصول إلى اللوحة داخله.
+    val ringColor = KararColors.Border
+    val softSurface = KararColors.CardSoft
+    val strongGold = KararColors.Gold
+    val onAccentStroke = KararColors.TextPrimary
     Canvas(modifier) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val radius = size.minDimension / 2f - 4.dp.toPx()
@@ -370,14 +375,14 @@ private fun CompassRose(
         // خلفية متوهجة بلون المكان المختار
         drawCircle(
             brush = Brush.radialGradient(
-                listOf(accent.copy(alpha = 0.16f), Color(0x0AFFFFFF)),
+                listOf(accent.copy(alpha = 0.16f), softSurface),
                 center = center,
                 radius = radius
             ),
             radius = radius,
             center = center
         )
-        drawCircle(Color(0x33FFFFFF), radius = radius, center = center, style = Stroke(2.dp.toPx()))
+        drawCircle(ringColor, radius = radius, center = center, style = Stroke(2.dp.toPx()))
 
         rotate(-heading, pivot = center) {
             // علامات الدرجات
@@ -394,7 +399,7 @@ private fun CompassRose(
                     (center.y + radius * sin(angle)).toFloat()
                 )
                 drawLine(
-                    color = if (long) Color(0x66FFD700) else Color(0x33FFFFFF),
+                    color = if (long) strongGold.copy(alpha = 0.40f) else ringColor,
                     start = start,
                     end = end,
                     strokeWidth = if (long) 2.dp.toPx() else 1.dp.toPx()
@@ -402,7 +407,7 @@ private fun CompassRose(
             }
 
             // مؤشر الشمال
-            drawCircle(Color(0xFFFFD700), radius = 4.dp.toPx(), center = Offset(center.x, center.y - radius + 4.dp.toPx()))
+            drawCircle(strongGold, radius = 4.dp.toPx(), center = Offset(center.x, center.y - radius + 4.dp.toPx()))
 
             // نقاط المراقد على المحيط — كلٌّ بلونه
             sites.forEachIndexed { index, site ->
@@ -417,7 +422,7 @@ private fun CompassRose(
                 val isSelected = site.name == selected.name
                 if (isSelected) {
                     drawCircle(siteColor.copy(alpha = 0.28f), radius = 11.dp.toPx(), center = pos)
-                    drawCircle(Color.White, radius = 5.5.dp.toPx(), center = pos, style = Stroke(1.5.dp.toPx()))
+                    drawCircle(onAccentStroke, radius = 5.5.dp.toPx(), center = pos, style = Stroke(1.5.dp.toPx()))
                 }
                 drawCircle(siteColor, radius = if (isSelected) 4.5.dp.toPx() else 3.dp.toPx(), center = pos)
             }

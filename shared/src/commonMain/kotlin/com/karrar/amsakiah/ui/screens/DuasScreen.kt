@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +44,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -50,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.core.data.ShiaDuasLibrary
-import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.platform.PlatformBackHandler
@@ -218,12 +222,31 @@ private fun DuaCard(
     onClick: () -> Unit,
     onPlay: () -> Unit
 ) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        corner = 20.dp,
-        contentPadding = PaddingValues(14.dp),
-        color = if (isCurrent) Color(0x1AFFD700) else KararColors.CardSoft,
-        borderColor = if (isCurrent) Color(0x4DFFD700) else KararColors.Border
+    // Edge-to-edge: لا كتل لونية. الصف شفاف على خلفية الشاشة نفسها،
+    // والفاصل خط شعري متلاشٍ الأطراف (كما في مرجع amsak3d).
+    val border = KararColors.Border
+    val glow = KararColors.Gold.copy(alpha = 0.12f)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .then(
+                if (isCurrent) Modifier.background(glow, RoundedCornerShape(14.dp))
+                else Modifier
+            )
+            .clickable(onClick = onClick)
+            .drawBehind {
+                val y = size.height - 0.5.dp.toPx()
+                drawLine(
+                    brush = Brush.horizontalGradient(
+                        listOf(Color.Transparent, border, Color.Transparent)
+                    ),
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+            .padding(horizontal = 6.dp, vertical = 13.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -239,9 +262,10 @@ private fun DuaCard(
                     Modifier
                         .size(38.dp)
                         .background(
-                            if (isCurrent) KararColors.Gold else Color(0x33FFD700),
+                            if (isCurrent) KararColors.Gold else KararColors.CardSoft,
                             CircleShape
                         )
+                        .border(1.dp, KararColors.Border, CircleShape)
                         .clickable(onClick = onPlay),
                     contentAlignment = Alignment.Center
                 ) {
@@ -252,7 +276,7 @@ private fun DuaCard(
                             else -> Icons.Filled.PlayArrow
                         },
                         contentDescription = if (isPlaying) "إيقاف مؤقت" else "تشغيل التسجيل",
-                        tint = if (isCurrent) Color(0xFF241A00) else KararColors.Gold,
+                        tint = if (isCurrent) KararColors.OnGold else KararColors.Gold,
                         modifier = Modifier.size(21.dp)
                     )
                 }
@@ -272,15 +296,16 @@ private fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .background(
-                if (selected) KararColors.Gold else Color(0x14FFFFFF),
+                if (selected) KararColors.Gold else KararColors.CardSoft,
                 RoundedCornerShape(50)
             )
+            .border(1.dp, KararColors.Border, RoundedCornerShape(50))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
             text,
-            color = if (selected) Color(0xFF241A00) else KararColors.TextSecondary,
+            color = if (selected) KararColors.OnGold else KararColors.TextSecondary,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium
         )

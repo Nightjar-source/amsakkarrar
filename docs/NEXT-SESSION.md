@@ -117,7 +117,19 @@
   اللانهائية (الطقس/السبلاش/المسبحة) تبقى خطية لأنها دورية بطبيعتها.
 
 
-### 1.1 آخر تحقق آلي — 2026-11-09 (v1.4.0)
+### 1.1 آخر تحقق آلي — 2026-11-10 (v1.4.1)
+
+- **v1.4.1:** وسم `v1.4.1` على `d452a3d`، تشغيلان سحابيان ناجحان:
+  - `42817054544` (`workflow_dispatch` على `main`): نجاح خلال 4 دقائق.
+  - `42817769131` (وسم `v1.4.1`): نجاح وأنشأ GitHub Release.
+- APK موقّع: **10,927,488 بايت**، SHA-256
+  `7acc37d67b45a0c5e64c32ac62d5f46431f49c56ba3534e11cff2815d6759784`.
+- التوقيع: `CN=Nightjar` (شهادة `01e73103…78d`)، v2 scheme عبر `apksigner`.
+- `aapt badging`: `versionCode 10401` / `versionName 1.4.1` / `targetSdkVersion 37` / `compileSdk 37`.
+- البناء المحلي قبل الدفع: `:shared:compileAndroidMain` + `:androidApp:compileDebugKotlin`
+  **BUILD SUCCESSFUL** (6m51s) بعد إصلاح 3 أخطاء ترجمة.
+
+#### v1.4.0 (تاريخي)
 
 - **v1.4.0:** وسم `v1.4.0` على `0577bab`، تشغيلان سحابيان ناجحان:
   - `42633294491` (`workflow_dispatch` على `main`): نجاح خلال 4 دقائق.
@@ -125,13 +137,9 @@
 - **التوقيع:** الأسرار المشفّرة في GitHub (`KEYSTORE_BASE64`,
   `KEYSTORE_PASSWORD`, `KEY_PASSWORD`) — كانت فارغة فضُبطت عبر sealed box.
 - APK موقّع: **10,910,816 بايت**، SHA-256
-  `9b58ecb6113a05abdc9d3d2a91c104f853e43224400e633acac7db7e010c8fba`
-  (تطابق الملف والموجود في الـRelease).
+  `9b58ecb6113a05abdc9d3d2a91c104f853e43224400e633acac7db7e010c8fba`.
 - التوقيع: `CN=Nightjar` (شهادة `01e73103…78d`)، `apksigner` — v2 scheme.
-- `aapt badging`: `versionCode 10400` / `versionName 1.4.0` /
-  `targetSdkVersion 37` / `minSdk 24` / `compileSdk 37`.
-- التحقق المحلي قبل الوسم: `clean :androidApp:assembleDebug` نجح (23m47s،
-  65 مهمة) ثم `:shared:compileAndroidMain` نجح.
+- `aapt badging`: `versionCode 10400` / `versionName 1.4.0` / `targetSdkVersion 37` / `minSdk 24`.
 
 #### v1.3.0 (تاريخي)
 
@@ -204,6 +212,49 @@
 - **الوضع الفاتح:** استبدال الألوان الداكنة الحرفية في `TasbihScreen`
   (`Slate`/`SlateCard`/`SlateMuted`/`082F49`) برموز اللوحة (`KararColors.*` +
   `OnAccent` حسب `IsDark`).
+
+### 1.8 جولة v1.4.2 — إشعارات مصمّمة + صوت مطابق للمعايير + أدعية edge-to-edge
+
+- **الإشعار الحي صار البطاقة المصمّمة نفسها:** كان يستخدم
+  `NotificationCompat.ProgressStyle`؛ الآن يبني `notification_live.xml`
+  (النسخة الحرفية من `widgetsnotifications.html`) عبر RemoteViews:
+  هيدر «رمضان مباشر» + نقطة حمراء + الوقت المستهدف + `Chronometer` تنازلي
+  حقيقي داخل النظام + شريط تقدّم بشكل حبة دواء (`notif_progress_day/night`).
+  - العدّاد ينبض بلا أي تحديث من التطبيق ⇒ لا استهلاك بطارية إضافي.
+  - `setOngoing(false)` ⇒ قابل للسحب، و`LiveDismissReceiver` يمنع عودته.
+- **حذف سبب التكرار المرئي:** أُزيل `setRequestPromotedOngoing` و
+  `setShortCriticalText` — كانا يُظهران شريحة إضافية فوق البطاقة على
+  Android 16+ فيبدو الأمر كإشعارين لنفس العدّاد.
+- **شكل أندرويد الأصلي:** `setColorized(false)` في البطاقتين — التصميم
+  مرسوم داخل RemoteViews، والإطار يبقى إطار النظام (بلا تلوين كتلي).
+- **سحب الإشعار يوقف الصوت فعليًا:** `setDeleteIntent` وزر «إيقاف الأذان»
+  صارا `PendingIntent.getBroadcast` إلى `AdhanStopReceiver` جديد، يستدعي
+  `stopService` (مسموح دائمًا من الخلفية) بدل `startService` الذي قد يرمي
+  `BackgroundServiceStartNotAllowedException` على 12+ ويترك الصوت عالقًا.
+- **اتساق مسار الصوت:** طلب تركيز الصوت صار `USAGE_MEDIA`/`STREAM_MUSIC`
+  (كان `ALARM` بينما التشغيل `MEDIA`)، وقناة الاحتياط صارت `USAGE_MEDIA`
+  أيضًا ⇒ كتم النظام وزر الصوت يُحترمان في كل المسارات.
+- **وضع الاهتزاز:** `RINGER_MODE_VIBRATE` لا يُصدر صوتًا ويُشغّل نمط
+  الاهتزاز فقط (كان يتجاهله فيشغّل صوتًا كاملًا).
+- **الأدعية edge-to-edge:** بطاقات القائمة صارت صفوفًا شفافة على خلفية
+  الشاشة مع فاصل خطّي متلاشٍ بدل الكتل الممتلئة، وصفحة الدعاء بلا بطاقة
+  خلف النص.
+- **الوضع الفاتح:** استبدال بقية الألوان الحرفية في `TasbihScreen`
+  (`#E2E8F0`)، و`SettingsScreen` (الهيرو + حقل البحث + شرائح)،
+  و`WidgetsScreen` (رسالة الحالة)، و`FiqhScreen` (تنبيه الفلك).
+- **توحيد شريط التقدم:** `widget_progress*.xml` صار بنفس تدرّجات
+  `notif_progress*.xml` (نهار `#FFE066→#FF9F1C→#E71D36`،
+  ليل `#80A1D4→#C0D6DF→#F2F5EA`) ونفس نصف القطر والحد.
+- **التقويم — الشكل الثاني (السنوات):** الضغط على قيمة «السنة» في شريحة
+  التقويم يفتح شبكة 12 سنة (هجرية أو ميلادية حسب الوضع) مع سهمَي تنقّل
+  للنطاق التالي/السابق وزر «رجوع»؛ اختيار سنة يقفز إلى تقويمها الشهري.
+  - الشكل الأول يبقى كما هو: بطاقة الشهر القصيرة من شاشة القوس
+    (`ArcCalendarSheet`) + تقويم الشهر الكامل من شريط التنقل.
+  - بلا زر إضافي في الصف ⇒ لا يزاحم «اليوم» على الشاشات الضيقة.
+- **التقويم — الوضع الفاتح:** استبدال كل الألوان البيضاء الشفافة
+  (`0x1AFFFFFF`, `Color.White.copy(...)`) برموز اللوحة في `ModePill`,
+  `CalendarStepper`, `StepChip`, `MonthArrow`, `CalendarStatChip`,
+  `DayCard`, `PrayerTimeCell`.
 
 ---
 

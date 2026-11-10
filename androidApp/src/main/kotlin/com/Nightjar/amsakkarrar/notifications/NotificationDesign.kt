@@ -4,24 +4,29 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
-import androidx.core.graphics.drawable.IconCompat
 import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.R
 
 /**
  * بناء الإشعارين بتصميم `widgetsnotifications.html`:
  *
- * 1) الإشعار الحي «رمضان مباشر»:
- *    - `NotificationCompat.ProgressStyle` موحّد على كل الإصدارات، بلا أي
- *      `customContentView`. هذا شرط أساسي لقبوله كـ Live Update مروّج على
- *      Android 16+ (developer.android.com/develop/ui/views/notifications/live-update).
- *    - على Android 16+ يضيف `setShortCriticalText` و`setRequestPromotedOngoing`
- *      فتظهر الشريحة في شريط الحالة وشاشة القفل؛ وعلى Android 7–15 يعمل
- *      كإشعار قياسي بعدّاد تنازلي أصلي، بلا RemoteViews مخصص (أقل ذاكرة
- *      وأقل عرضة للتسريب).
- * 2) إشعار الصلاة: «حان الآن موعد …» + «تقبل الله طاعتكم».
+ * 1) الإشعار الحي «رمضان مباشر» — بطاقة `RemoteViews` مصمّمة
+ *    (`notification_live.xml`):
+ *    - هيدر + وقت الصلاة القادمة + عدّاد `Chronometer` تنازلي حقيقي
+ *      ينبض داخل النظام (لا تحديث من التطبيق ⇒ صفر استهلاك إضافي)،
+ *      وشريط تقدّم بشكل حبة دواء.
+ *    - `setOngoing(false)` ⇒ قابل للسحب، والسحب يمنع إعادته
+ *      (`LiveDismissReceiver`).
+ *    - لا `setRequestPromotedOngoing` ولا `setShortCriticalText`: كانا
+ *      يُظهران شريحة إضافية فوق البطاقة على Android 16+ فيبدو الأمر
+ *      كإشعارين لنفس العدّاد.
+ *    - `setColorized(false)`: يبقى الإطار إطار أندرويد الأصلي.
+ * 2) إشعار الصلاة: «حان الآن موعد …» + «تقبل الله طاعتكم»، وفيه زر
+ *    «إيقاف الأذان» وسحبُ البطاقة يوقف الصوت عبر `AdhanStopReceiver`.
  */
 object NotificationDesign {
 
@@ -54,58 +59,71 @@ object NotificationDesign {
     // ---------------------------------------------------------------
     //  الإشعار الحي
     // ---------------------------------------------------------------
-    fun buildLive(context: Context, snapshot: PrayerSnapshot): Notification {
-        val remaining = snapshot.remainingSeconds.coerceAtLeast(0)
+    /**
+     * الإشعار الحي — نسخة حرفية من `widgetsnotifications.html`:
+     * كبسولة داكنة متدرجة + «رمضان مباشر» + الوقت المستهدف + عدّاد تنازلي
+     * حقيقي (Chronometer) + شريط تقدّم بشكل حبة دواء.
+     *
+     * قرارات مقصودة:
+     *  - **لا** `setRequestPromotedOngoing` ولا `setShortCriticalText`: كانت
+     *    تُظهر شريحة إضافية في شريط الحالة فوق البطاقة، فيبدو الأمر كإشعارين
+     *    لنفس العدّاد (شكوى المستخدم المتكررة).
+     *  - `setOngoing(false)`: البطاقة قابلة للسحب، والسحب مسجّل فلا يعيد
+     *    العامل الدوري نشرها.
+     *  - العدّاد يعمل داخل النظام (`setChronometer`) فلا حاجة لإعادة نشر
+     *    الإشعار كل ثانية — صفر استهلاك إضافي للبطارية.
+     */
+    fun buildLive(context: Context, snapshot: PrayerSnapshot, forceDaytime: Boolean? = null): Notification {
         val percent = (snapshot.periodProgress * 100f).toInt().coerceIn(0, 100)
-        val accent = if (snapshot.isDaytime) 0xFFFF9F1C.toInt() else 0xFF80A1D4.toInt()
-
-        // ProgressStyle عبر NotificationCompat: يتوافق مع Android 7 ويُرقّى
-        // تلقائيًا إلى Live Update على Android 16+، ولا يحتاج RemoteViews.
-        val progressStyle = NotificationCompat.ProgressStyle()
-            .setProgress(percent)
-            .setStyledByProgress(false)
-            .setProgressSegments(
-                listOf(NotificationCompat.ProgressStyle.Segment(100).setColor(accent))
-            )
-            .addProgressPoint(NotificationCompat.ProgressStyle.Point(percent).setColor(accent))
-            .setProgressTrackerIcon(IconCompat.createWithResource(context, R.drawable.ic_notif_moon))
+        val views = liveViews(context, snapshot, percent, forceDaytime)
 
         return NotificationCompat.Builder(context, NotificationChannels.LIVE)
             .setSmallIcon(R.drawable.ic_notif_small)
             .setContentTitle("رمضان مباشر")
             .setContentText("باقي على ${snapshot.nextLabel} • ${snapshot.nextTime}")
-            .setSubText(snapshot.city)
-            // شريحة الحالة النصية القصيرة — تُهمَل تلقائيًا قبل Android 16.
-            .setShortCriticalText(criticalRemaining(snapshot))
-            .setStyle(progressStyle)
-            // شريط تقدم قياسي على Android 7–15؛ ويتجاهله النظام على 16+ لأن
-            // ProgressStyle هو المسؤول عن العرض هناك.
-            .setProgress(100, percent, false)
-            // مستمر على Android 16+ (شرط الإشعار المروّج، ويبقى قابلًا للسحب)،
-            // وقابل للسحب على الإصدارات الأقدم حيث لا يوجد مفهوم Live Update.
-            .setOngoing(android.os.Build.VERSION.SDK_INT >= 36)
+            .setCustomContentView(views)
+            .setCustomBigContentView(views)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setOngoing(false)
             .setOnlyAlertOnce(true)
             .setSilent(true)
-            .setShowWhen(true)
-            .setWhen(System.currentTimeMillis() + remaining * 1000L)
-            .setUsesChronometer(true)
-            .setChronometerCountDown(true)
-            .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setColorized(false)
             .setContentIntent(contentIntent(context))
             // يمكن سحب الإشعار؛ وLiveDismissReceiver يمنع إعادة نشره حتى
             // دخول وقت الصلاة القادم.
             .setDeleteIntent(liveDismissIntent(context))
-            // طلب الترقية إلى Live Update (لا أثر له قبل Android 16).
-            .setRequestPromotedOngoing(true)
             .build()
     }
 
-    private fun criticalRemaining(snapshot: PrayerSnapshot): String {
-        val totalMinutes = (snapshot.remainingSeconds.coerceAtLeast(0) + 59) / 60
-        val hours = totalMinutes / 60
-        val minutes = totalMinutes % 60
-        return if (hours > 0) "$hours:${minutes.toString().padStart(2, '0')}" else "$minutes د"
+    private fun liveViews(
+        context: Context,
+        snapshot: PrayerSnapshot,
+        percent: Int,
+        forceDaytime: Boolean?
+    ): RemoteViews {
+        val isDay = forceDaytime ?: snapshot.isDaytime
+        val remaining = snapshot.remainingSeconds.coerceAtLeast(0)
+
+        return RemoteViews(context.packageName, R.layout.notification_live).apply {
+            setTextViewText(R.id.live_city, snapshot.city)
+            setTextViewText(R.id.live_label, "باقي على ${snapshot.nextLabel}")
+            setTextViewText(R.id.live_target, snapshot.nextTime)
+            // عدّاد تنازلي ينبض داخل النظام بلا أي تحديث من التطبيق.
+            setChronometerCountDown(R.id.live_chrono, true)
+            setChronometer(
+                R.id.live_chrono,
+                SystemClock.elapsedRealtime() + remaining * 1000L,
+                null,
+                true
+            )
+            setViewVisibility(R.id.live_progress_day, if (isDay) View.VISIBLE else View.GONE)
+            setViewVisibility(R.id.live_progress_night, if (isDay) View.GONE else View.VISIBLE)
+            setProgressBar(R.id.live_progress_day, 100, percent, false)
+            setProgressBar(R.id.live_progress_night, 100, percent, false)
+        }
     }
 
     // ---------------------------------------------------------------
@@ -133,7 +151,8 @@ object NotificationDesign {
             .setTimeoutAfter(timeoutAfterMs)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setColor(0xFFFFD700.toInt())
-            .setColorized(true)
+            // شكل أندرويد الأصلي (بلا تلوين كامل للإشعار) — التصميم داخل الـRemoteViews.
+            .setColorized(false)
             .setContentIntent(contentIntent(context))
             .build()
     }
@@ -169,7 +188,9 @@ object NotificationDesign {
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setColor(0xFFFFD700.toInt())
-            .setColorized(true)
+            // بلا colorized: الشكل يبقى شكل أندرويد الأصلي في الظل، والتصميم
+            // (الخلفية والتدرجات) مرسوم داخل RemoteViews نفسها.
+            .setColorized(false)
             .setContentIntent(contentIntent(context))
             // سحب البطاقة يوقف الصوت والخدمة معًا — لا يبقى إشعار عالق.
             .setDeleteIntent(stopIntent)
@@ -193,10 +214,12 @@ object NotificationDesign {
         setTextViewText(R.id.prayer_next_time, nextTime)
     }
 
-    private fun stopIntent(context: Context): PendingIntent = PendingIntent.getService(
+    private fun stopIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
         context,
         902,
-        Intent(context, AdhanService::class.java).apply { action = AdhanService.ACTION_STOP },
+        Intent(context, AdhanStopReceiver::class.java).apply {
+            action = AdhanStopReceiver.ACTION_STOP
+        },
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 }

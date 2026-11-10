@@ -86,6 +86,12 @@
             android:name=".notifications.LiveDismissReceiver"
             android:exported="false" />
 
+        <!-- زر «إيقاف الأذان» وسحب بطاقة التشغيل: يوقف الصوت فورًا.
+             stopService مسموح من الخلفية دائمًا (عكس startService). -->
+        <receiver
+            android:name=".notifications.AdhanStopReceiver"
+            android:exported="false" />
+
         <!-- التحديث الدوري للإشعار الحي والودجت يتم عبر WorkManager فقط
              (WidgetRefreshWorker) — لا مستقبل منبهات متكررة. -->
 

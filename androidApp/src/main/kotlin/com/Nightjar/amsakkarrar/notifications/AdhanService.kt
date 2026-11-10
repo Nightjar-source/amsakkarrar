@@ -112,12 +112,15 @@ class AdhanService : Service() {
         }
 
         // احترام وضع صوت النظام: الصامت/الكتم لا يُشغّل صوتًا، والاهتزاز فقط إن طُلب.
+        // (الطلب صريح: كتم الهاتف يُكتم معه الأذان، والاهتزاز لا يُصدر صوتًا.)
         val ringer = (getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.ringerMode
-        if (ringer == AudioManager.RINGER_MODE_SILENT) {
+        if (ringer == AudioManager.RINGER_MODE_SILENT || ringer == AudioManager.RINGER_MODE_VIBRATE) {
             // لا صوت إطلاقًا: نُبقي البطاقة الصامتة فقط ولا نُشغل MediaPlayer.
+            // في وضع الاهتزاز نُشغّل النمط إن لم يكن قد بدأ بعد.
             player = null
             runCatching { mp.release() }
             currentPrayer = prayer
+            if (ringer == AudioManager.RINGER_MODE_VIBRATE && vibrator == null) startVibration()
             return
         }
 
@@ -171,8 +174,11 @@ class AdhanService : Service() {
     private fun requestAudioFocus() {
         runCatching {
             audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            // يجب أن يطابق مسار التشغيل: USAGE_MEDIA + STREAM_MUSIC.
+            // كان ALARM هنا بينما التشغيل MEDIA — تعارض يجعل التركيز يُمنح
+            // على مسار مختلف عن الصوت الفعلي فلا يُحترم كتم النظام.
             val attributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -187,7 +193,7 @@ class AdhanService : Service() {
                 @Suppress("DEPRECATION")
                 audioManager?.requestAudioFocus(
                     { },
-                    AudioManager.STREAM_ALARM,
+                    AudioManager.STREAM_MUSIC,
                     AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
                 )
             }

@@ -352,7 +352,7 @@ fun WidgetsScreen(state: AppState, contentPadding: PaddingValues) {
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(50))
-                            .background(Color(0x14FFFFFF))
+                            .background(KararColors.CardSoft)
                             .clickable {
                                 val ok = WidgetPinBridge.openWidgetSettings()
                                 message = if (ok) {
@@ -378,11 +378,11 @@ fun WidgetsScreen(state: AppState, contentPadding: PaddingValues) {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     corner = 16.dp,
-                    color = Color(0x1F38BDF8),
-                    borderColor = Color(0x3338BDF8),
+                    color = KararColors.Teal.copy(alpha = 0.10f),
+                    borderColor = KararColors.Teal.copy(alpha = 0.28f),
                     contentPadding = PaddingValues(12.dp)
                 ) {
-                    Text(message ?: "", color = Color(0xFF7DD3FC), fontSize = 11.sp, lineHeight = 16.sp)
+                    Text(message ?: "", color = KararColors.Teal, fontSize = 11.sp, lineHeight = 16.sp)
                 }
             }
         }
@@ -423,8 +423,8 @@ private fun StyleChip(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) KararColors.Gold else Color(0x14FFFFFF))
-            .border(1.dp, if (selected) Color.Transparent else Color(0x1FFFFFFF), RoundedCornerShape(12.dp))
+            .background(if (selected) KararColors.Gold else KararColors.CardSoft)
+            .border(1.dp, if (selected) Color.Transparent else KararColors.Border, RoundedCornerShape(12.dp))
             .clickable {
                 if (WidgetPinBridge.setStyle(key)) onSelect(key)
             }
@@ -502,7 +502,7 @@ private fun TodayPreview(
     Box(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(Color(0x14FFFFFF))
+            .background(KararColors.CardSoft)
             .padding(horizontal = 12.dp, vertical = 3.dp)
     ) {
         Text("باقي على $nextLabel", color = KararColors.Gold, fontSize = 9.sp, fontWeight = FontWeight.Bold)

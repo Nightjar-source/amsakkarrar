@@ -296,7 +296,7 @@ fun SettingsScreen(
                     title = "أوقات العدّاد",
                     subtitle = "يدور العدّاد والإشعار الحي حول هذه الأوقات — إلغاء الكل يفرغ العدّاد.",
                     selected = settings.livePrayers,
-                    accent = Color(0xFF7DD3FC),
+                    accent = KararColors.Teal,
                     onToggle = { id ->
                         state.update { s ->
                             s.copy(livePrayers = s.livePrayers.togglePrayer(id, PrayerMeta.order))
@@ -394,13 +394,13 @@ fun SettingsScreen(
                         Icon(
                             Icons.Filled.Widgets,
                             contentDescription = null,
-                            tint = Color(0xFF7DD3FC),
+                            tint = KararColors.Teal,
                             modifier = Modifier.size(17.dp)
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
                             "إضافة ودجت للشاشة",
-                            color = Color(0xFF7DD3FC),
+                            color = KararColors.Teal,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -544,7 +544,7 @@ private fun SettingsHero(
                     text = "إمساكية كرار",
                     style = TextStyle(
                         brush = Brush.linearGradient(
-                            listOf(KararTokens.Accent.teal, Color(0xFFA5B4FC))
+                            listOf(KararColors.Teal, KararColors.Violet)
                         ),
                         fontSize = 25.sp,
                         fontWeight = FontWeight.Black,
@@ -599,8 +599,8 @@ private fun SettingsHero(
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            HeroPill(clockText, KararTokens.Accent.teal, ltr = true)
-            HeroPill(utcLabel, Color(0xFFA5B4FC), ltr = true)
+            HeroPill(clockText, KararColors.Teal, ltr = true)
+            HeroPill(utcLabel, KararColors.Violet, ltr = true)
             if (state.locating) HeroPill("جارٍ التحديد…", KararColors.TextMuted)
         }
 
@@ -611,8 +611,8 @@ private fun SettingsHero(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
-                .background(Color(0x80000000))
-                .border(1.dp, Color(0x0DFFFFFF), RoundedCornerShape(22.dp))
+                .background(KararColors.SurfaceHigh.copy(alpha = 0.72f))
+                .border(1.dp, KararColors.Border, RoundedCornerShape(22.dp))
                 .clickable(onClick = onSearchCity)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -620,13 +620,13 @@ private fun SettingsHero(
             Icon(
                 Icons.Filled.Search,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.40f),
+                tint = KararColors.TextMuted,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(Modifier.width(8.dp))
             Text(
                 text = "ابحث عن مدينة (كربلاء، النجف، لندن…)",
-                color = Color.White.copy(alpha = 0.45f),
+                color = KararColors.TextMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
@@ -640,7 +640,7 @@ private fun SettingsHero(
             HeroAction(
                 text = if (state.locating) "جارٍ…" else "GPS ذكي",
                 icon = Icons.Filled.MyLocation,
-                color = Color(0xFF6EE7B7),
+                color = KararColors.Mint,
                 container = Color(0x1A34D399),
                 border = Color(0x3334D399),
                 modifier = Modifier.weight(1f),
@@ -649,7 +649,7 @@ private fun SettingsHero(
             HeroAction(
                 text = "مدينتي (IP)",
                 icon = Icons.Filled.Public,
-                color = Color(0xFFA5B4FC),
+                color = KararColors.Violet,
                 container = Color(0x1A6366F1),
                 border = Color(0x336366F1),
                 modifier = Modifier.weight(1f),
@@ -659,8 +659,8 @@ private fun SettingsHero(
                 text = "المدن",
                 icon = Icons.Filled.Search,
                 color = KararColors.TextSecondary,
-                container = Color(0x0DFFFFFF),
-                border = Color(0x1AFFFFFF),
+                container = KararColors.CardSoft,
+                border = KararColors.Border,
                 onClick = onSearchCity
             )
         }
@@ -669,7 +669,7 @@ private fun SettingsHero(
 
         Text(
             text = "طريقة الحساب",
-            color = Color.White.copy(alpha = 0.50f),
+            color = KararColors.TextMuted,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
@@ -779,7 +779,7 @@ private fun HeroMethodButton(
     ) {
         Text(
             text = label,
-            color = if (selected) Color.White else Color.White.copy(alpha = 0.50f),
+            color = if (selected) KararColors.OnGold else KararColors.TextMuted,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -874,10 +874,10 @@ private fun DailyTimeCell(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(if (highlight) Color(0x1A2DD4BF) else Color(0x08FFFFFF))
+            .background(if (highlight) KararColors.Teal.copy(alpha = 0.12f) else KararColors.CardSoft)
             .border(
                 1.dp,
-                if (highlight) Color(0x332DD4BF) else Color(0x0FFFFFFF),
+                if (highlight) KararColors.Teal.copy(alpha = 0.30f) else KararColors.Border,
                 RoundedCornerShape(16.dp)
             )
             .padding(horizontal = 8.dp, vertical = 10.dp),
@@ -932,10 +932,10 @@ private fun MethodSelector(selected: String, onSelect: (String) -> Unit) {
                             Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(50))
-                                .background(if (isSelected) KararColors.Gold else Color(0x14FFFFFF))
+                                .background(if (isSelected) KararColors.Gold else KararColors.CardSoft)
                                 .border(
                                     1.dp,
-                                    if (isSelected) Color.Transparent else Color(0x1FFFFFFF),
+                                    if (isSelected) Color.Transparent else KararColors.Border,
                                     RoundedCornerShape(50)
                                 )
                                 .clickable { onSelect(code) }
@@ -944,7 +944,7 @@ private fun MethodSelector(selected: String, onSelect: (String) -> Unit) {
                         ) {
                             Text(
                                 label,
-                                color = if (isSelected) Color(0xFF241A00) else KararColors.TextSecondary,
+                                color = if (isSelected) KararColors.OnGold else KararColors.TextSecondary,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
@@ -1112,8 +1112,8 @@ private fun OffsetCell(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0x0AFFFFFF))
-            .border(1.dp, Color(0x12FFFFFF), RoundedCornerShape(14.dp))
+            .background(KararColors.CardSoft)
+            .border(1.dp, KararColors.Border, RoundedCornerShape(14.dp))
             .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Text(
@@ -1346,10 +1346,10 @@ private fun PrayerSelectionCard(
             Spacer(Modifier.width(8.dp))
             Box(
                 Modifier
-                    .background(if (allSelected) accent.copy(alpha = 0.16f) else Color(0x0FFFFFFF), RoundedCornerShape(50))
+                    .background(if (allSelected) accent.copy(alpha = 0.16f) else KararColors.CardSoft, RoundedCornerShape(50))
                     .border(
                         1.dp,
-                        if (allSelected) accent.copy(alpha = 0.6f) else Color(0x1FFFFFFF),
+                        if (allSelected) accent.copy(alpha = 0.6f) else KararColors.Border,
                         RoundedCornerShape(50)
                     )
                     .clickable { if (allSelected) onNone() else onAll() }
@@ -1372,12 +1372,12 @@ private fun PrayerSelectionCard(
                         Modifier
                             .weight(1f)
                             .background(
-                                if (on) accent.copy(alpha = 0.18f) else Color(0x0AFFFFFF),
+                                if (on) accent.copy(alpha = 0.18f) else KararColors.CardSoft,
                                 RoundedCornerShape(10.dp)
                             )
                             .border(
                                 1.dp,
-                                if (on) accent.copy(alpha = 0.55f) else Color(0x12FFFFFF),
+                                if (on) accent.copy(alpha = 0.55f) else KararColors.Border,
                                 RoundedCornerShape(10.dp)
                             )
                             .clickable { onToggle(id) }
@@ -1470,7 +1470,7 @@ private fun ToggleRow(
                 checked = checked,
                 onCheckedChange = onChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color(0xFF241A00),
+                    checkedThumbColor = KararColors.OnGold,
                     checkedTrackColor = KararColors.Gold
                 )
             )
@@ -1507,7 +1507,7 @@ private fun StepChip(label: String, onClick: () -> Unit) {
     Box(
         Modifier
             .size(30.dp)
-            .background(Color(0x1AFFFFFF), CircleShape)
+            .background(KararColors.CardSoft, CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {

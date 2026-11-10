@@ -76,7 +76,9 @@ object NotificationChannels {
                 setSound(
                     fallbackSound,
                     AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        // MEDIA (لا ALARM): نفس مسار الصوت الأساسي، فيحترم
+                        // زر الصوت وكتم النظام بدل تجاوزهما.
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
                 )
