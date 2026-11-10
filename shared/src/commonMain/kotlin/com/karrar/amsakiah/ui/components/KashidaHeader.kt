@@ -14,11 +14,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.ui.theme.KararFonts
 import com.karrar.amsakiah.ui.theme.SkyTheme
 
 /**
  * كشيدة الشهر — نسخة حرفية من V7:
  * `رمضـ` + كشيدة بيضاء متصلة يتوسّطها رقم اليوم بالذهبي (`#FFD700`) + `ـان`.
+ * خط `Reem Kufi` كما في التطبيق المرجعي (font-reem).
  */
 @Composable
 fun KashidaHeader(
@@ -27,6 +29,7 @@ fun KashidaHeader(
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 44.sp
 ) {
+    val reem = KararFonts.ReemKufi
     val (pre, post) = SkyTheme.getKashidaMonthParts(monthName)
     val unit = fontSize.value
     val daySize = (unit * (38.4f / 44.8f)).sp
@@ -40,7 +43,8 @@ fun KashidaHeader(
             text = pre,
             color = Color.White,
             fontSize = fontSize,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            fontFamily = reem
         )
         Box(
             modifier = Modifier.widthIn(min = (unit * (45f / 44.8f)).dp),
@@ -51,7 +55,8 @@ fun KashidaHeader(
                 text = "ـــــ",
                 color = Color.White.copy(alpha = 0.92f),
                 fontSize = fontSize,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontFamily = reem
             )
             // رقم اليوم فوقها بالذهبي مع ظل خفيف
             Text(
@@ -59,6 +64,7 @@ fun KashidaHeader(
                 color = Color(0xFFFFD700),
                 fontSize = daySize,
                 fontWeight = FontWeight.ExtraBold,
+                fontFamily = reem,
                 modifier = Modifier.offset(y = (-(unit * (6f / 44.8f))).dp)
             )
         }
@@ -66,7 +72,8 @@ fun KashidaHeader(
             text = post,
             color = Color.White,
             fontSize = fontSize,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            fontFamily = reem
         )
     }
 }

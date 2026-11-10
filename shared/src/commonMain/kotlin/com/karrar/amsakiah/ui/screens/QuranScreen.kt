@@ -42,6 +42,7 @@ import com.karrar.amsakiah.core.net.fetchRemoteText
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.KararFonts
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.Dispatchers
@@ -155,6 +156,7 @@ private fun QuranReader(surah: SurahInfo, onClose: () -> Unit) {
     var failed by remember { mutableStateOf(false) }
     var verses by remember { mutableStateOf<List<String>>(emptyList()) }
     var reloadTick by remember { mutableStateOf(0) }
+    val amiriFont = KararFonts.Amiri
 
     LaunchedEffect(surah.number, reloadTick) {
         loading = true
@@ -258,6 +260,7 @@ private fun QuranReader(surah: SurahInfo, onClose: () -> Unit) {
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
+                            fontFamily = amiriFont,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -270,6 +273,7 @@ private fun QuranReader(surah: SurahInfo, onClose: () -> Unit) {
                             fontSize = 17.sp,
                             lineHeight = 30.sp,
                             textAlign = TextAlign.Right,
+                            fontFamily = amiriFont,
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(Modifier.width(8.dp))

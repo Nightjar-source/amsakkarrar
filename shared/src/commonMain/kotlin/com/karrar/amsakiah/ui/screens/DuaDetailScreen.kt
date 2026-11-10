@@ -214,6 +214,8 @@ private fun DuaPill(text: String, color: Color) {
 @Composable
 private fun DuaTextCard(item: ShiaDuaItem) {
     // نص الدعاء على خلفية الشاشة مباشرة — بلا بطاقة ممتلئة (edge-to-edge).
+    // خط Amiri كما في التطبيق المرجعي (font-amiri).
+    val amiri = com.karrar.amsakiah.ui.theme.KararFonts.Amiri
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -231,6 +233,7 @@ private fun DuaTextCard(item: ShiaDuaItem) {
                 lineHeight = if (isPoetry) 30.sp else 32.sp,
                 fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal,
                 textAlign = if (isPoetry) TextAlign.Center else TextAlign.Justify,
+                fontFamily = amiri,
                 modifier = Modifier.fillMaxWidth()
             )
             if (index != paragraphs.lastIndex) Spacer(Modifier.height(if (isPoetry) 10.dp else 12.dp))

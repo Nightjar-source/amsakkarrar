@@ -33,6 +33,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -228,6 +230,9 @@ fun TodayScreen(
                 .align(Alignment.Center)
                 .width(stageWidth)
                 .fillMaxHeight()
+                // على الشاشات الصغيرة/المنقسمة: المحتوى يتمرّر بدل أن يُقصّ —
+                // القوس يبقى كاملًا والأرقام لا تُفقد تحت الحواف.
+                .verticalScroll(rememberScrollState())
         ) {
             TodayHeader(
                 settings = settings,
@@ -373,7 +378,7 @@ private fun TodayHeader(
                     Icon(
                         imageVector = Icons.Filled.LocationOn,
                         contentDescription = null,
-                        tint = Color(0xFFFFD700),
+                        tint = KararColors.Gold,
                         modifier = Modifier.size(if (tiny) 10.dp else 12.dp)
                     )
                     Text(
@@ -566,7 +571,7 @@ private fun CountdownSection(
         ) {
             Text(
                 text = label,
-                color = Color(0xFFFFD700),
+                color = KararColors.Gold,
                 fontSize = if (compact) 10.sp else 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp,
@@ -602,7 +607,7 @@ private fun CountdownSection(
                     label = "countdown-dot-width"
                 )
                 val color by animateColorAsState(
-                    targetValue = if (active) Color(0xFFFFD700) else Color.White.copy(alpha = 0.20f),
+                    targetValue = if (active) KararColors.Gold else Color.White.copy(alpha = 0.20f),
                     animationSpec = KararTokens.Motion.effects(),
                     label = "countdown-dot-color"
                 )
@@ -856,12 +861,12 @@ private fun PrayerCard(
             Icon(
                 imageVector = KararIcons.prayer(id),
                 contentDescription = null,
-                tint = if (active) Color(0xFFFFD700) else Color.White.copy(alpha = 0.50f),
+                tint = if (active) KararColors.Gold else Color.White.copy(alpha = 0.50f),
                 modifier = Modifier.size(11.dp)
             )
             Text(
                 text = label,
-                color = if (active) Color(0xFFFFD700) else Color.White.copy(alpha = 0.50f),
+                color = if (active) KararColors.Gold else Color.White.copy(alpha = 0.50f),
                 fontSize = if (compact) 10.sp else 11.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,

@@ -5,9 +5,13 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.Nightjar.amsakkarrar.R
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -161,7 +165,9 @@ private fun WidgetFrame(
     }
 }
 
-/** كشيدة الشهر: «رمضـ 16 ـان» — الحروف ذهبية والرقم أبيض. */
+/** كشيدة الشهر: «رمضـ 16 ـان» — الحروف ذهبية والرقم أبيض (بخط ريم كوفي كما في المرجع). */
+private val ReemKufi = FontFamily(Font(R.font.reem_kufi))
+
 @Composable
 private fun WidgetKashida(snapshot: PrayerSnapshot, fontSize: Int = 26) {
     val (pre, post) = SkyTheme.getKashidaMonthParts(snapshot.hijriMonth)
@@ -172,15 +178,30 @@ private fun WidgetKashida(snapshot: PrayerSnapshot, fontSize: Int = 26) {
     ) {
         Text(
             text = pre,
-            style = TextStyle(color = color(Gold), fontSize = (fontSize + 2).sp, fontWeight = FontWeight.Bold)
+            style = TextStyle(
+                color = color(Gold),
+                fontSize = (fontSize + 2).sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = ReemKufi
+            )
         )
         Text(
             text = " ${snapshot.hijriDay} ",
-            style = TextStyle(color = color(TextPrimary), fontSize = fontSize.sp, fontWeight = FontWeight.Bold)
+            style = TextStyle(
+                color = color(TextPrimary),
+                fontSize = fontSize.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = ReemKufi
+            )
         )
         Text(
             text = post,
-            style = TextStyle(color = color(Gold), fontSize = (fontSize + 2).sp, fontWeight = FontWeight.Bold)
+            style = TextStyle(
+                color = color(Gold),
+                fontSize = (fontSize + 2).sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = ReemKufi
+            )
         )
     }
 }

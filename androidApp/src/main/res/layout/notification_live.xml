@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- الإشعار الحي — التصميم الكامل (widgetsnotifications.html) -->
+<!-- الإشعار الحي — نسخة حرفية من widgetsnotifications.html (قسم إشعار النشاط المباشر) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layoutDirection="rtl"
     android:background="@drawable/notif_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:paddingStart="22dp"
+    android:paddingTop="18dp"
+    android:paddingEnd="22dp"
+    android:paddingBottom="18dp">
 
-    <!-- الهيدر -->
+    <!-- الهيدر: لهب + «رمضان مباشر» + النقطة الحمراء النابضة -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -16,37 +19,28 @@
         android:orientation="horizontal">
 
         <ImageView
-            android:layout_width="26dp"
-            android:layout_height="26dp"
-            android:background="@drawable/notif_icon_circle"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/notif_flame_circle"
             android:contentDescription="@null"
-            android:padding="5dp"
-            android:src="@drawable/ic_notif_moon" />
+            android:padding="4dp"
+            android:src="@drawable/ic_notif_flame" />
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:text="إمساكية كرار"
+            android:text="رمضان مباشر"
             android:textColor="#FFF5F5F7"
             android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/live_city"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:maxLines="1"
-            android:text="كربلاء"
-            android:textColor="#80B9C0D4"
-            android:textSize="9sp" />
+            android:textStyle="bold"
+            android:letterSpacing="0.02" />
 
         <FrameLayout
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:background="@drawable/notif_box_next">
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/notif_box_current">
 
             <View
                 android:layout_width="8dp"
@@ -56,14 +50,16 @@
         </FrameLayout>
     </LinearLayout>
 
-    <!-- الوقت المستهدف والعدّاد -->
+    <!-- الصف السفلي: العدّاد + الوقت المتبقي -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:baselineAligned="false"
         android:gravity="bottom"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -77,8 +73,9 @@
                 android:layout_height="wrap_content"
                 android:text="باقي على الإمساك"
                 android:textColor="#99B9C0D4"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
 
             <TextView
                 android:id="@+id/live_target"
@@ -104,7 +101,8 @@
                 android:text="متبقي"
                 android:textColor="#99B9C0D4"
                 android:textSize="9sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:letterSpacing="0.2" />
 
             <Chronometer
                 android:id="@+id/live_chrono"
@@ -117,17 +115,17 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- شريط التقدم (نهاري / ليلي) -->
+    <!-- شريط التقدم (نهاري / ليلي) h-[28px] -->
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="12dp"
-        android:layout_marginTop="12dp">
+        android:layout_height="28dp"
+        android:layout_marginTop="14dp">
 
         <ProgressBar
             android:id="@+id/live_progress_day"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
-            android:layout_height="12dp"
+            android:layout_height="28dp"
             android:max="100"
             android:progress="65"
             android:progressDrawable="@drawable/notif_progress_day" />
@@ -136,7 +134,7 @@
             android:id="@+id/live_progress_night"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
-            android:layout_height="12dp"
+            android:layout_height="28dp"
             android:max="100"
             android:progress="65"
             android:progressDrawable="@drawable/notif_progress" />
