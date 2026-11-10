@@ -21,6 +21,15 @@ object LiveNotificationManager {
     private const val KEY_WAS_ENABLED = "was_enabled"
 
     /**
+     * بصمة آخر محتوى نُشر. إعادة نشر نفسه كلما فتح المستخدم التطبيق أو تغيّر
+     * إعداد كانت تُعيد رسم البطاقة (وإحساسًا بالإشعار مرتين). هنا نضمن أن
+     * الإشعار يُعاد نشره فقط عندما يتغيّر المحتوى فعلًا (الصلاة، الوقت،
+     * أو تغيّر النسبة بمقدار ملموس).
+     */
+    @Volatile
+    private var lastSignature: String? = null
+
+    /**
      * @param force أظهر الإشعار حتى لو سحبه المستخدم سابقًا. يُستخدم عند
      *   اختبار الإشعار من الضبط أو عند دخول وقت صلاة جديدة.
      */
@@ -33,6 +42,7 @@ object LiveNotificationManager {
         val prefs = prefs(appContext)
 
         if (!settings.liveNotification) {
+            lastSignature = null
             prefs.edit()
                 .putBoolean(KEY_WAS_ENABLED, false)
                 .putLong(KEY_DISMISSED_UNTIL, 0L)
@@ -49,6 +59,21 @@ object LiveNotificationManager {
         if (!force && isDismissed(prefs)) return
 
         val snapshot = PrayerSnapshotLoader.load(appContext)
+        val percent = (snapshot.periodProgress * 100f).toInt()
+        val remaining = snapshot.remainingSeconds
+        // بصمة المحتوى: لا نُعيد النشر إذا لم يتغيّر شيء يُرى في البطاقة.
+        val signature = buildString {
+            append(snapshot.nextLabel)
+            append('|')
+            append(snapshot.nextTime)
+            append('|')
+            append(percent)
+            append('|')
+            append(remaining / 30) // يتغيّر كل 30 ثانية فقط
+        }
+        if (!force && signature == lastSignature) return
+        lastSignature = signature
+
         clearDismissed(prefs)
         runCatching {
             manager.notify(
@@ -61,6 +86,7 @@ object LiveNotificationManager {
     /** إخفاء الإشعار نهائيًا (عند إيقاف الخيار من الإعدادات). */
     fun cancel(context: Context) {
         val appContext = context.applicationContext
+        lastSignature = null
         clearDismissed(prefs(appContext))
         cancelInternal(appContext)
     }

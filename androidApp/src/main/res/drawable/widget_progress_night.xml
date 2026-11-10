@@ -1,18 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- شريط تقدم الودجت (ليلي) — نفس لون الإشعار الحي بالضبط (#80A1D4)
-     حتى يبدو شريط الودجت وشريط الإشعار شيئًا واحدًا. -->
+<!-- شريط تقدم الودجت (ليلي) — نفس تدرج grad-night في الإشعار بالضبط
+     (#80A1D4 → #C0D6DF → #F2F5EA) حتى يبدو الشريطان شيئًا واحدًا. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <solid android:color="#66000000" />
-            <corners android:radius="99dp" />
+            <corners android:radius="9999px" />
+            <stroke
+                android:width="1dp"
+                android:color="#14FFFFFF" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <solid android:color="#FF80A1D4" />
-                <corners android:radius="99dp" />
+                <gradient
+                    android:angle="0"
+                    android:startColor="#80A1D4"
+                    android:centerColor="#C0D6DF"
+                    android:endColor="#F2F5EA" />
+                <corners android:radius="9999px" />
             </shape>
         </clip>
     </item>

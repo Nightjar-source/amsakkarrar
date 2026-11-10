@@ -41,6 +41,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,13 +78,14 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-// ألوان مستوحاة من مسبحة.html: سماوي على خلفية Slate
-private val Sky = Color(0xFF38BDF8)
-private val SkyDeep = Color(0xFF0284C7)
-private val Slate = Color(0xFF0F172A)
-private val SlateCard = Color(0xFF1E293B)
-private val SlateMuted = Color(0xFF94A3B8)
-private val Violet = Color(0xFFA78BFA)
+// الألوان تقرأ من اللوحة الحالية حتى يتبدّل الوضع الداكن/الفاتح فورًا —
+// لا قيم داكنة ثابتة تُظهر الوضع الفاتح معطوبًا.
+private val Sky: Color @Composable @ReadOnlyComposable get() = KararColors.Sky
+private val Violet: Color @Composable @ReadOnlyComposable get() = KararColors.Violet
+
+/** نص فوق سطح سماوي فاتح: داكن في الوضعين ليبقى التباين عاليًا. */
+private val OnAccent: Color @Composable @ReadOnlyComposable get() =
+    if (KararColors.IsDark) Color.White else Color(0xFF082F49)
 
 private const val TAB_COUNTER = 0
 private const val TAB_LIST = 1
@@ -218,7 +220,7 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
                 )
                 Text(
                     "مسبحة كرار — ${presets.size} أذكار",
-                    color = SlateMuted,
+                    color = KararColors.TextMuted,
                     fontSize = 10.sp
                 )
             }
@@ -395,7 +397,7 @@ private fun TasbihTabs(selected: Int, onSelect: (Int) -> Unit) {
             ) {
                 Text(
                     label,
-                    color = if (isSelected) Color(0xFF082F49) else KararColors.TextSecondary,
+                    color = if (isSelected) OnAccent else KararColors.TextSecondary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
@@ -429,6 +431,8 @@ private fun TasbihCounterTab(
     val progress = (count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
     // تُقرأ ألوان الثيم قبل Canvas (القراءة داخل draw lambda غير مسموحة).
     val progressGold = KararColors.Gold
+    val sky = Sky
+    val violet = Violet
 
     Text(
         dhikr.text,
@@ -439,7 +443,7 @@ private fun TasbihCounterTab(
         lineHeight = 36.sp
     )
     Spacer(Modifier.height(4.dp))
-    Text(dhikr.group, color = SlateMuted, fontSize = 11.sp)
+    Text(dhikr.group, color = KararColors.TextMuted, fontSize = 11.sp)
     Spacer(Modifier.height(18.dp))
 
     Box(
@@ -461,7 +465,7 @@ private fun TasbihCounterTab(
             // هالة خارجية
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Sky.copy(alpha = 0.16f), Color.Transparent),
+                    colors = listOf(sky.copy(alpha = 0.16f), Color.Transparent),
                     center = center,
                     radius = size.minDimension / 2f
                 ),
@@ -469,7 +473,7 @@ private fun TasbihCounterTab(
             )
             // المسار الخلفي
             drawArc(
-                color = Sky.copy(alpha = 0.14f),
+                color = sky.copy(alpha = 0.14f),
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -481,7 +485,7 @@ private fun TasbihCounterTab(
             if (progress > 0f) {
                 drawArc(
                     brush = Brush.sweepGradient(
-                        listOf(Sky, Violet, progressGold, Sky),
+                        listOf(sky, violet, progressGold, sky),
                         center = center
                     ),
                     startAngle = -90f,
@@ -501,7 +505,7 @@ private fun TasbihCounterTab(
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
-                        listOf(Color(0xFF1E293B), Slate)
+                        listOf(KararColors.SurfaceHigh, KararColors.Card)
                     )
                 )
                 .border(8.dp, Sky, CircleShape),
@@ -516,7 +520,7 @@ private fun TasbihCounterTab(
                 )
                 Text(
                     text = "من $target",
-                    color = SlateMuted,
+                    color = KararColors.TextMuted,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -525,7 +529,7 @@ private fun TasbihCounterTab(
     }
 
     Spacer(Modifier.height(8.dp))
-    Text("اضغط في أي مكان داخل الدائرة للتسبيح", color = SlateMuted, fontSize = 10.sp)
+    Text("اضغط في أي مكان داخل الدائرة للتسبيح", color = KararColors.TextMuted, fontSize = 10.sp)
     Spacer(Modifier.height(16.dp))
 
     // شريط التقدم والهدف
@@ -534,7 +538,7 @@ private fun TasbihCounterTab(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("الهدف:", color = SlateMuted, fontSize = 12.sp)
+        Text("الهدف:", color = KararColors.TextMuted, fontSize = 12.sp)
         Text("$target", color = Sky, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.weight(1f))
         if (rounds > 0) InfoPill("الدورات: $rounds", Violet)
@@ -663,7 +667,7 @@ private fun DhikrRow(
         ) {
             Text(
                 "${index + 1}",
-                color = if (selected) Color(0xFF082F49) else SlateMuted,
+                color = if (selected) OnAccent else KararColors.TextMuted,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -676,11 +680,11 @@ private fun DhikrRow(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
-            Text(dhikr.group, color = SlateMuted, fontSize = 10.sp)
+            Text(dhikr.group, color = KararColors.TextMuted, fontSize = 10.sp)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text("${dhikr.target}", color = Sky, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Text("مرة", color = SlateMuted, fontSize = 9.sp)
+            Text("مرة", color = KararColors.TextMuted, fontSize = 9.sp)
         }
         if (onDelete != null) {
             Spacer(Modifier.width(8.dp))
@@ -728,7 +732,7 @@ private fun TasbihStatsTab(
         Text(
             "عداد «اليوم» يتصفّر تلقائيًا كل 24 ساعة، بينما «الإجمالي» يبقى محفوظًا على جهازك. " +
                 "كل تسبيحة تُحفظ فورًا، ولا تحتاج إنترنت.",
-            color = SlateMuted,
+            color = KararColors.TextMuted,
             fontSize = 11.sp,
             lineHeight = 18.sp
         )
@@ -749,7 +753,7 @@ private fun StatColumn(label: String, value: Int, color: Color) {
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold
         )
-        Text(label, color = SlateMuted, fontSize = 11.sp)
+        Text(label, color = KararColors.TextMuted, fontSize = 11.sp)
     }
 }
 
@@ -802,7 +806,7 @@ private fun TasbihSettingsTab(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("حذف كل بيانات المسبحة", color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text("اليوم والإجمالي والدورات", color = SlateMuted, fontSize = 10.sp)
+                Text("اليوم والإجمالي والدورات", color = KararColors.TextMuted, fontSize = 10.sp)
             }
             SmallPill("حذف", danger = true, onClick = onResetAll)
         }
@@ -819,16 +823,16 @@ private fun TasbihToggleRow(
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, color = Color(0xFFE2E8F0), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = SlateMuted, fontSize = 10.sp, lineHeight = 15.sp)
+            Text(subtitle, color = KararColors.TextMuted, fontSize = 10.sp, lineHeight = 15.sp)
         }
         Switch(
             checked = checked,
             onCheckedChange = onChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color(0xFF082F49),
+                checkedThumbColor = OnAccent,
                 checkedTrackColor = Sky,
-                uncheckedThumbColor = SlateMuted,
-                uncheckedTrackColor = SlateCard
+                uncheckedThumbColor = KararColors.TextMuted,
+                uncheckedTrackColor = KararColors.SurfaceHigh
             )
         )
     }
@@ -888,7 +892,7 @@ private fun AddDhikrDialog(
             Text("إضافة تسبيح جديد", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(
                 "اكتب الذكر وحدّد عدده، وسيُضاف إلى قائمتك الخاصة.",
-                color = SlateMuted,
+                color = KararColors.TextMuted,
                 fontSize = 10.sp
             )
             Spacer(Modifier.height(12.dp))
@@ -935,7 +939,7 @@ private fun AddDhikrDialog(
                 ) {
                     Text(
                         "إضافة التسبيح",
-                        color = Color(0xFF082F49),
+                        color = OnAccent,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -994,7 +998,7 @@ private fun CompletionDialog(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "التالي: $nextDhikr",
-                    color = SlateMuted,
+                    color = KararColors.TextMuted,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center
                 )
@@ -1008,14 +1012,14 @@ private fun CompletionDialog(
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("متابعة", color = Color(0xFF082F49), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("متابعة", color = OnAccent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(8.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(SlateCard)
+                        .background(KararColors.SurfaceHigh)
                         .clickable(onClick = onChange)
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
@@ -1045,14 +1049,14 @@ private fun TasbihConfirmDialog(
         ) {
             Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
-            Text(message, color = SlateMuted, fontSize = 12.sp, lineHeight = 18.sp)
+            Text(message, color = KararColors.TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(SlateCard)
+                        .background(KararColors.SurfaceHigh)
                         .clickable(onClick = onDismiss)
                         .padding(vertical = 11.dp),
                     contentAlignment = Alignment.Center

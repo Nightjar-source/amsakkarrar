@@ -37,6 +37,10 @@ object KararColors {
     val Purple: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.purple
     val Cyan: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.cyan
     val Pink: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.pink
+    val Sky: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.sky
+    val Amber: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.amber
+    val Rose: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.rose
+    val Mint: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.mint
     val Teal: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.teal
     val Violet: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.violet
     val TextPrimary: Color @Composable @ReadOnlyComposable get() = LocalKararPalette.current.textPrimary

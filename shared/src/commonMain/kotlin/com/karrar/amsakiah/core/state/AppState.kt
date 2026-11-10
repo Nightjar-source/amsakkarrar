@@ -17,7 +17,35 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 
 /**
+ * نوع التنبيه العائم — تستخدمه الواجهة لاختيار اللون والأيقونة والحركة.
+ *
+ * الفصل هنا مقصود: النواة لا تعرف شيئًا عن الشكل، وتكتفي بإعلان «ماذا حدث»
+ * (UDF: الحالة + الحدث)، بينما تختار الواجهة «كيف يُرسم».
+ */
+enum class ToastKind { INFO, ERROR, SUCCESS, LOCATION }
+
+/**
+ * تنبيه واحد عائم (كبسولة بيضاء أنيقة) — نموذج بيانات فقط، بلا أي رسم.
+ *
+ * @param id معرّف فريد يمنع إعادة استخدام نفس المفتاح عند تكرار الرسالة.
+ * @param text نص التنبيه (سطر واحد).
+ * @param kind النوع: يحدد التأكيد اللوني في الواجهة.
+ * @param actionLabel نص زر إجراء اختياري (مثل «تشغيل الموقع»).
+ */
+data class ToastMessage(
+    val id: Long,
+    val text: String,
+    val kind: ToastKind,
+    val actionLabel: String? = null
+)
+
+/**
  * حالة التطبيق المركزية — مصدر الحقيقة الوحيد لكل الشاشات.
+ *
+ * **معمارية UDF:** كل ما هنا حالة قابلة للقراءة (state) ودوال أحداث (events)
+ * تعدّل الحالة، ولا يوجد أي `@Composable` أو مرجع واجهة. الواجهة تقرأ الحالة
+ * وترسل الأحداث فقط، لذلك يمكن اختبار المنطق بلا Compose وتشغيله على كل
+ * المنصات بلا طبقة رسوميات.
  */
 class AppState {
 
@@ -48,6 +76,27 @@ class AppState {
     /** خدمة الموقع معطّلة في إعدادات النظام — تُعرض معها زر «تشغيل الموقع». */
     var locationServiceDisabled: Boolean by mutableStateOf(false)
         private set
+
+    /**
+     * التنبيه العائم الحالي (كبسولة بيضاء أنيقة) — حالة لا تملك أي رسم؛
+     * يقرأها مضيف التنبيهات في الواجهة ويختار شكلها وحركتها.
+     */
+    var toast by mutableStateOf<ToastMessage?>(null)
+        private set
+
+    private var toastSeq = 0L
+
+    /** حدث: إظهار تنبيه عائم جديد (معرّف متسلسل يمنع التكرار بنفس المفتاح). */
+    fun showToast(text: String, kind: ToastKind = ToastKind.INFO, actionLabel: String? = null) {
+        if (text.isBlank()) return
+        toastSeq += 1
+        toast = ToastMessage(toastSeq, text.trim(), kind, actionLabel)
+    }
+
+    /** حدث: إخفاء التنبيه الحالي. */
+    fun dismissToast() {
+        toast = null
+    }
 
     /**
      * مزامنة التغييرات القادمة من خارج الواجهة (ودجت المسبحة، الإجراءات السريعة).
@@ -148,21 +197,21 @@ class AppState {
         try {
             val provider = createLocationProvider()
             if (!provider.isAvailable()) {
-                lastLocationError = "خدمة الموقع غير متوفرة على هذا الجهاز"
+                reportLocationError("خدمة الموقع غير متوفرة على هذا الجهاز")
                 return
             }
             if (!provider.isLocationEnabled()) {
                 locationServiceDisabled = true
-                lastLocationError = "خدمة الموقع معطّلة — شغّلها من إعدادات الجهاز"
+                reportLocationError("خدمة الموقع معطّلة — شغّلها من إعدادات الجهاز", "تشغيل الموقع")
                 return
             }
             if (!provider.hasPermission()) {
-                lastLocationError = "لم يُمنح إذن الموقع"
+                reportLocationError("لم يُمنح إذن الموقع", "الإعدادات")
                 return
             }
             val point = provider.currentLocation()
             if (point == null) {
-                lastLocationError = "تعذّر الحصول على إحداثيات الجهاز"
+                reportLocationError("تعذّر الحصول على إحداثيات الجهاز")
                 return
             }
             val nearest = CityDatabase.nearest(point.lat, point.lon)
@@ -179,6 +228,9 @@ class AppState {
                         locationSource = "gps"
                     )
                 }
+                showToast("تم تحديد الموقع: ${nearest.city.name}", ToastKind.LOCATION)
+            } else {
+                reportLocationError("لم تُطابَق المدينة من القاعدة الأوفلاين")
             }
         } finally {
             locating = false
@@ -197,7 +249,7 @@ class AppState {
         try {
             val ip = fetchIpLocation()
             if (ip == null) {
-                lastLocationError = "تعذّر استشعار الموقع عبر IP — تحقق من اتصال الإنترنت"
+                reportLocationError("تعذّر استشعار الموقع عبر IP — تحقق من اتصال الإنترنت")
                 return
             }
             val nearest = CityDatabase.nearest(ip.latitude, ip.longitude)
@@ -217,9 +269,16 @@ class AppState {
                     locationSource = "ip"
                 )
             }
+            showToast("تم تحديد الموقع عبر IP: $cityName", ToastKind.LOCATION)
         } finally {
             locating = false
         }
+    }
+
+    /** يُسجّل الخطأ في الحالة ويُظهره ككبسولة عائمة — لا إغلاق للتطبيق أبدًا. */
+    private fun reportLocationError(message: String, actionLabel: String? = null) {
+        lastLocationError = message
+        showToast(message, ToastKind.ERROR, actionLabel)
     }
 
     /** يفتح إعدادات خدمة الموقع في النظام (أندرويد) عقب كشف تعطيلها. */

@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -1177,7 +1177,10 @@ private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.92f)
+                // لا fillMaxHeight داخل الورقة السفلية: القيود هناك قد تكون غير
+                // محدودة على بعض الأجهزة ما يسبب انهيار القياس. ارتفاع ثابت
+                // معقول مع LazyColumn بوزن كامل يعطي نفس الشكل بأمان.
+                .heightIn(min = 320.dp, max = 640.dp)
                 .padding(horizontal = 16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1259,7 +1262,11 @@ private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
-                items(results, key = { it.stableId }) { city ->
+                items(
+                    items = results,
+                    key = { it.stableId },
+                    contentType = { "city" }
+                ) { city ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

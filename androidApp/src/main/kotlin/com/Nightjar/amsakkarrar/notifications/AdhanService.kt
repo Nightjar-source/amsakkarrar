@@ -100,12 +100,24 @@ class AdhanService : Service() {
         val mp = AdhanPlayback.createPlayer(
             context = this,
             name = AdhanPlayback.ADHAN,
-            usage = AudioAttributes.USAGE_ALARM
+            // USAGE_MEDIA (وليس ALARM): زر الصوت في الهاتف هو الذي يتحكم،
+            // وكتم النظام/الصامت يُحترم — وهو المطلوب صراحةً.
+            usage = AudioAttributes.USAGE_MEDIA
         )
         if (mp == null) {
             // لم نستطع فتح الملف — نعرض إشعارًا بقناة تحمل الصوت المخصص نفسه.
             PrayerNotifier.showAdhanFallback(this, prayer)
             stopPlayback()
+            return
+        }
+
+        // احترام وضع صوت النظام: الصامت/الكتم لا يُشغّل صوتًا، والاهتزاز فقط إن طُلب.
+        val ringer = (getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.ringerMode
+        if (ringer == AudioManager.RINGER_MODE_SILENT) {
+            // لا صوت إطلاقًا: نُبقي البطاقة الصامتة فقط ولا نُشغل MediaPlayer.
+            player = null
+            runCatching { mp.release() }
+            currentPrayer = prayer
             return
         }
 
@@ -124,6 +136,10 @@ class AdhanService : Service() {
             stopPlayback()
             return
         }
+
+        // نجاح المسار الأساسي: أزل أي بطاقة احتياطية سبق نشرها حتى لا يبقى
+        // إشعاران لنفس الحدث (كانت تظهر البطاقة الاحتياطية مع البطاقة الصامتة).
+        PrayerNotifier.clearFallback(this)
 
         // حرس وقت: المدة الفعلية + 5 ثوانٍ كهامش.
         val durationMs = runCatching { mp.duration.toLong() }.getOrDefault(0L)

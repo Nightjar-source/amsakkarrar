@@ -116,13 +116,15 @@ object CityDatabase {
         return withContext(Dispatchers.Default) {
             val all = sortedByPop.orEmpty()
             val country = preferredCountry?.trim()
-            if (country.isNullOrEmpty()) {
-                all.take(limit)
+            val ordered = if (country.isNullOrEmpty()) {
+                all
             } else {
                 val local = all.filter { it.country == country }
                 val rest = all.filter { it.country != country }
-                (local + rest).take(limit)
+                local + rest
             }
+            // ضمان عدم تكرار المفاتيح في LazyColumn (التكرار يسبب انهيار التركيب).
+            ordered.distinctBy { it.stableId }.take(limit)
         }
     }
 
@@ -170,6 +172,7 @@ object CityDatabase {
                         .thenByDescending { country.isNotEmpty() && it.country == country }
                         .thenByDescending { it.population }
                 )
+                .distinctBy { it.stableId }
                 .take(limit)
                 .toList()
         }

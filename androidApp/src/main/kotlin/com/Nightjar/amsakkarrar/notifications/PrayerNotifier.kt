@@ -23,6 +23,8 @@ object PrayerNotifier {
     fun showAdhanFallback(context: Context, prayerLabel: String) {
         NotificationChannels.createAll(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        // بطاقة واحدة لكل حدث: أزل أي نسخة سابقة قبل النشر.
+        runCatching { manager.cancel(NotificationDesign.PRAYER_ID) }
         val snapshot = runCatching { PrayerSnapshotLoader.load(context) }.getOrNull()
         val entries = snapshot?.entries.orEmpty()
         val index = entries.indexOfFirst { it.label == prayerLabel }.let { if (it < 0) 0 else it }
