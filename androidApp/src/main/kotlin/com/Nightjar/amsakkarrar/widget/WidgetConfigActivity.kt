@@ -280,7 +280,7 @@ private fun StyleOptionCard(option: StyleOption, selected: Boolean, onClick: () 
                 .padding(10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("رمضان", color = KararColors.Gold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("الإمساكية", color = KararColors.Gold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text(" 16 ", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Text("12:45", color = KararColors.TextSecondary, fontSize = 8.sp)

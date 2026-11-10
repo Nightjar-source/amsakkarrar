@@ -67,10 +67,10 @@ object NotificationChannels {
         val fallbackSound = AdhanPlayback.soundUri(context)
         val fallback = NotificationChannel(
             ADHAN_FALLBACK,
-            "الأذان (صوت احتياطي)",
+            "الأذان (احتياطي)",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "صوت adhan.mp3 المخصص عند تعذّر تشغيل خدمة الأذان"
+            description = "الصوت المخصص للأذان عند تعذر تشغيل خدمة الأذان"
             enableVibration(true)
             if (fallbackSound != null) {
                 setSound(

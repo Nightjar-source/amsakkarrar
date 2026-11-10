@@ -20,44 +20,59 @@ sealed interface AppRoute : NavKey {
     data object Today : AppRoute
 
     @Serializable
-    data object Settings : AppRoute
-
-    @Serializable
     data object Calendar : AppRoute
 
+    /** نافذة «المفاتيح» — أيقونات لشاشات فرعية. */
     @Serializable
-    data object Qibla : AppRoute
-
-    @Serializable
-    data object Duas : AppRoute
-
-    @Serializable
-    data object Tasbih : AppRoute
+    data object Keys : AppRoute
 
     @Serializable
     data object Fiqh : AppRoute
 
-    /** شاشة فرعية تُفتح من الضبط — ليست تبويبًا ثامنًا. */
+    @Serializable
+    data object Settings : AppRoute
+
+    /** فرعية «المفاتيح» — الأدعية والمناجاة. */
+    @Serializable
+    data object Duas : AppRoute
+
+    /** فرعية «المفاتيح» — القرآن الكريم (المصحف الشريف). */
+    @Serializable
+    data object Quran : AppRoute
+
+    /** فرعية «المفاتيح» — المسبحة. */
+    @Serializable
+    data object Tasbih : AppRoute
+
+    /** فرعية «المفاتيح» — البوصلة والمراقد المقدسة. */
+    @Serializable
+    data object Qibla : AppRoute
+
+    /** فرعية «المفاتيح» — أعمال اليوم (مهام وملاحظات). */
+    @Serializable
+    data object Tasks : AppRoute
+
+    /** شاشة فرعية تُفتح من الضبط — ليست تبويبًا. */
     @Serializable
     data object Widgets : AppRoute
 }
 
 /**
  * إعداد `rememberNavBackStack` لاسترجاع الـback stack بعد قتل العملية.
- *
- * Navigation 3 يطلب تسجيلًا صريحًا لكل نوع من `NavKey` (تعددية مفتوحة)،
- * وهذا ما يجعل الحالة تبقى بعد إعادة إنشاء النشاط على أندرويد وiOS.
  */
 val appNavConfiguration: SavedStateConfiguration = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
             subclass(AppRoute.Today::class, AppRoute.Today.serializer())
-            subclass(AppRoute.Settings::class, AppRoute.Settings.serializer())
             subclass(AppRoute.Calendar::class, AppRoute.Calendar.serializer())
-            subclass(AppRoute.Qibla::class, AppRoute.Qibla.serializer())
-            subclass(AppRoute.Duas::class, AppRoute.Duas.serializer())
-            subclass(AppRoute.Tasbih::class, AppRoute.Tasbih.serializer())
+            subclass(AppRoute.Keys::class, AppRoute.Keys.serializer())
             subclass(AppRoute.Fiqh::class, AppRoute.Fiqh.serializer())
+            subclass(AppRoute.Settings::class, AppRoute.Settings.serializer())
+            subclass(AppRoute.Duas::class, AppRoute.Duas.serializer())
+            subclass(AppRoute.Quran::class, AppRoute.Quran.serializer())
+            subclass(AppRoute.Tasbih::class, AppRoute.Tasbih.serializer())
+            subclass(AppRoute.Qibla::class, AppRoute.Qibla.serializer())
+            subclass(AppRoute.Tasks::class, AppRoute.Tasks.serializer())
             subclass(AppRoute.Widgets::class, AppRoute.Widgets.serializer())
         }
     }
@@ -66,22 +81,23 @@ val appNavConfiguration: SavedStateConfiguration = SavedStateConfiguration {
 /** تحويل وجهة شريط التنقل إلى مسار. */
 fun AppDestination.toRoute(): AppRoute = when (this) {
     AppDestination.TODAY -> AppRoute.Today
-    AppDestination.SETTINGS -> AppRoute.Settings
     AppDestination.CALENDAR -> AppRoute.Calendar
-    AppDestination.QIBLA -> AppRoute.Qibla
-    AppDestination.DUAS -> AppRoute.Duas
-    AppDestination.TASBIH -> AppRoute.Tasbih
+    AppDestination.KEYS -> AppRoute.Keys
     AppDestination.FIQH -> AppRoute.Fiqh
+    AppDestination.SETTINGS -> AppRoute.Settings
 }
 
 /** الوجهة المطابقة للمسار الحالي (لإبراز التبويب). */
 fun AppRoute.toDestination(): AppDestination? = when (this) {
     AppRoute.Today -> AppDestination.TODAY
-    AppRoute.Settings -> AppDestination.SETTINGS
     AppRoute.Calendar -> AppDestination.CALENDAR
-    AppRoute.Qibla -> AppDestination.QIBLA
-    AppRoute.Duas -> AppDestination.DUAS
-    AppRoute.Tasbih -> AppDestination.TASBIH
+    AppRoute.Keys -> AppDestination.KEYS
     AppRoute.Fiqh -> AppDestination.FIQH
+    AppRoute.Settings -> AppDestination.SETTINGS
+    AppRoute.Duas,
+    AppRoute.Quran,
+    AppRoute.Tasbih,
+    AppRoute.Qibla,
+    AppRoute.Tasks -> AppDestination.KEYS
     AppRoute.Widgets -> AppDestination.SETTINGS
 }

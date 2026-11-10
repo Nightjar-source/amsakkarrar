@@ -4,8 +4,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.karrar.amsakiah.ui.theme.KararIcons
 
 /**
- * وجهات التطبيق السبع — بترتيب `amsak3d.tsx`:
- * اليوم، الضبط والأوقات، التقويم، القبلة والمراقد، الأدعية، المسبحة، فقه المواقيت.
+ * وجهات التطبيق الأساسية (شريط التنقل السفلي والجانبي) — بالترتيب:
+ *
+ * اليوم ← التقويم ← **المفاتيح** ← فقه المواقيت ← **الضبط (في الأخير)**.
+ *
+ * «المفاتيح» نافذة أيقونات تجمع: الأدعية والمناجاة، القرآن الكريم،
+ * البوصلة والمراقد، المسبحة، وأعمال اليوم (ملاحظات/مهام). الشاشات
+ * بداخلها فرعية في الـback stack — لا تُكدَّس أبدًا أكثر من
+ * `اليوم ← المفاتيح ← الشاشة`، والرجوع يكون دائمًا خطوة واحدة.
  */
 enum class AppDestination(
     val route: String,
@@ -14,10 +20,8 @@ enum class AppDestination(
     val icon: ImageVector
 ) {
     TODAY("today", "اليوم", "اليوم", KararIcons.Today),
-    SETTINGS("settings", "الضبط والأوقات", "الضبط", KararIcons.Settings),
     CALENDAR("calendar", "التقويم", "التقويم", KararIcons.Calendar),
-    QIBLA("qibla", "القبلة والمراقد", "القبلة", KararIcons.Qibla),
-    DUAS("duas", "الأدعية والمناجاة", "الأدعية", KararIcons.Duas),
-    TASBIH("tasbih", "المسبحة", "المسبحة", KararIcons.Tasbih),
-    FIQH("fiqh", "فقه المواقيت", "الفقه", KararIcons.Fiqh)
+    KEYS("keys", "المفاتيح", "المفاتيح", KararIcons.Duas),
+    FIQH("fiqh", "فقه المواقيت", "الفقه", KararIcons.Fiqh),
+    SETTINGS("settings", "الضبط والأوقات", "الضبط", KararIcons.Settings)
 }

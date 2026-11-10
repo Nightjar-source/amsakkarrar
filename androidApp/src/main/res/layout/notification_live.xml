@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:text="رمضان مباشر"
+            android:text="إمساكية كرار"
             android:textColor="#FFF5F5F7"
             android:textSize="14sp"
             android:textStyle="bold" />

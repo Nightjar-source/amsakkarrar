@@ -50,7 +50,7 @@ object KararTokens {
         val navBarMaxWidth = 560.dp
         val navItem = 52.dp
         /** ارتفاع شريط مشغّل الأدعية المدمج (≤ 30dp كما في المتطلبات). */
-        val playerDockHeight = 28.dp
+        val playerDockHeight = 64.dp
         val touchTarget = 48.dp
         val circleButton = 52.dp
         val railWidth = 76.dp
@@ -88,12 +88,12 @@ object KararTokens {
         // ------------------------------------------------------------------
         const val SpatialDamping = 0.8f
         const val SpatialStiffnessDefault = 380f
-        const val SpatialStiffnessFast = 1400f
+        const val SpatialStiffnessFast = 800f
         const val SpatialStiffnessSlow = 200f
 
         const val EffectsDamping = 1f
-        const val EffectsStiffnessDefault = 3800f
-        const val EffectsStiffnessFast = 10000f
+        const val EffectsStiffnessDefault = 1600f
+        const val EffectsStiffnessFast = 3800f
         const val EffectsStiffnessSlow = 800f
 
         /** نابض مكاني: للانتقالات، تغيّر الحجم، حركة العناصر. */

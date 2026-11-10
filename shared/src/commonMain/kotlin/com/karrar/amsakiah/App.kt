@@ -4,6 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -20,6 +23,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.karrar.amsakiah.core.permissions.rememberPermissionController
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.core.weather.fetchWeather
@@ -34,6 +38,8 @@ fun App() {
     val state = remember { AppState() }
     var weather by remember { mutableStateOf<WeatherInfo?>(null) }
     var showSplash by remember { mutableStateOf(true) }
+    val permissions = rememberPermissionController()
+    var showNotificationAsk by remember { mutableStateOf(false) }
 
     DisposableEffect(state) {
         onDispose { state.dispose() }
@@ -57,11 +63,14 @@ fun App() {
         }
     }
 
-    // مدة السبلاش الدنيا: 1.2 ثانية حتى تكتمل حركة الشعار، ثم يتلاشى بسلاسة.
-    // (سبلاش النظام يبقى حتى أول إطار فعلي عبر StartupGate، فلا وميض بينهما.)
+    // مدة السبلاش الدنيا + طلب إذن الإشعارات بلطف بعد أن تستقر الواجهة:
+    // لا نطلب الصلاحية في أول ومضة — ننتظر حتى يرى المستخدم التطبيق أولًا.
     LaunchedEffect(Unit) {
-        delay(1200)
+        delay(1600)
         showSplash = false
+        if (!permissions.status.notifications) {
+            showNotificationAsk = true
+        }
     }
 
     // الطقس الاختياري (إنترنت) — يتوقف في الخلفية ولا يستهلك شبكة/بطارية.
@@ -106,6 +115,31 @@ fun App() {
                     exit = fadeOut(animationSpec = KararTokens.Motion.effects())
                 ) {
                     SplashScreen()
+                }
+
+                // طلب إذن الإشعارات — نافذة فوق التطبيق (حوار النظام) لا صفحة
+                // إعدادات الهاتف: سلسلة واحدة سلسة، والصوت مرتبط بالكامل بالكتم/زر الصوت.
+                if (showNotificationAsk) {
+                    AlertDialog(
+                        onDismissRequest = { showNotificationAsk = false },
+                        title = { Text("إذن الإشعارات") },
+                        text = {
+                            Text(
+                                "لنصلك بطاقة الأذان عند دخول وقت الصلاة، والعدّاد التنازلي للصلاة القادمة " +
+                                    "في شريط الإشعارات. لا نُصدر أي صوت ما لم تُفعّل ذلك من الإعدادات، " +
+                                    "ونحترم كتم النظام وزر الصوت."
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showNotificationAsk = false
+                                permissions.requestNotifications()
+                            }) { Text("تفعيل الإشعارات") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showNotificationAsk = false }) { Text("ليس الآن") }
+                        }
+                    )
                 }
             }
         }

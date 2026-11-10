@@ -191,6 +191,15 @@ fun TodayScreen(
             .fillMaxSize()
             .drawBehind {
                 drawRect(Brush.verticalGradient(listOf(skyTop, skyBottom)))
+                // تدرّج علوي خفيف خلف شريط الحالة فقط — يبقى السماء ظاهرة،
+                // والأيقونات البيضاء تُقرأ دائمًا في الوضعين بلا "كتلة لونية".
+                drawRect(
+                    Brush.verticalGradient(
+                        listOf(Color(0x3D000000), Color.Transparent),
+                        startY = 0f,
+                        endY = 78.dp.toPx()
+                    )
+                )
                 drawRect(
                     Brush.radialGradient(
                         colorStops = arrayOf(0f to skyGlow, 0.8f to Color.Transparent),
@@ -337,7 +346,9 @@ private fun TodayHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = horizontalPadding, end = horizontalPadding, top = if (maxWidth < 600.dp) 10.dp else 20.dp),
+                .height(if (maxWidth < 600.dp) 66.dp else 84.dp)
+                .clipToBounds()
+                .padding(start = horizontalPadding, end = horizontalPadding, top = if (maxWidth < 600.dp) 6.dp else 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
@@ -522,6 +533,8 @@ private fun CountdownSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // ارتفاع ثابت: العدّاد لا يرفع القوس/يخفضه أبدًا مهما تغيّر المحتوى.
+            .height(if (compact) 118.dp else 132.dp)
             .pointerInput(dotsCount) {
                 if (dotsCount <= 1) return@pointerInput
                 var accumulated = 0f
@@ -538,7 +551,8 @@ private fun CountdownSection(
                     }
                 )
             },
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
     ) {
         Box(
             modifier = Modifier
@@ -724,7 +738,12 @@ private fun PrayerStrip(
         if (targetIndex >= 0) listState.centerItem(targetIndex)
     }
 
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
+    BoxWithConstraints(
+        Modifier
+            .fillMaxWidth()
+            // ارتفاع ثابت لشريط الصلوات: يبقى القوس بموضعه ولا يرتفع/ينخفض.
+            .height(if (compact) 128.dp else 140.dp)
+    ) {
         val sidePadding = maxWidth * if (compact) 0.36f else 0.38f
 
         Box(

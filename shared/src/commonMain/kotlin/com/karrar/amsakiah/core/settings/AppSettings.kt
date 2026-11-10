@@ -91,6 +91,14 @@ data class AppSettings(
     /** أذكار يضيفها المستخدم بنفسه (تسبيح مفرد أو ضمن مجموعة) */
     val customDhikrs: List<TasbihDhikr> = emptyList(),
 
+    // ---------- أعمال اليوم (شاشة «المفاتيح» — تذكّر/ملاحظات) ----------
+    /** معرفات الأعمال اليومية التي أكملت في اليوم الحالي (تُصفر مع تغيّر اليوم) */
+    val todayTasksDone: List<String> = emptyList(),
+    /** تاريخ اليوم الذي تُحسب له مهام `todayTasksDone` (ISO yyyy-MM-dd) */
+    val todayTasksDate: String = "",
+    /** ملاحظات حرة يضيفها المستخدم (الأحدث أولًا) */
+    val notes: List<String> = emptyList(),
+
     val version: Int = 1
 )
 

@@ -1,6 +1,7 @@
 package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -108,6 +109,12 @@ fun SettingsScreen(
     val settings = state.settings
     val scope = rememberCoroutineScope()
     val permissions = rememberPermissionController()
+    // عندما يعود المستخدم من إعدادات النظام نحدّث حالة الصلاحيات فورًا —
+    // فتعرف الشاشة إن كانت الصلاحيات صارت مكتملة دون النقر على «تحديث».
+    LifecycleResumeEffect(Unit) {
+        permissions.refresh()
+        onPauseOrDispose {}
+    }
     var showCityPicker by remember { mutableStateOf(false) }
     // طلب صلاحية الموقع من النظام أولًا، ثم المتابعة تلقائيًا بعد الموافقة
     var gpsAfterGrant by remember { mutableStateOf(false) }
@@ -338,12 +345,12 @@ fun SettingsScreen(
                 GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("تشخيص الصوت والإشعار", color = KararColors.TextPrimary, fontSize = 13.sp)
+                            Text("التشخيص والمعاينة", color = KararColors.TextPrimary, fontSize = 13.sp)
                             Text(
                                 if (SoundTestBridge.supported) {
-                                    "يشغّل adhan.mp3 من الموارد المشتركة، ويعيد نشر الإشعار الحي"
+                                    "تشغيل معاينة الأذان ومعاينة الإشعار الحي — تُحاكي ما يصلك ساعة التنبيه"
                                 } else {
-                                    "التشخيص متاح على أندرويد فقط"
+                                    "المعاينة متاحة على أندرويد فقط"
                                 },
                                 color = KararColors.TextMuted,
                                 fontSize = 9.sp,
@@ -351,9 +358,9 @@ fun SettingsScreen(
                             )
                         }
                         if (SoundTestBridge.supported) {
-                            SmallAction("الأذان") { SoundTestBridge.playAdhan() }
+                            SmallAction("معاينة الأذان") { SoundTestBridge.playAdhan() }
                             Spacer(Modifier.width(6.dp))
-                            SmallAction("الإشعار") { SoundTestBridge.showLiveNotification() }
+                            SmallAction("معاينة الإشعار") { SoundTestBridge.showLiveNotification() }
                         }
                     }
                 }

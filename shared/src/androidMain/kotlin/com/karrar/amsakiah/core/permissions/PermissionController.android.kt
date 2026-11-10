@@ -45,18 +45,41 @@ private class AndroidPermissionController(private val context: Context) : Permis
         status = readStatus()
     }
 
+    /** هل يُظهر النظام تأكيدًا فوق التطبيق؟ false عندما يكون مرفوضًا نهائيًا («عدم السؤال مجددًا»). */
+    private fun permanentlyDenied(permission: String): Boolean {
+        if (Build.VERSION.SDK_INT < 33) return false
+        val activity = context as? android.app.Activity
+        val granted = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+        if (granted) return false
+        // إن لم يعد النظام يسمح بالسؤال (رفض نهائي) → لا فائدة من نافذة فوق التطبيق.
+        return activity == null || !activity.shouldShowRequestPermissionRationale(permission)
+    }
+
     override fun requestNotifications() {
         if (Build.VERSION.SDK_INT >= 33) {
+            if (permanentlyDenied(Manifest.permission.POST_NOTIFICATIONS)) {
+                // الرفض النهائي: النظام لا يُظهر النافذة أصلًا — كخيار ثانوي نفتح إعدادات التطبيق.
+                openAppSettings()
+                return
+            }
             notificationLauncher?.launch(Manifest.permission.POST_NOTIFICATIONS)
-                ?: run {
-                    openAppSettings()
-                }
+                ?: run { openAppSettings() }
         } else {
             openAppSettings()
         }
     }
 
     override fun requestLocation() {
+        val deniedFine = permanentlyDenied(Manifest.permission.ACCESS_FINE_LOCATION)
+        val deniedCoarse = permanentlyDenied(Manifest.permission.ACCESS_COARSE_LOCATION)
+        val refusedAll =
+            context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+        if (refusedAll && deniedFine && deniedCoarse) {
+            // رفض نهائي لكلا الموقعين — نعرض إعدادات النظام كحل احتياطي.
+            openAppSettings()
+            return
+        }
         locationLauncher?.launch(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,

@@ -47,9 +47,8 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -70,7 +69,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
@@ -79,12 +77,14 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -107,16 +107,18 @@ import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.screens.CalendarScreen
 import com.karrar.amsakiah.ui.screens.DuasScreen
 import com.karrar.amsakiah.ui.screens.FiqhScreen
+import com.karrar.amsakiah.ui.screens.KeysScreen
+import com.karrar.amsakiah.ui.screens.QuranScreen
 import com.karrar.amsakiah.ui.screens.SettingsScreen
 import com.karrar.amsakiah.ui.screens.ShrinesQiblaScreen
 import com.karrar.amsakiah.ui.screens.TasbihScreen
+import com.karrar.amsakiah.ui.screens.TasksScreen
 import com.karrar.amsakiah.ui.screens.TodayScreen
 import com.karrar.amsakiah.ui.screens.WidgetsScreen
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 import com.karrar.amsakiah.ui.theme.LocalKararPalette
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /**
  * الشل الرئيسي — Material 3 Expressive + Compose Adaptive.
@@ -158,8 +160,11 @@ fun AppShell(
         onDispose { player.release() }
     }
 
+    // «اليوم» ولا شيء فوقه؛ وعند فتح دعاء: صفحة كاملة edge-to-edge بشاشتها
+    // الخاصة (شريط موحّد آخر يزعج القراءة).
     val isToday = currentRoute == AppRoute.Today && !duaDetailOpen
-    val showTopBar = !isToday
+    val immersive = isToday || (currentRoute == AppRoute.Duas && duaDetailOpen)
+    val showTopBar = !immersive
 
     // ---------- الإنسِتس ----------
     val topInsets = WindowInsets.statusBars
@@ -205,22 +210,35 @@ fun AppShell(
 
     fun select(destination: AppDestination) {
         val route = destination.toRoute()
-        if (backStack.size == 1 && backStack[0] == route) return
+        if (currentRoute == route && backStack.size == 1) return
         navDirection = if (destination.ordinal >= currentTab.ordinal) 1 else -1
-        // التبويبات تُستبدل في جذر الـback stack (لا تتكدّس)، وأي شاشة فرعية تُغلق.
-        //
-        // الخفة: كل تعديل على SnapshotStateList يوقظ NavDisplay؛ مسح الشاشات
-        // الفرعية ثم تبديل الجذر داخل لقطة واحدة يعني إعادة تركيب واحدة وحركة
-        // واحدة، بدل سلسلة حركات متتالية عند العودة من شاشة فرعية.
+        // كل علامة تبويب قابلة للعودة بـback إلى «اليوم» ثم الخروج:
+        // الـback stack أبدًا [اليوم] أو [اليوم، التبويب]. الشاشات الفرعية
+        // (المفاتيح ← الأدعية…) تدفع فوق ذلك وتُغلق بالرجوع خطوة واحدة.
         Snapshot.withMutableSnapshot {
-            if (backStack.size > 1) backStack.subList(1, backStack.size).clear()
-            if (backStack.isEmpty()) backStack.add(route) else backStack[0] = route
+            if (destination == AppDestination.TODAY) {
+                backStack.clear()
+                backStack.add(AppRoute.Today)
+            } else {
+                backStack.clear()
+                backStack.add(AppRoute.Today)
+                backStack.add(route)
+            }
         }
     }
 
     fun openSettings() = select(AppDestination.SETTINGS)
 
-    /** «الودجتات» شاشة فرعية تُدفع فوق الضبط — ليست تبويبًا ثامنًا. */
+    /** فرعية «المفاتيح» تُدفع فوق النافذة. */
+    fun openKeysChild(child: AppRoute) {
+        if (backStack.lastOrNull() == child) return
+        navDirection = 1
+        duaDetailOpen = false
+        duaDetailTitle = null
+        backStack.add(child)
+    }
+
+    /** «الودجتات» شاشة فرعية تُدفع فوق الضبط — ليست تبويبًا. */
     fun openWidgets() {
         if (backStack.lastOrNull() == AppRoute.Widgets) return
         navDirection = 1
@@ -301,18 +319,18 @@ fun AppShell(
                                 contentPadding = contentPadding
                             )
                         }
-                        entry(AppRoute.Settings) {
-                            SettingsScreen(
-                                state = state,
-                                contentPadding = contentPadding,
-                                onOpenWidgets = ::openWidgets
-                            )
-                        }
                         entry(AppRoute.Calendar) {
                             CalendarScreen(state = state, contentPadding = contentPadding)
                         }
-                        entry(AppRoute.Qibla) {
-                            ShrinesQiblaScreen(state = state, contentPadding = contentPadding)
+                        entry(AppRoute.Keys) {
+                            KeysScreen(
+                                contentPadding = contentPadding,
+                                onOpenDuas = { openKeysChild(AppRoute.Duas) },
+                                onOpenQuran = { openKeysChild(AppRoute.Quran) },
+                                onOpenQibla = { openKeysChild(AppRoute.Qibla) },
+                                onOpenTasbih = { openKeysChild(AppRoute.Tasbih) },
+                                onOpenTasks = { openKeysChild(AppRoute.Tasks) }
+                            )
                         }
                         entry(AppRoute.Duas) {
                             DuasScreen(
@@ -326,11 +344,27 @@ fun AppShell(
                                 onDetailTitleChanged = { duaDetailTitle = it }
                             )
                         }
+                        entry(AppRoute.Quran) {
+                            QuranScreen(state = state, contentPadding = contentPadding)
+                        }
                         entry(AppRoute.Tasbih) {
                             TasbihScreen(state = state, contentPadding = contentPadding)
                         }
+                        entry(AppRoute.Qibla) {
+                            ShrinesQiblaScreen(state = state, contentPadding = contentPadding)
+                        }
+                        entry(AppRoute.Tasks) {
+                            TasksScreen(state = state, contentPadding = contentPadding)
+                        }
                         entry(AppRoute.Fiqh) {
                             FiqhScreen(state = state, contentPadding = contentPadding)
+                        }
+                        entry(AppRoute.Settings) {
+                            SettingsScreen(
+                                state = state,
+                                contentPadding = contentPadding,
+                                onOpenWidgets = ::openWidgets
+                            )
                         }
                         entry(AppRoute.Widgets) {
                             WidgetsScreen(state = state, contentPadding = contentPadding)
@@ -339,15 +373,19 @@ fun AppShell(
                 )
 
                 if (showTopBar) {
+                    val childTitle = when (currentRoute) {
+                        AppRoute.Duas -> duaDetailTitle?.takeIf { it.isNotBlank() } ?: "الأدعية والمناجاة"
+                        AppRoute.Quran -> "القرآن الكريم"
+                        AppRoute.Tasbih -> "المسبحة"
+                        AppRoute.Qibla -> "القبلة والمراقد"
+                        AppRoute.Tasks -> "أعمال اليوم"
+                        else -> null
+                    }
                     UnifiedTopBar(
-                        title = when {
-                            widgetsOpen -> "الودجتات"
-                            currentTab == AppDestination.DUAS && duaDetailTitle != null -> duaDetailTitle!!
-                            else -> currentTab.title
-                        },
+                        title = childTitle ?: if (widgetsOpen) "الودجتات" else currentTab.title,
                         subtitle = when {
                             widgetsOpen -> "أشكال الودجت وخلفياتها"
-                            currentTab == AppDestination.DUAS && duaDetailTitle != null -> "الأدعية والمناجاة"
+                            childTitle != null -> "المفاتيح"
                             else -> "${hijri.day} ${hijri.monthName} ${hijri.year} هـ"
                         },
                         canGoBack = backStack.size > 1 || duaDetailOpen,
@@ -375,7 +413,7 @@ fun AppShell(
             )
         }
 
-        if (layout.navigationLayout == NavigationLayout.BOTTOM_BAR) {
+        if (layout.navigationLayout == NavigationLayout.BOTTOM_BAR && !immersive) {
             FloatingBottomBar(
                 current = currentTab,
                 onSelect = ::select,
@@ -592,17 +630,14 @@ private fun CircleGlassButton(
 }
 
 /**
- * الشريط السفلي البيضوي العائم — نسخة حرفية من `amsak3d.tsx` (M3 Expressive
- * Floating Pill Bottom Bar):
- *
- * - كبسولة واحدة `rounded-full` داكنة شبه شفافة بحدود بيضاء 10% وظل عميق.
- * - **كل العناوين ظاهرة دائمًا** بأيقونة + اسم قصير، بلا توسّع/طي للعنصر
- *   النشط — لذلك لا يُدفع أي تبويب خارج الشاشة (كان «اليوم» يُقصّ على
- *   الشاشات الضيقة لأنه كان أول عنصر في صف بعرض ثابت).
- * - النشط: تدرج teal→indigo + نص أبيض + `scale(1.03)` + ظل ملوّن.
- * - غير النشط: أيقونة teal بشفافية 70% ونص أبيض 55%.
- * - الصف قابل للتمرير أفقيًا عند الحاجة، ويُمرَّر العنصر النشط إلى الظهور
- *   تلقائيًا بحركة نابضة.
+ * الشريط السفلي — M3 Expressive Floating Pill مع **مؤشر سائل مستمر**:
+ * - كبسولة واحدة `rounded-full` زجاجية داكنة بحدود خفيفة وظل عميق.
+ * - لكل عنصر خانة بعرض متساوٍ؛ المؤشر النشط كبسولة بعرض `٧٨٪` من الخانة
+ *   تنزلق بين الخانات بنابض مكاني (بلا قفزات). كل حركتها في طبقة
+ *   `graphicsLayer` فقط، فلا يعاد قياس أي شيء أثناء الانزلاق.
+ * - بلا عناصر Triangular/scroll — كل الوجهات ظاهرة على أي حجم شاشة.
+ * - الضغط يعطي استجابة لمس بحجم الحافة وشكل الخانة نفسها (ripple مدمج
+ *   في `clickable` مع `clip(CircleShape)`).
  */
 @Composable
 private fun FloatingBottomBar(
@@ -610,15 +645,7 @@ private fun FloatingBottomBar(
     onSelect: (AppDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
-    val activeIndex = AppDestination.entries.indexOf(current).coerceAtLeast(0)
-
-    // إبقاء التبويب النشط ظاهرًا داخل الكبسولة عند تبديله من الشريط الجانبي.
-    LaunchedEffect(activeIndex) {
-        runCatching { listState.animateScrollToItem(activeIndex) }
-    }
-
+    val entries = AppDestination.entries
     Box(
         modifier = modifier
             .widthIn(max = KararTokens.Size.navBarMaxWidth)
@@ -628,29 +655,45 @@ private fun FloatingBottomBar(
             modifier = Modifier.fillMaxWidth(),
             shape = CircleShape,
             elevation = 26.dp,
-            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
+            contentPadding = PaddingValues(horizontal = 5.dp, vertical = 5.dp)
         ) {
-            LazyRow(
-                state = listState,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                userScrollEnabled = true
-            ) {
-                items(
-                    items = AppDestination.entries,
-                    key = { it.name },
-                    contentType = { "nav_item" }
-                ) { destination ->
-                    PillNavItem(
-                        destination = destination,
-                        selected = destination == current,
-                        onClick = {
-                            // تمرير فوري نابض ثم التبديل — لا انتظار لإعادة القياس.
-                            scope.launch { runCatching { listState.animateScrollToItem(activeIndex) } }
-                            onSelect(destination)
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val density = LocalDensity.current.density
+                val slotWidth = maxWidth / entries.size
+                val indicatorWidth = slotWidth * 0.78f
+                val targetOffset = slotWidth * current.ordinal + (slotWidth - indicatorWidth) / 2
+                val offsetX by animateFloatAsState(
+                    targetValue = targetOffset.value,
+                    animationSpec = KararTokens.Motion.spatial(),
+                    label = "nav-fluid-offset"
+                )
+                val gradient = Brush.linearGradient(listOf(KararColors.Teal, KararColors.Violet))
+
+                // المؤشر السائل — يتحرك خلف العناصر فقط.
+                Box(
+                    Modifier
+                        .graphicsLayer {
+                            translationX = offsetX * density
                         }
-                    )
+                        .width(indicatorWidth)
+                        .height(KararTokens.Size.navItem)
+                        .clip(CircleShape)
+                        .background(gradient)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    entries.forEach { destination ->
+                        PillNavItem(
+                            destination = destination,
+                            selected = destination == current,
+                            onClick = { onSelect(destination) },
+                            modifier = Modifier.width(slotWidth)
+                        )
+                    }
                 }
             }
         }
@@ -658,58 +701,49 @@ private fun FloatingBottomBar(
 }
 
 /**
- * عنصر كبسولة داخل شريط التنقل — عنوان ظاهر دائمًا، والنشط يتدرّج ويكبر
- * قليلًا (1.03) بنابض مكاني، وكل الحركة في طبقة الرسم فقط.
+ * عنصر كبسولة داخل شريط التنقل — الخانة بعرض متساوٍ؛ النشط أيقونته
+ * ونصه أبيض على المؤشر السائل (المرسوم خلف الصف)، وغير النشط teal/أبيض
+ * بشفافية — بلا تدرّج لكل عنصر ولا scale (الحركة كلها للمؤشر السائل).
  */
 @Composable
 private fun PillNavItem(
     destination: AppDestination,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.03f else 1f,
-        animationSpec = KararTokens.Motion.spatial(),
-        label = "nav-scale"
-    )
     val contentAlpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.55f,
+        targetValue = if (selected) 1f else 0.62f,
         animationSpec = KararTokens.Motion.effects(),
         label = "nav-alpha"
     )
     val iconTint by animateColorAsState(
-        targetValue = if (selected) Color.White else KararColors.Teal.copy(alpha = 0.7f),
+        targetValue = if (selected) Color.White else KararColors.Teal.copy(alpha = 0.85f),
         animationSpec = KararTokens.Motion.effects(),
         label = "nav-icon"
     )
-    val gradient = Brush.linearGradient(listOf(KararColors.Teal, KararColors.Violet))
 
     Box(
-        modifier = Modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
+        modifier = modifier
+            .height(KararTokens.Size.navItem)
             .clip(CircleShape)
-            .then(if (selected) Modifier.background(gradient) else Modifier)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Icon(
                 imageVector = destination.icon,
                 contentDescription = destination.title,
                 tint = iconTint,
-                modifier = Modifier.size(13.dp)
+                modifier = Modifier.size(15.dp)
             )
             Text(
                 text = destination.shortTitle,
                 color = Color.White.copy(alpha = contentAlpha),
-                fontSize = 10.sp,
+                fontSize = 10.5.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Clip
@@ -815,14 +849,16 @@ private fun SideNavItem(
 // =====================================================================
 
 /**
- * مضيف التنبيهات — يقرأ الحالة من النواة (`state.toast` / `state.locating`)
- * ويختار الشكل والحركة. لا يملك أي منطق: التعديل كله في [com.karrar.amsakiah.core.state.AppState].
+ * مضيف التنبيهات — يقرأ الحالة من النواة (`state.toast` / `state.locating`).
  *
- * - كبسولة بيضاء `rounded-full` بظل عميق ونص داكن (تباين عالٍ في الوضعين).
- * - دخول/خروج بانزلاق عمودي نابض + تلاشٍ.
- * - إخفاء تلقائي بعد مدة تختلف حسب النوع (الموقع أطول قليلًا).
- * - أثناء تحديد الموقع تظهر كبسولة «رادار» حلقات نابضة — حتى لو كان GPS سريعًا،
- *   فالحركة هي المطلوبة من المستخدم.
+ * النظام:
+ * - كبسولة داكنة (#121A2C) `rounded-[20dp]` بحدود teal خفيف وظل عميق —
+ *   نفس شخصية شريط التنقل والهيرو، فلا يذوب في أي خلفية.
+ * - أيقونة ملوّنة داخل دائرة `tint.copy(alpha = 0.16f)` — لا نعيد استخدام
+ *   لون الخطأ كاملًا على الخلفية الداكنة.
+ * - دخول/خروج بانزلاق عمودي نابض + تلاشٍ (Motion.spatial).
+ * - عند الخطأ يظهر زر فعلي «فتح الإعدادات» بدل مجرد نص.
+ * - أثناء تحديد الموقع تظهر كبسولة «رادار» حلقات نابضة.
  */
 @Composable
 private fun AppToastHost(state: AppState, modifier: Modifier = Modifier) {
@@ -834,7 +870,7 @@ private fun AppToastHost(state: AppState, modifier: Modifier = Modifier) {
         delay(
             when (current.kind) {
                 ToastKind.LOCATION -> 5_000L
-                ToastKind.ERROR -> 4_500L
+                ToastKind.ERROR -> 5_000L
                 else -> 3_500L
             }
         )
@@ -869,7 +905,7 @@ private fun AppToastHost(state: AppState, modifier: Modifier = Modifier) {
     }
 }
 
-/** كبسولة بيضاء أنيقة: أيقونة ملوّنة + نص + زر إجراء اختياري + زر إغلاق. */
+/** كبسولة داكنة أنيقة: أيقونة + نص بلون مقروء + إجراء اختياري + إغلاق. */
 @Composable
 private fun ToastPill(
     message: ToastMessage,
@@ -878,20 +914,21 @@ private fun ToastPill(
 ) {
     val (icon, tint) = when (message.kind) {
         ToastKind.LOCATION -> Icons.Filled.LocationOn to KararColors.Gold
-        ToastKind.ERROR -> Icons.Filled.Info to KararColors.Danger
-        ToastKind.SUCCESS -> Icons.Filled.CheckCircle to KararColors.Success
+        ToastKind.ERROR -> Icons.Filled.Info to KararColors.Rose
+        ToastKind.SUCCESS -> Icons.Filled.CheckCircle to KararColors.Mint
         ToastKind.INFO -> Icons.Filled.Info to KararColors.Teal
     }
-    // الكبسولة بيضاء في الوضعين (تباين AA) مع حدود خفيفة تمنع ذوبانها في الخلفية.
+    val pillColor = Color(0xF0121A2C)
+    val onPill = Color(0xFFF2F5FA)
+
     Box(
         modifier = Modifier
-            .clip(CircleShape)
-            .background(Color.White)
-            .border(
-                width = 1.dp,
-                color = Color(0x14000000),
-                shape = CircleShape
-            )
+            .widthIn(max = 340.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(pillColor)
+            .border(1.dp, KararColors.Teal.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+            .shadow(10.dp, RoundedCornerShape(20.dp))
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         Row(
@@ -900,48 +937,53 @@ private fun ToastPill(
         ) {
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(30.dp)
                     .clip(CircleShape)
-                    .background(tint.copy(alpha = 0.14f)),
+                    .background(tint.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = tint,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(17.dp)
                 )
             }
             Text(
                 text = message.text,
-                color = Color(0xFF1B1B1F),
-                fontSize = 12.sp,
+                color = onPill,
+                fontSize = 11.5.sp,
+                lineHeight = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 240.dp)
+                modifier = Modifier.weight(1f)
             )
             if (!message.actionLabel.isNullOrBlank()) {
-                Text(
-                    text = message.actionLabel,
-                    color = KararColors.Teal,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
+                Box(
                     modifier = Modifier
                         .clip(CircleShape)
+                        .background(KararColors.Teal.copy(alpha = 0.16f))
                         .clickable(onClick = onAction)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = message.actionLabel,
+                        color = KararColors.Teal,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             Icon(
                 imageVector = Icons.Filled.Close,
                 contentDescription = "إغلاق",
-                tint = Color(0x88000000),
+                tint = onPill.copy(alpha = 0.55f),
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(20.dp)
                     .clip(CircleShape)
                     .clickable(onClick = onDismiss)
-                    .padding(2.dp)
+                    .padding(3.dp)
             )
         }
     }
@@ -972,15 +1014,17 @@ private fun LocatingPill() {
         ),
         label = "locating-pulse"
     )
-    // تُقرأ الألوان قبل drawBehind (القراءة داخل draw lambda غير مسموحة).
     val radarGold = KararColors.Gold
+    val pillColor = Color(0xF0121A2C)
+    val onPill = Color(0xFFF2F5FA)
 
     Box(
         modifier = Modifier
-            .clip(CircleShape)
-            .background(Color.White)
-            .border(1.dp, Color(0x14000000), CircleShape)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .widthIn(max = 300.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(pillColor)
+            .border(1.dp, KararColors.Teal.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 12.dp, vertical = 9.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -988,9 +1032,8 @@ private fun LocatingPill() {
         ) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(32.dp)
                     .drawBehind {
-                        // حلقات رادار: ثلاث دوائر تتمدّد وتخفت بشكل متتابع.
                         repeat(3) { index ->
                             val phase = (progress + index / 3f) % 1f
                             drawCircle(
@@ -1014,12 +1057,20 @@ private fun LocatingPill() {
                         }
                 )
             }
-            Text(
-                text = "جارٍ تحديد الموقع…",
-                color = Color(0xFF1B1B1F),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Column {
+                Text(
+                    text = "جارٍ تحديد الموقع…",
+                    color = onPill,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "نستخدم أدق مصدر متاح (GPS ← الشبكة ← IP)",
+                    color = onPill.copy(alpha = 0.55f),
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

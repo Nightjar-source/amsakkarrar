@@ -9,3 +9,5 @@
 *.jks
 *.keystore
 !keystore_base64.txt
+/.agents/
+/content-factory/
