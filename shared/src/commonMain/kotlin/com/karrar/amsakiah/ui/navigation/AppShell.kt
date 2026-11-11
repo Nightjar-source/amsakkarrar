@@ -46,6 +46,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -60,11 +61,13 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -93,7 +96,6 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.karrar.amsakiah.core.state.AppState
-import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.state.ToastKind
 import com.karrar.amsakiah.core.state.ToastMessage
 import com.karrar.amsakiah.core.weather.WeatherInfo
@@ -183,17 +185,6 @@ fun AppShell(
     val cutoutEnd = cutout.calculateEndPadding(layoutDirection)
 
     val settings = state.settings
-    // الخفة: الشل يقرأ المؤقّت (كل ثانية) داخل قيمة مشتقّة لا تُبلّغ إلا عند
-    // تغيّر اليوم. قبل ذلك كان كل نبض ثانية يعيد تركيب الشل وNavDisplay معه.
-    val today by remember {
-        derivedStateOf {
-            state.now // اعتماد صريح على المؤقّت لإعادة الحساب
-            PrayerCalculator.todayDate(state.settings)
-        }
-    }
-    val hijri = remember(today, settings.hijriOffset) {
-        PrayerCalculator.hijriFor(settings, today)
-    }
 
     // ارتفاع شريط التنقل السفلي + هوامشه — يُحجز للمحتوى والمشغّل.
     val navBarReserve = navigationBottom + 12.dp + KararTokens.Size.navBarHeight
@@ -249,15 +240,23 @@ fun AppShell(
         backStack.add(AppRoute.Widgets)
     }
 
+    // آخر وقت معالجة زر الرجوع — يمنع تنفيذ ضغطة واحدة مرتين (NavDisplay + معالج iOS).
+    private var lastBackMark: kotlin.time.TimeMark? = null
+
     fun back() {
-        when {
-            // تفاصيل الدعاء أولًا: تُدار داخل شاشة الأدعية نفسها.
-            duaDetailOpen -> duaBackSignal++
-            backStack.size > 1 -> {
-                navDirection = -1
-                backStack.removeAt(backStack.lastIndex)
-            }
-            else -> Unit
+        // تفاصيل الدعاء أولًا: يُدار داخل شاشة الأدعية نفسها.
+        if (duaDetailOpen) {
+            duaBackSignal++
+            lastBackMark = kotlin.time.TimeSource.Monotonic.markNow()
+            return
+        }
+        if (backStack.size > 1) {
+            // نفس الضغطة قد تصل عبر NavDisplay ومعالج iOS معًا — لا نسمح بقفزة مستويين.
+            val now = kotlin.time.TimeSource.Monotonic.markNow()
+            if ((lastBackMark?.elapsedNow()?.inWholeMilliseconds ?: Long.MAX_VALUE) < 350) return
+            lastBackMark = now
+            navDirection = -1
+            backStack.removeAt(backStack.lastIndex)
         }
     }
 
@@ -406,10 +405,11 @@ fun AppShell(
                     }
                     UnifiedTopBar(
                         title = childTitle ?: if (widgetsOpen) "الودجتات" else currentTab.title,
+                        // «اليوم» والشاشات الرئيسية: عنوان فقط — التاريخ الهجري يظهر داخل «اليوم» نفسها.
                         subtitle = when {
                             widgetsOpen -> "أشكال الودجت وخلفياتها"
                             childTitle != null -> "المفاتيح"
-                            else -> "${hijri.day} ${hijri.monthName} ${hijri.year} هـ"
+                            else -> ""
                         },
                         canGoBack = backStack.size > 1 || duaDetailOpen,
                         onBack = ::back,
@@ -653,14 +653,18 @@ private fun CircleGlassButton(
 }
 
 /**
- * الشريط السفلي — M3 Expressive Floating Pill مع **مؤشر سائل مستمر**:
- * - كبسولة واحدة `rounded-full` زجاجية داكنة بحدود خفيفة وظل عميق.
- * - لكل عنصر خانة بعرض متساوٍ؛ المؤشر النشط كبسولة بعرض `٧٨٪` من الخانة
- *   تنزلق بين الخانات بنابض مكاني (بلا قفزات). كل حركتها في طبقة
- *   `graphicsLayer` فقط، فلا يعاد قياس أي شيء أثناء الانزلاق.
- * - بلا عناصر Triangular/scroll — كل الوجهات ظاهرة على أي حجم شاشة.
- * - الضغط يعطي استجابة لمس بحجم الحافة وشكل الخانة نفسها (ripple مدمج
- *   في `clickable` مع `clip(CircleShape)`).
+ * الشريط السفلي — M3 Expressive «Flexible Navigation Bar» (v0_11_0)، بحدود
+ * هوية التطبيق الداكنة:
+ *
+ * - الحاوية: `surfaceContainer` بنقطة عالية المحتوى، زوايا xxxl، حدّ رقيق
+ *   (`outlineVariant`) — نغمة سطحية لا درجة تخصصية فيها، وجهات متساوية.
+ * - العناصر عمودية (compact): أيقونة حيوي ٢٤dp فوق تسمية (١١sp).
+ * - المؤشر النشط: كبسولة **٣٢×٥٦dp** (CornerFull) بتعبئة `secondaryContainer`،
+ *   تتوسع من مركز الأيقونة على محور واحد وتنزلق بنابض مكاني — لا قفزات.
+ * - الألوان تتبع MaterialTheme.colorScheme: الأيقونة والمؤشر = onSecondaryContainer،
+ *   والتسمية النشطة = secondary (سميكة)، والتسمية غير النشطة = onSurfaceVariant.
+ * - الانتقالات: الأيقونة تملأ/تفرغ، المؤشر ينزلق — الحركة كلها `graphicsLayer`،
+ *   لا يعاد قياس أي شيء أثناء الانزلاق.
  */
 @Composable
 private fun FloatingBottomBar(
@@ -669,54 +673,52 @@ private fun FloatingBottomBar(
     modifier: Modifier = Modifier
 ) {
     val entries = AppDestination.entries
-    Box(
+    Surface(
         modifier = modifier
             .widthIn(max = KararTokens.Size.navBarMaxWidth)
-            .fillMaxWidth()
+            .fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(KararTokens.Radius.xxxl),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        tonalElevation = 1.dp,
+        shadowElevation = 2.dp
     ) {
-        GlassSurface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = CircleShape,
-            elevation = 26.dp,
-            contentPadding = PaddingValues(horizontal = 5.dp, vertical = 5.dp)
-        ) {
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val density = LocalDensity.current.density
-                val slotWidth = maxWidth / entries.size
-                val indicatorWidth = slotWidth * 0.78f
-                val targetOffset = slotWidth * current.ordinal + (slotWidth - indicatorWidth) / 2
-                val offsetX by animateFloatAsState(
-                    targetValue = targetOffset.value,
-                    animationSpec = KararTokens.Motion.spatial(),
-                    label = "nav-fluid-offset"
-                )
-                val gradient = Brush.linearGradient(listOf(KararColors.Teal, KararColors.Violet))
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(68.dp)) {
+            val slotWidth = maxWidth / entries.size
+            val indicatorWidth = 56.dp
+            val indicatorHeight = 32.dp
+            val targetOffset = slotWidth * current.ordinal + (slotWidth - indicatorWidth) / 2
+            val offsetX by animateFloatAsState(
+                targetValue = targetOffset.value,
+                animationSpec = KararTokens.Motion.spatial(),
+                label = "nav-m3-offset"
+            )
+            val density = LocalDensity.current.density
 
-                // المؤشر السائل — يتحرك خلف العناصر فقط.
-                Box(
-                    Modifier
-                        .graphicsLayer {
-                            translationX = offsetX * density
-                        }
-                        .width(indicatorWidth)
-                        .height(KararTokens.Size.navItem)
-                        .clip(CircleShape)
-                        .background(gradient)
-                )
+            // مؤشر M3 Expressive: كبسولة secondaryContainer تنزلق خلف الأيقونة فقط.
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 6.dp)
+                    .graphicsLayer { translationX = offsetX * density }
+                    .width(indicatorWidth)
+                    .height(indicatorHeight)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+            )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    entries.forEach { destination ->
-                        PillNavItem(
-                            destination = destination,
-                            selected = destination == current,
-                            onClick = { onSelect(destination) },
-                            modifier = Modifier.width(slotWidth)
-                        )
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                entries.forEach { destination ->
+                    FlexibleNavItem(
+                        destination = destination,
+                        selected = destination == current,
+                        onClick = { onSelect(destination) },
+                        modifier = Modifier.width(slotWidth)
+                    )
                 }
             }
         }
@@ -724,54 +726,58 @@ private fun FloatingBottomBar(
 }
 
 /**
- * عنصر كبسولة داخل شريط التنقل — الخانة بعرض متساوٍ؛ النشط أيقونته
- * ونصه أبيض على المؤشر السائل (المرسوم خلف الصف)، وغير النشط teal/أبيض
- * بشفافية — بلا تدرّج لكل عنصر ولا scale (الحركة كلها للمؤشر السائل).
+ * عنصر داخل الشريط السفلي — الأيقونة في خانة المؤشر (٣٢dp) ثم التسمية تحتها،
+ * تمامًا كتخطيط «Vertical» في M3 Expressive.
  */
 @Composable
-private fun PillNavItem(
+private fun FlexibleNavItem(
     destination: AppDestination,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val contentAlpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.62f,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "nav-alpha"
-    )
+    val scheme = MaterialTheme.colorScheme
     val iconTint by animateColorAsState(
-        targetValue = if (selected) Color.White else KararColors.Teal.copy(alpha = 0.85f),
+        targetValue = if (selected) scheme.onSecondaryContainer else KararColors.TextMuted,
         animationSpec = KararTokens.Motion.effects(),
-        label = "nav-icon"
+        label = "nav-icon-tint"
+    )
+    val labelTint by animateColorAsState(
+        targetValue = if (selected) scheme.secondary else KararColors.TextMuted,
+        animationSpec = KararTokens.Motion.effects(),
+        label = "nav-label-tint"
     )
 
-    Box(
+    Column(
         modifier = modifier
-            .height(KararTokens.Size.navItem)
-            .clip(CircleShape)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        Spacer(Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .width(56.dp)
+                .height(32.dp),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = destination.icon,
                 contentDescription = destination.title,
                 tint = iconTint,
-                modifier = Modifier.size(15.dp)
-            )
-            Text(
-                text = destination.shortTitle,
-                color = Color.White.copy(alpha = contentAlpha),
-                fontSize = 10.5.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Clip
+                modifier = Modifier.size(24.dp)
             )
         }
+        Text(
+            text = destination.shortTitle,
+            color = labelTint,
+            fontSize = 11.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
