@@ -16,8 +16,8 @@ android {
         applicationId = "com.Nightjar.amsakkarrar"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 10506
-        versionName = "1.5.7"
+        versionCode = 10507
+        versionName = "1.5.8"
     }
 
     buildFeatures {

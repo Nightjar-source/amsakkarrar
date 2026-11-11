@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -52,24 +53,35 @@ fun KeysScreen(
     onOpenQuran: () -> Unit,
     onOpenQibla: () -> Unit,
     onOpenTasbih: () -> Unit,
-    onOpenTasks: () -> Unit
+    onOpenTasks: () -> Unit,
+    onOpenJinan: () -> Unit
 ) {
+    // ترتيب الظهور: القرآن ← مفاتيح الجنان ← الأدعية ← البوصلة ← المسبحة ← أعمال اليوم.
+    // كلها منسقة بنفس البناء (كشيدة شفافة + أيقونة دائرية + عنوان) لتوحيد الشكل.
     val tiles = listOf(
+        KeyTile(
+            id = "quran",
+            title = "القرآن الكريم",
+            subtitle = "المصحف الشريف — فهرس سورة آية آية",
+            icon = Icons.AutoMirrored.Filled.MenuBook,
+            accent = KararColors.Mint,
+            onClick = onOpenQuran
+        ),
+        KeyTile(
+            id = "jinan",
+            title = "مفاتيح الجنان",
+            subtitle = "مصباح المتهجّد — أدعية وأعمال أيام وأشهر وزيارات أوفلاين",
+            icon = Icons.Filled.Key,
+            accent = KararColors.Gold,
+            onClick = onOpenJinan
+        ),
         KeyTile(
             id = "duas",
             title = "الأدعية والمناجاة",
             subtitle = "أدعية الحجة وكربلاء وقم والبقيع · تعقيبات الصباح والمساء",
             icon = Icons.AutoMirrored.Filled.MenuBook,
-            accent = KararColors.Gold,
+            accent = KararColors.Purple,
             onClick = onOpenDuas
-        ),
-        KeyTile(
-            id = "quran",
-            title = "القرآن الكريم",
-            subtitle = "المصحف الشريف · قراءة ومتابعة كل سورة آية آية",
-            icon = Icons.AutoMirrored.Filled.MenuBook,
-            accent = KararColors.Mint,
-            onClick = onOpenQuran
         ),
         KeyTile(
             id = "qibla",

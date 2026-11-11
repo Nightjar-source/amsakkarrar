@@ -108,7 +108,9 @@ import com.karrar.amsakiah.ui.screens.CalendarScreen
 import com.karrar.amsakiah.ui.screens.DuasScreen
 import com.karrar.amsakiah.ui.screens.FiqhScreen
 import com.karrar.amsakiah.ui.screens.KeysScreen
+import com.karrar.amsakiah.ui.screens.JinanScreen
 import com.karrar.amsakiah.ui.screens.QuranScreen
+import com.karrar.amsakiah.ui.screens.UnifiedReaderScreen
 import com.karrar.amsakiah.ui.screens.SettingsScreen
 import com.karrar.amsakiah.ui.screens.ShrinesQiblaScreen
 import com.karrar.amsakiah.ui.screens.TasbihScreen
@@ -160,10 +162,10 @@ fun AppShell(
         onDispose { player.release() }
     }
 
-    // «اليوم» ولا شيء فوقه؛ وعند فتح دعاء: صفحة كاملة edge-to-edge بشاشتها
-    // الخاصة (شريط موحّد آخر يزعج القراءة).
+    // «اليوم» ولا شيء فوقه؛ أوفتح دعاء/قارئ الجنان يتحولان إلى edge-to-edge
+    // بشاشتهما الخاصة (لا شريط التطبيق الرئيسي).
     val isToday = currentRoute == AppRoute.Today && !duaDetailOpen
-    val immersive = isToday || (currentRoute == AppRoute.Duas && duaDetailOpen)
+    val immersive = isToday || (currentRoute == AppRoute.Duas && duaDetailOpen) || currentRoute is AppRoute.JinanReader
     val showTopBar = !immersive
 
     // ---------- الإنسِتس ----------
@@ -329,7 +331,8 @@ fun AppShell(
                                 onOpenQuran = { openKeysChild(AppRoute.Quran) },
                                 onOpenQibla = { openKeysChild(AppRoute.Qibla) },
                                 onOpenTasbih = { openKeysChild(AppRoute.Tasbih) },
-                                onOpenTasks = { openKeysChild(AppRoute.Tasks) }
+                                onOpenTasks = { openKeysChild(AppRoute.Tasks) },
+                                onOpenJinan = { openKeysChild(AppRoute.Jinan) }
                             )
                         }
                         entry(AppRoute.Duas) {
@@ -369,6 +372,25 @@ fun AppShell(
                         entry(AppRoute.Widgets) {
                             WidgetsScreen(state = state, contentPadding = contentPadding)
                         }
+                        entry(AppRoute.Jinan) {
+                            // تحميل محتوى مفاتيح الجنان (2.9MB) عند الحاجة فقط.
+                            LaunchedEffect(Unit) { state.prepareJinanContent() }
+                            JinanScreen(
+                                contentPadding = contentPadding,
+                                onOpenReader = { item ->
+                                    openKeysChild(AppRoute.JinanReader(item.id, item.title))
+                                }
+                            )
+                        }
+                        entry(AppRoute.JinanReader) { route ->
+                            // كل مقتطف يقرأ نفسه من الملف المُدمج بالكامل (ولا تُحمل من جديد).
+                            UnifiedReaderScreen(
+                                contentId = route.contentId,
+                                title = route.title,
+                                subtitle = route.title,
+                                onBack = ::back
+                            )
+                        }
                     }
                 )
 
@@ -379,6 +401,7 @@ fun AppShell(
                         AppRoute.Tasbih -> "المسبحة"
                         AppRoute.Qibla -> "القبلة والمراقد"
                         AppRoute.Tasks -> "أعمال اليوم"
+                        AppRoute.Jinan -> "مفاتيح الجنان"
                         else -> null
                     }
                     UnifiedTopBar(

@@ -55,6 +55,14 @@ sealed interface AppRoute : NavKey {
     /** شاشة فرعية تُفتح من الضبط — ليست تبويبًا. */
     @Serializable
     data object Widgets : AppRoute
+
+    /** فرعية «المفاتيح» — فهرس مفاتيح الجنان (الأجزاء والأبواب والأدعية). */
+    @Serializable
+    data object Jinan : AppRoute
+
+    /** فرعية «المفاتيح» — قارئ الجنان الموحّد (لأي دعاء وشهر). */
+    @Serializable
+    data class JinanReader(val contentId: Int, val title: String) : AppRoute
 }
 
 /**
@@ -74,6 +82,8 @@ val appNavConfiguration: SavedStateConfiguration = SavedStateConfiguration {
             subclass(AppRoute.Qibla::class, AppRoute.Qibla.serializer())
             subclass(AppRoute.Tasks::class, AppRoute.Tasks.serializer())
             subclass(AppRoute.Widgets::class, AppRoute.Widgets.serializer())
+            subclass(AppRoute.Jinan::class, AppRoute.Jinan.serializer())
+            subclass(AppRoute.JinanReader::class, AppRoute.JinanReader.serializer())
         }
     }
 }
@@ -98,6 +108,8 @@ fun AppRoute.toDestination(): AppDestination? = when (this) {
     AppRoute.Quran,
     AppRoute.Tasbih,
     AppRoute.Qibla,
-    AppRoute.Tasks -> AppDestination.KEYS
+    AppRoute.Tasks,
+    AppRoute.Jinan,
+    AppRoute.JinanReader -> AppDestination.KEYS
     AppRoute.Widgets -> AppDestination.SETTINGS
 }

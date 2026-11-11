@@ -73,6 +73,13 @@ class AppState {
     var lastLocationError: String? by mutableStateOf(null)
         private set
 
+    var jinanReady: Boolean by mutableStateOf(false)
+        private set
+
+    fun markJinanReady() {
+        jinanReady = true
+    }
+
     /** خدمة الموقع معطّلة في إعدادات النظام — تُعرض معها زر «تشغيل الموقع». */
     var locationServiceDisabled: Boolean by mutableStateOf(false)
         private set
@@ -105,6 +112,20 @@ class AppState {
     private val externalSync: () -> Unit = {
         val stored = loadSettings()
         if (stored != settings) settings = stored
+    }
+
+    /**
+     * تهيئة محتوى مفاتيح الجنان — تقرأ bytes JSON وتبني فهرسًا في الذاكرة.
+     * يُستدعى مرة واحدة من شاشة «المفاتيح» عند فتح قسم الجنان أوفلاين.
+     * نافع للذاكرة: 2.9MB ملف كاملًا لكن تم تحليله مرة فقط لكل عملية.
+     */
+    suspend fun prepareJinanContent() {
+        if (jinanReady) return
+        runCatching {
+            val bytes = com.karrar.amsakiah.resources.Res.readBytes("files/content_texts.json")
+            com.karrar.amsakiah.core.jinan.JinanContentTexts.load(bytes)
+            markJinanReady()
+        }
     }
 
     init {
