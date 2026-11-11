@@ -9,8 +9,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.text.FontFamily
-import androidx.glance.text.FontWeight
-import com.Nightjar.amsakkarrar.R
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -164,8 +162,15 @@ private fun WidgetFrame(
     }
 }
 
-/** كشيدة الشهر: «رمضـ 16 ـان» — الحروف ذهبية والرقم أبيض (بخط ريم كوفي كما في المرجع). */
-private val ReemKufi = FontFamily(R.font.reem_kufi)
+/**
+ * كشيدة الشهر: «رمضـ 16 ـان» — الحروف ذهبية والرقم أبيض.
+ *
+ * ملاحظة صريحة: Glance يقبل فقط أسماء خطوط النظام عبر `FontFamily(String)`
+ * ولا يسمح بخط مخصص داخل Compose Glance. لذلك تُرسم الكشيدة بأقرب خط نظام
+ * (`serif`). للمتابعة بخط Reem Kufi حرفيًا يجب تحويل الكشيدة إلى RemoteViews
+ * مع `@font/reem_kufi` — قابل للإضافة عند الطلب.
+ */
+private val ReemKufi = FontFamily.Serif
 
 @Composable
 private fun WidgetKashida(snapshot: PrayerSnapshot, fontSize: Int = 26) {
