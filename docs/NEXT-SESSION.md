@@ -10,12 +10,12 @@
 | البند | القيمة |
 | --- | --- |
 | الفرع | `main` |
-| آخر التزام كود | `31edf72` — مدفوع + وسم `v1.5.3` |
-| المرحلة التالية | **وكيل الجهاز يفحص v1.5.3 ثم يرسل مشكلته** |
+| آخر التزام كود | `e65162b` — مدفوع + وسم `v1.5.5` |
+| المرحلة التالية | **وكيل الجهاز يفحص v1.5.5** — الخطة: `docs/PLAN-V2-2026-11-10.md` |
 | الخطة | `docs/PLAN-FULL-REBUILD-2026-11.md` + `docs/PLAN-V2-2026-11-10.md` |
 | الجهاز | لا جهاز/محاكي متصل (الوكيل يفحص على جهاز نفسه) |
-| الإصدار الحالي | `versionCode 10503` / `versionName 1.5.3` — CI #43024862607 (dispatch) و#43025502692 (وسم) كلاهما ناجح؛ APK موقّع 11,439,235 بايت |
-| تعديلات معلّقة | تحقق بصري للجدول المردود على الجهاز (isfar / card / table / حبيوان) |
+| الإصدار الحالي | `versionCode 10505` / `versionName 1.5.5` — CI #43036577918 **نجح**؛ وسم `v1.5.5` على `e65162b` |
+| تعديلات معلّقة | تحقق بصري (القوس/التقويم/الإشعار) على الجهاز — غير منجزة |
 ### 1.2 إعادة تصميم الشاشات — 2026-11-08 (مدفوعة في v1.3.0)
 
 - **Splash:** مقاسات نسبية عبر `BoxWithConstraints` (تعمل من 320dp وفي الوضع
@@ -563,6 +563,35 @@
 - **الإصدارات المتحركة:** كل الانتقالات الآن على Typography بنابض، لا tween؛ الجرد الكامل: 0 tween لناقل حالة، 10 tween للحركات اللامنتهائية (مؤقّت/طقس/نبض).
 - الوسم المدفوع → GitHub Release موقّع:
   https://github.com/Nightjar-source/amsakkarrar/releases/tag/v1.5.2
+
+### 1.16 إصدار v1.5.4 / v1.5.5 — formal astronomy naming (2026-11-11)
+
+- **CI #43033274020** و**CI #43036577918** فشلا مع عشرات الأخطاء من نفس النوع:
+  `Unresolved reference 'state'` في ملفات الشاشات — لأن استدعاءًا واحدًا
+  لـ`use24Hour` وضعناه في نطاق لا يتوفر فيه `state`. **الإصلاح الكبير:**
+  - في `TodayScreen`، تُمرر قِيمة `use24Hour: Boolean` صراحةً لكل الدوال
+    الفرعية: `BottomArea` ← `PrayerStrip`، `computeArcPhase` ←
+    `timeText`، `ArcDayCell` (مثلث)، DayCard → PrayerTimeCell.
+  - في `WidgetsScreen`، معاينة الويدجت ليست بحاجة لـ`state`، فقيمة
+    `use24Hour` ثابتة فيها (البطاقات للمعاينة فقط).
+  - أيقونة «12/24» أُبدلت للـ`AccessTime` (لا يوجد `Icons.Filled.Schedule`).
+- **التسمية الرسمية للمحرك الفلكي:** 0 أحرف مفردة؛ إعادة تسمية كاملة:
+  `dsin → sineOfDegrees`، `dcos → cosineOfDegrees`، `darcsin → arcSineOfDegrees`،
+  `darccos → arcCosineOfDegrees`، `darctan2 → arctangentOfDegrees`،
+  `DTR → DEGREES_TO_RADIANS`، `RTD → RADIANS_TO_DEGREES`،
+  `fixAngle → normalizeAngleInDegrees`، `fixHour → normalizeHourOfDay`،
+  `getJulianDay → calculateJulianDay`،
+  `getSolarPosition → calculateSolarPosition`،
+  `getHourAngle → calculateHourAngle`،
+  `getHijriDateSafe → calculateHijriDate`،
+  `formatArcHour → formatHourOfDay`،
+  `calculateDistance → greatCircleDistanceKm`،
+  `haSunrise → hourAngleSunrise`،
+  `jd / eqt / g / q / l / e / d → julianDay / equationOfTime / meanAnomaly /
+  meanLongitude / trueLongitude / obliquityOfEcliptic / daysSinceJ2000`.
+- **نتيجة تجريبية:** CI **نجاح** (#429/43036577918 dispatch على `2f09bc8`،
+  والوسم `v1.5.5` على `e65162b`).
+- **لا شيء اليوم على جهازك** — كل ما سبق نجاح/ناجح عبر CI.
 
 ---
 
