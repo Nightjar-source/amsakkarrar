@@ -839,6 +839,7 @@ private fun hijriMonthStart(
 private fun shortLabel(id: String): String = when (id) {
     "imsak" -> "إمساك"
     "fajr" -> "فجر"
+    "isfar" -> "إسفار"
     "sunrise" -> "شروق"
     "dhuhr" -> "ظهر"
     "asr" -> "عصر"

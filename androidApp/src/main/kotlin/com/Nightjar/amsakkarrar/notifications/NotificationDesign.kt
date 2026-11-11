@@ -120,7 +120,7 @@ object NotificationDesign {
 
         return NotificationCompat.Builder(context, NotificationChannels.LIVE)
             .setSmallIcon(R.drawable.ic_notif_small)
-            .setContentTitle("إمساكية كرار")
+            .setContentTitle("رمضان مباشر")
             .setContentText("باقٍ على ${snapshot.nextLabel} • ${snapshot.nextTime} · العدّ التنازلي")
             .setSubText("${snapshot.city} — إمساكيات كرار")
             .setCustomContentView(views)

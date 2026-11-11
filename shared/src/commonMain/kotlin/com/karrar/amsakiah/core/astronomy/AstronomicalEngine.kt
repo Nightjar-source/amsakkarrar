@@ -260,6 +260,13 @@ object AstronomicalEngine {
         val midnightDuration = midnightEnd - midnightStart
         val midnightUtc = fixHour(midnightStart + (midnightDuration / 2.0))
 
+        var isfarUtc: Double? = if (isShiaMode && isSummerAnomaly && highLatRule == HighLatitudeRule.SAYEGH) {
+            // الإسفار وفق "تقويم الصائغ": صلاة الفجر الفعلية وفق حد الإشراق،
+            // ... تُملأ فقط عند خطوط العرض العليا في الصيف الفلكي.
+            sunriseUtc - 1.25
+        } else {
+            null
+        }
         fun toLocal(utcHour: Double): Double = fixHour(utcHour + tzOffset - (lon / 15.0))
 
         return PrayerTimes(
@@ -272,6 +279,9 @@ object AstronomicalEngine {
             maghrib = toLocal(maghribUtc),
             isha = toLocal(ishaUtc),
             midnight = toLocal(midnightUtc),
+            // الإسفار: فقط عند خطوط العرض العليا صيفًا (المرجع: الفجر الفلكي
+            // في ظل "تقويم الصائغ" — يبدأ بعد الظهر فلكيًا + صلاة في وقت مبدئي).
+            isfar = isfarUtc?.let { toLocal(it) },
             isHighLatAnomaly = isSummerAnomaly,
             declination = ((declination * 100.0).roundToInt() / 100.0).toString(),
             eqtMinutes = ((eqt * 60.0 * 10.0).roundToInt() / 10.0).toString(),

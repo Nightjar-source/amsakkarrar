@@ -45,6 +45,9 @@ data class PrayerTimes(
     val maghrib: Double,
     val isha: Double,
     val midnight: Double,
+    /** الإسفار — صلاة الفجر الفعلية وفق "تقويم الصائغ" في خطوط العرض العليا في
+     *  الصيف الفلكي. يُملأ فقط في تلك الحالة (وإلا null). */
+    val isfar: Double? = null,
     val isHighLatAnomaly: Boolean = false,
     val declination: String = "",
     val eqtMinutes: String = "",

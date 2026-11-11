@@ -42,7 +42,7 @@ object KararIcons {
      */
     fun prayer(id: String): ImageVector = when (id) {
         "imsak", "isha", "midnight" -> Icons.Filled.NightsStay
-        "fajr", "sunrise" -> Icons.Filled.WbTwilight
+        "fajr", "isfar", "sunrise" -> Icons.Filled.WbTwilight
         "dhuhr", "asr" -> Icons.Filled.WbSunny
         "sunset", "maghrib" -> Icons.Filled.WbTwilight
         else -> Icons.Filled.WbSunny

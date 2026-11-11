@@ -21,11 +21,12 @@ import kotlin.math.roundToInt
 
 /** ترتيب الأوقات المستخدم في كل الشاشات */
 object PrayerMeta {
-    val order = listOf("imsak", "fajr", "sunrise", "dhuhr", "asr", "sunset", "maghrib", "isha", "midnight")
+    val order = listOf("imsak", "fajr", "isfar", "sunrise", "dhuhr", "asr", "sunset", "maghrib", "isha", "midnight")
 
     val labels = mapOf(
         "imsak" to "الإمساك",
         "fajr" to "الفجر",
+        "isfar" to "الإسفار",
         "sunrise" to "الشروق",
         "dhuhr" to "الظهر",
         "asr" to "العصر",
@@ -38,6 +39,8 @@ object PrayerMeta {
     fun label(id: String): String = labels[id] ?: id
     fun fixed(id: String): Boolean = id == "imsak" || id == "fajr" || id == "sunrise" ||
         id == "dhuhr" || id == "sunset" || id == "maghrib" || id == "isha" || id == "midnight"
+        // isfar وقت خاص يظهر فقط عند خطوط العرض العليا — ليست صلاة بذاتها للمهام
+        || id == "isfar"
 }
 
 data class PrayerSlot(
@@ -123,7 +126,7 @@ object PrayerCalculator {
 
     /** خريطة الأوقات بعد تطبيق التعديلات اليدوية */
     fun adjustedTimes(times: PrayerTimes, settings: AppSettings): Map<String, Double> {
-        val base = mapOf(
+        val base = mutableMapOf(
             "imsak" to times.imsak,
             "fajr" to times.fajr,
             "sunrise" to times.sunrise,
@@ -134,6 +137,8 @@ object PrayerCalculator {
             "isha" to times.isha,
             "midnight" to times.midnight
         )
+        // الإسفار يضاف فقط عندما يخلصّه المحرك الفلكي (شروق خاص بخطوط العرض العليا).
+        times.isfar?.let { base["isfar"] = it }
         return base.mapValues { (id, hour) ->
             val offset = settings.offsets[id] ?: 0
             var value = hour + offset / 60.0
@@ -162,10 +167,23 @@ object PrayerCalculator {
      */
     fun visibleIds(settings: AppSettings, date: LocalDate = todayDate(settings)): List<String> {
         val isShia = methodFor(settings.methodCode).isShia
+        // الإسفار لا يظهر إلا عندما يستخرجه المحرك (خطوط العرض العليا صيفًا)
+        val showsIsfar = AstronomicalEngine.calculatePrayerTimes(
+            year = date.year,
+            month = date.monthNumber,
+            day = date.dayOfMonth,
+            lat = settings.latitude,
+            lon = settings.longitude,
+            tzOffset = offsetHours(settings, date),
+            method = methodFor(settings.methodCode),
+            highLatRule = highLatFor(settings.highLatRule),
+            asrMethod = settings.asrMethod
+        ).isfar != null
         return PrayerMeta.order.filter { id ->
             id in settings.visiblePrayers &&
                 (id != "sunset" || isShia) &&
-                (id != "imsak" || imsakVisible(settings, date))
+                (id != "imsak" || imsakVisible(settings, date)) &&
+                (id != "isfar" || showsIsfar)
         }
     }
 
@@ -187,7 +205,7 @@ object PrayerCalculator {
 
     /** يعيد (معرّف الصلاة القادمة، الوقت بالثواني من منتصف الليل، هل هي غدًا) */
     fun nextPrayerId(settings: AppSettings, date: LocalDate, nowSeconds: Int): Pair<String, Int>? {
-        val ids = visibleIds(settings, date).filter { it != "sunrise" && it != "sunset" }
+        val ids = visibleIds(settings, date).filter { it != "sunrise" && it != "sunset" && it != "isfar" }
         val today = adjustedTimes(timesFor(settings, date), settings)
         for (id in ids) {
             val raw = today[id] ?: continue

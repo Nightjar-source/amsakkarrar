@@ -234,7 +234,7 @@ fun SettingsScreen(
                         fontSize = 10.sp
                     )
                     Text(
-                        "لبقية الطرق (13 طريقة) وكل الزوايا والقواعد انتقل إلى شاشة «الفقه والمعايير».",
+                        "للتفاصيل الفقهية والزوايا والقواعد مع المرجع راجع شاشة «فقه المواقيت» (يختصرها نفس التقسيم).",
                         color = KararColors.TextMuted,
                         fontSize = 10.sp
                     )
@@ -917,21 +917,70 @@ private fun DailyTimeCell(
 // اختيار الطريقة
 // =====================================================================
 
-private val SETTINGS_METHODS = listOf(
-    "alkafeel" to "الكفيل",
-    "leufa" to "ليفا",
+/** الطرق السريعة — تُعرض دائمًا في الضبط (من amsak3d.tsx). */
+private val SETTINGS_METHODS_QUICK = listOf(
+    "alkafeel" to "الكفيل (السيستاني)",
+    "leufa" to "معهد ليفا - قم",
     "tehran" to "طهران",
-    "london_shia" to "لندن",
-    "mwl" to "MWL",
-    "egypt" to "مصر"
+    "ummalqura" to "أم القرى (مكة)"
+)
+
+/** بقية المعاهد العالمية — تُعرض بعد النقر على «متقدمة» (نفس ترتيب المرجع). */
+private val SETTINGS_METHODS_ADVANCED = listOf(
+    "london_shia" to "مؤسسة لندن (شيعي)",
+    "mwl" to "رابطة العالم الإسلامي",
+    "egypt" to "الهيئة المصرية العامة للمساحة",
+    "isna" to "رابطة أمريكا الشمالية (ISNA)",
+    "karachi" to "جامعة كراتشي (18°)",
+    "france_12" to "فرنسا 12°",
+    "european_council" to "المجلس الأوروبي للإفتاء",
+    "mwl_custom" to "المعيار الموحد (18°)",
+    "gulf_shia" to "معيار زاوية 4.1°"
 )
 
 @Composable
 private fun MethodSelector(selected: String, onSelect: (String) -> Unit) {
+    var showAdvanced by rememberSaveable { mutableStateOf(false) }
+    // السريعة دائمًا ٤ فقط، و«متقدمة» لا توسّع إلا بعد النقر عليها —
+    // نفس البنية في المرجع وفيه تقلص تلقائي بلا ازدحام.
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        MethodChipsGrid(SETTINGS_METHODS_QUICK, selected, onSelect, columns = 2)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(KararColors.CardSoft)
+                .border(1.dp, KararColors.Border, RoundedCornerShape(12.dp))
+                .clickable { showAdvanced = !showAdvanced }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (showAdvanced) "إخفاء الطرق المتقدمة" else "عرض الطرق المتقدمة (9 معايير)",
+                color = KararColors.Gold,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Text(if (showAdvanced) "−" else "+", color = KararColors.Gold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+        if (showAdvanced) {
+            MethodChipsGrid(SETTINGS_METHODS_ADVANCED, selected, onSelect, columns = 2)
+        }
+    }
+}
+
+@Composable
+private fun MethodChipsGrid(
+    methods: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    columns: Int
+) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val columns = if (maxWidth >= 420.dp) 3 else 2
+        val cols = if (maxWidth >= 420.dp) 3 else columns
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            SETTINGS_METHODS.chunked(columns).forEach { row ->
+            methods.chunked(cols).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     row.forEach { (code, label) ->
                         val isSelected = selected == code
@@ -955,11 +1004,12 @@ private fun MethodSelector(selected: String, onSelect: (String) -> Unit) {
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                maxLines = 1
+                                maxLines = 2,
+                                softWrap = true
                             )
                         }
                     }
-                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
