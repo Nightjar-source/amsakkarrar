@@ -670,6 +670,14 @@ private fun SettingsHero(
                 border = KararColors.Border,
                 onClick = onSearchCity
             )
+            HeroAction(
+                text = if (settings.use24Hour) "24 ساعة" else "12 ساعة",
+                icon = Icons.Filled.Schedule,
+                color = KararColors.Gold,
+                container = KararColors.Gold.copy(alpha = 0.12f),
+                border = KararColors.Gold.copy(alpha = 0.30f),
+                onClick = { state.update { it.copy(use24Hour = !it.use24Hour) } }
+            )
         }
 
         Spacer(Modifier.height(14.dp))
@@ -860,7 +868,7 @@ private fun DailyTimesGrid(settings: AppSettings) {
                     rowIds.forEach { id ->
                         DailyTimeCell(
                             id = id,
-                            time = PrayerCalculator.formatHour(times[id] ?: 0.0),
+                            time = PrayerCalculator.formatHour(times[id] ?: 0.0, state.settings.use24Hour),
                             modifier = Modifier.weight(1f)
                         )
                     }

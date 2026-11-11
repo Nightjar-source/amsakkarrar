@@ -151,6 +151,9 @@ object PrayerCalculator {
     fun formatHour(rawHour: Double): Triple<String, String, String> =
         AstronomicalEngine.formatArcHour(rawHour)
 
+    fun formatHour(rawHour: Double, use24Hour: Boolean): Triple<String, String, String> =
+        AstronomicalEngine.formatArcHour(rawHour, use24Hour)
+
     /** هل الإمساك ظاهر في هذا التاريخ وفق وضع العرض المختار؟ */
     fun imsakVisible(settings: AppSettings, date: LocalDate = todayDate(settings)): Boolean =
         when (settings.imsakMode) {

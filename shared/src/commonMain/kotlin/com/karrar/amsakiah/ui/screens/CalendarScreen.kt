@@ -390,7 +390,8 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
                     days = days,
                     mode = mode,
                     today = today,
-                    visible = PrayerCalculator.visibleIds(settings, today)
+                    visible = PrayerCalculator.visibleIds(settings, today),
+                    use24Hour = state.settings.use24Hour
                 )
             }
         }
@@ -788,7 +789,7 @@ private fun DayCard(
 
 @Composable
 private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Modifier) {
-    val (time, amPm, _) = PrayerCalculator.formatHour(rawHour)
+    val (time, amPm, _) = PrayerCalculator.formatHour(rawHour, state.settings.use24Hour)
     val shortAmPm = if (amPm.startsWith("م")) "م" else "ص"
     Box(
         modifier = modifier
@@ -914,7 +915,8 @@ private fun MonthTableCard(
     days: List<CalendarDay>,
     mode: CalendarMode,
     today: LocalDate,
-    visible: List<String>
+    visible: List<String>,
+    use24Hour: Boolean
 ) {
     GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
         // شريط الهيدر السماوي: عنوان الشهر + المدينة — كما في عنصر المرجع.
@@ -992,10 +994,10 @@ private fun MonthTableCard(
                         )
                         visible.forEach { id ->
                             val raw = day.times[id] ?: 0.0
-                            val (time, amPm, _) = PrayerCalculator.formatHour(raw)
+                            val (time, amPm, _) = PrayerCalculator.formatHour(raw, use24Hour)
                             val isMag = id == "maghrib"
                             Text(
-                                text = "$time ${if (amPm.startsWith("م")) "م" else "ص"}",
+                                text = if (use24Hour) time else "$time ${if (amPm.startsWith("م")) "م" else "ص"}",
                                 color = if (isMag) KararColors.Teal else KararColors.TextPrimary,
                                 fontSize = 11.sp,
                                 fontWeight = if (isMag) FontWeight.Black else FontWeight.Medium,

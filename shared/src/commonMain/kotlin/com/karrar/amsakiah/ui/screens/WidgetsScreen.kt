@@ -137,7 +137,7 @@ fun WidgetsScreen(state: AppState, contentPadding: PaddingValues) {
     val entries = remember(times) {
         widgetPrayers.mapNotNull { id ->
             val raw = times[id] ?: return@mapNotNull null
-            val (t12, ap, _) = PrayerCalculator.formatHour(raw)
+            val (t12, ap, _) = PrayerCalculator.formatHour(raw, settings.use24Hour)
             Triple(id, PrayerMeta.label(id), "$t12 $ap")
         }
     }
@@ -556,7 +556,7 @@ private fun CountdownPreview(
         fontSize = 38.sp,
         fontWeight = FontWeight.Bold
     )
-    val (t12, ap, _) = PrayerCalculator.formatHour(nextTime)
+    val (t12, ap, _) = PrayerCalculator.formatHour(nextTime, false)
     Text("موعد $t12 $ap", color = KararColors.TextMuted, fontSize = 8.sp)
     Spacer(Modifier.height(6.dp))
     PreviewProgress(progress, Color(0xFFA78BFA))

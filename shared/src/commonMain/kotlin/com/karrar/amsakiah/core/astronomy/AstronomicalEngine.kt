@@ -341,8 +341,8 @@ object AstronomicalEngine {
         )
     }
 
-    fun formatArcHour(rawHourFloat: Double): Triple<String, String, String> {
-        if (rawHourFloat.isNaN()) return Triple("00:00", "صباحاً", "00:00")
+    fun formatArcHour(rawHourFloat: Double, use24Hour: Boolean = false): Triple<String, String, String> {
+        if (rawHourFloat.isNaN()) return if (use24Hour) Triple("00:00", "", "00:00") else Triple("00:00", "صباحاً", "00:00")
         val local = ((rawHourFloat % 24.0) + 24.0) % 24.0
         var h = floor(local).toInt()
         var m = floor((local - h) * 60.0 + 0.5).toInt()
@@ -350,10 +350,14 @@ object AstronomicalEngine {
             h = (h + 1) % 24
             m = 0
         }
-        val ap = if (h >= 12) "مساءً" else "صباحاً"
-        val h12 = if (h % 12 == 0) 12 else h % 12
         val mStr = m.toString().padStart(2, '0')
         val h24Str = h.toString().padStart(2, '0')
-        return Triple("$h12:$mStr", ap, "$h24Str:$mStr")
+        return if (use24Hour) {
+            Triple("$h24Str:$mStr", "", "$h24Str:$mStr")
+        } else {
+            val ap = if (h >= 12) "مساءً" else "صباحاً"
+            val h12 = if (h % 12 == 0) 12 else h % 12
+            Triple("$h12:$mStr", ap, "$h24Str:$mStr")
+        }
     }
 }

@@ -153,7 +153,7 @@ fun TodayScreen(
     }
 
     val (skyTop, skyBottom, skyGlow) = SkyTheme.getSkyColorsForSecond(nowSeconds.toFloat())
-    val clock = PrayerCalculator.formatHour(nowLdt.hour + nowLdt.minute / 60.0)
+    val clock = PrayerCalculator.formatHour(nowLdt.hour + nowLdt.minute / 60.0, state.settings.use24Hour)
 
     // ---- العدّاد: الصلاة التالية تلقائيًا، مع إمكانية اختيار صلاة أخرى باللمس ----
     val autoIndex = countdownIds.indexOfFirst { id ->
@@ -194,6 +194,16 @@ fun TodayScreen(
             .fillMaxSize()
             .drawBehind {
                 drawRect(Brush.verticalGradient(listOf(skyTop, skyBottom)))
+                // النجوم — تظهر فقط ليلاً، مثل المرجع (stars + boxShadow).
+                if (isNight) {
+                    SkyTheme.celestialStars.forEach { star ->
+                        drawCircle(
+                            color = Color.White.copy(alpha = star.maxAlpha),
+                            radius = star.radius * 1.1.dp.toPx(),
+                            center = Offset(star.xPercent * size.width / 100f, star.yPercent * size.height / 100f)
+                        )
+                    }
+                }
                 // تدرّج علوي خفيف خلف شريط الحالة فقط — يبقى السماء ظاهرة،
                 // والأيقونات البيضاء تُقرأ دائمًا في الوضعين بلا "كتلة لونية".
                 drawRect(
@@ -260,9 +270,9 @@ fun TodayScreen(
                     timeText = clock.first,
                     meridiem = clock.second,
                     leftLabel = phase.leftLabel,
-                    leftTime = PrayerCalculator.formatHour(phase.leftHour).first,
+                    leftTime = PrayerCalculator.formatHour(phase.leftHour, state.settings.use24Hour).first,
                     rightLabel = phase.rightLabel,
-                    rightTime = PrayerCalculator.formatHour(phase.rightHour).first,
+                    rightTime = PrayerCalculator.formatHour(phase.rightHour, state.settings.use24Hour).first,
                     subPhaseBadge = phase.badge,
                     modifier = Modifier
                         .size(width = arcWidth, height = arcHeight)
@@ -787,7 +797,7 @@ private fun PrayerStrip(
                     val todayHour = todayTimes[id] ?: 0.0
                     val showTomorrow = id == targetId && targetIsTomorrow
                     val rawHour = if (showTomorrow) tomorrowTimes[id] ?: todayHour else todayHour
-                    val formatted = PrayerCalculator.formatHour(rawHour)
+                    val formatted = PrayerCalculator.formatHour(rawHour, state.settings.use24Hour)
                     PrayerCard(
                         id = id,
                         label = PrayerMeta.label(id),
@@ -951,7 +961,7 @@ private fun computeArcPhase(
     val sunriseSec = secondsOf(sunrise)
     val sunsetSec = secondsOf(sunset)
     val maghribSec = secondsOf(maghrib)
-    fun timeText(hour: Double): String = PrayerCalculator.formatHour(hour).first
+    fun timeText(hour: Double): String = PrayerCalculator.formatHour(hour, state.settings.use24Hour).first
 
     return when {
         // 1) الليل: من المغرب إلى الفجر

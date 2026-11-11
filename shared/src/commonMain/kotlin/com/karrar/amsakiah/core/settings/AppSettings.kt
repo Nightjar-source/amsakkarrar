@@ -64,6 +64,7 @@ data class AppSettings(
      */
     val themeMode: String = ThemeMode.SYSTEM,
     val fontScale: Float = 1f,
+    val use24Hour: Boolean = false,
 
     // ---------- أخرى ----------
     val showWeather: Boolean = true,

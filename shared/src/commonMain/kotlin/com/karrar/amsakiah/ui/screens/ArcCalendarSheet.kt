@@ -275,13 +275,13 @@ private fun ArcDayCell(cell: MonthCell.Day, isToday: Boolean, onClick: () -> Uni
             fontWeight = FontWeight.Bold
         )
         Text(
-            "ف ${PrayerCalculator.formatHour(cell.day.times["fajr"] ?: 0.0).first}",
+            "ف ${PrayerCalculator.formatHour(cell.day.times["fajr"] ?: 0.0, state.settings.use24Hour).first}",
             color = KararColors.TextMuted,
             fontSize = 6.sp,
             maxLines = 1
         )
         Text(
-            "م ${PrayerCalculator.formatHour(cell.day.times["maghrib"] ?: 0.0).first}",
+            "م ${PrayerCalculator.formatHour(cell.day.times["maghrib"] ?: 0.0, state.settings.use24Hour).first}",
             color = KararColors.TextMuted,
             fontSize = 6.sp,
             maxLines = 1
