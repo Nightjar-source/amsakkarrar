@@ -87,6 +87,7 @@ import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.components.KashidaHeader
 import com.karrar.amsakiah.ui.components.SkyArc
 import com.karrar.amsakiah.ui.components.WeatherEffects
+import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararIcons
 import com.karrar.amsakiah.ui.theme.KararTokens
 import com.karrar.amsakiah.ui.theme.SkyTheme
