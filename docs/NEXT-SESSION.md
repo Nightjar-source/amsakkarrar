@@ -15,8 +15,8 @@
 | المرحلة التالية | **وكيل الجهاز يفحص v1.5.1 ثم يرسل مشكلته** |
 | الخطة | `docs/PLAN-FULL-REBUILD-2026-11.md` + `docs/PLAN-V2-2026-11-10.md` |
 | الجهاز | لا جهاز/محاكي متصل (الوكيل يفحص على جهاز نفسه) |
-| الإصدار الحالي | `versionCode 10501` / `versionName 1.5.1` — CI #42934847673 **نجح**؛ الوسم على `d7c90cf` |
-| تعديلات معلّقة | لا شيء |
+| الإصدار الحالي | `versionCode 10501` / `versionName 1.5.1` — CI #42934847673 **نجح** و CI #42935966711 (وسم) **نجح**؛ APK موقّع 11,439,235 بايت |
+| تعديلات معلّقة | لا شيء (بوابات جهاز معلّقة — رؤية على جهاز الوكيل فقط) |
 
 ### 1.2 إعادة تصميم الشاشات — 2026-11-08 (مدفوعة في v1.3.0)
 
@@ -329,6 +329,30 @@
   أسماء خطوط النظام (وليست ملفات `@font/*.ttf`)؛ تطلب الحل نقل kشيدة إلى
   RemoteViews — تم بطلب صريح أو الحصول على نتيجة مع أفضل ما لدى Glance
   (`FontFamily.Serif`).
+
+### 1.14 إصدار v1.5.1 — التحقق والنشر (2026-11-11)
+
+- **الفشل #1 (42925817567 على `ab850eb`):** استيراد `KararColors` مفقود في
+  `TodayScreen.kt`. **الإصلاح ed6547f:**
+  `import com.karrar.amsakiah.ui.theme.KararColors`.
+- **الفشل #2 (42930059246 على `ed6547f`):** نوع `shortCriticalText`
+  (كان `Long`، صار `Int`) + Glance font references غير متوافقة.
+  **الإصلاح d49435b.**
+- **الفشل #3 (42932443820 على `d49435b`):** استيراد مكرر + تركيب
+  `FontFamily("reem_kufi")` غير مسموح (Glance لا يدعم `@font/*.ttf`).
+  **الإصلاح d7c90cf:** `FontFamily.Serif` (أقرب خط نظام حرفي بقدر Glance).
+- **النجاح:** CI #42934847673 (dispatch) و#42935966711 (وسم على `d7c90cf`)
+  كلاهما **ناجح**.
+- **الحجم النهائي:** `amsakkarrar-release.apk` = 11,439,235 بايت؛
+  SHA-256 = `BB205F0E0005778BE39F17D9AFA51BDBC08E78AE9987C27108243CA6017067AE`.
+- **فحص APK:** `apksigner verify --print-certs` ناجح (v2 scheme، CN=Nightjar،
+  RSA 2048)؛ `aapt badging` ⇒ `versionCode 10501` / `versionName 1.5.1` /
+  `targetSdkVersion 37` / `package com.Nightjar.amsakkarrar` /
+  `application-label='إمساكية كرار 2026'`.
+- الوسم `v1.5.1` مدفوع → GitHub Release موقّع:
+  https://github.com/Nightjar-source/amsakkarrar/releases/tag/v1.5.1
+- **Honesty gates:** الإشعاران (الصوت/السحب) + لمس الودجت + kشيدة عربية
+  على جهاز مقحوم، كلها معلّقة للجهاز — لا أخضر فيها هنا.
 
 ### 1.10 إصدار v1.5.0 — التحقق والنشر (2026-11-11)
 
