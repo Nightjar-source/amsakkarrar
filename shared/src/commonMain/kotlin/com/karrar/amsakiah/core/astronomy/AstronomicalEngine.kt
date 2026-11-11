@@ -103,7 +103,7 @@ object AstronomicalEngine {
 
         return QiblaAndMoon(
             qiblaBearing = qiblaBearing,
-            distanceKm = distToKaaba,
+            distanceKm = distanceToKaaba,
             phaseName = phaseName,
             phaseSymbol = phaseSymbol,
             illuminationPercent = illumination,

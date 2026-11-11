@@ -46,11 +46,11 @@ data class PrayerTimes(
     val isha: Double,
     val midnight: Double,
     /** الإسفار — صلاة الفجر الفعلية وفق "تقويم الصائغ" في خطوط العرض العليا في
-     *  الصيف الفلكي. يُملأ فقط في تلك الحالة (وإلا null). */
+     *  الصيف الفلكي. تُملأ فقط في تلك الحالة (وإلا null). */
     val isfar: Double? = null,
     val isHighLatAnomaly: Boolean = false,
     val declination: String = "",
-    val eqtMinutes: String = "",
+    val equationOfTimeMinutes: String = "",
     val dayLengthHours: String = "",
     val nightLengthHours: String = ""
 )
@@ -60,7 +60,7 @@ data class HijriDate(
     val monthName: String,
     val year: Int,
     val monthNum: Int,
-    val jd: Double = 0.0
+    val julianDay: Double = 0.0
 )
 
 data class QiblaAndMoon(
