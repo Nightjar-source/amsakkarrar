@@ -3,6 +3,8 @@ package com.karrar.amsakiah.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -180,6 +184,8 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
     var yearsRangeStart by rememberSaveable {
         mutableIntStateOf(((todayHijri.year - 5) / 12) * 12 + 1)
     }
+    // الشكل الثالث للعرض: الجدول الكامل لشهر كامل (نموذج المرجع `calendar_hub`)
+    var calendarView by rememberSaveable { mutableStateOf("grid") }
 
     if (yearsMode) {
         YearPicker(
@@ -197,22 +203,9 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
         return
     }
 
-    // شبكة تكيّفية: عمود واحد على الهاتف، عمودان على التابلت، وثلاثة على
-    // الحاسوب/الشاشات العريضة — دون تغيير تسلسل الأيام (RTL يتبع LayoutDirection).
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = KararTokens.Size.calendarCardMinWidth),
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
+    @Composable
+    fun HeaderCard() {
+        GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
                 // ---- تبديل التقويم ----
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -307,6 +300,14 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
 
                 Spacer(Modifier.height(10.dp))
 
+                // ---- تبديل شكل العرض: بطاقات / جدول المرجع ----
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ModePill(label = "بطاقات", selected = calendarView == "grid", onClick = { calendarView = "grid" })
+                    ModePill(label = "جدول", selected = calendarView == "table", onClick = { calendarView = "table" })
+                }
+
+                Spacer(Modifier.height(10.dp))
+
                 // ---- تغيير السنة والشهر كلًّا على حدة ----
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CalendarStepper(
@@ -334,21 +335,64 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
                     )
                 }
             }
-        }
+    }
 
-        // ---- بطاقات الأيام ----
-        items(
-            count = days.size,
-            key = { index -> days[index].date.toString() }
-        ) { index ->
-            val day = days[index]
-            DayCard(
-                day = day,
-                mode = mode,
-                isToday = day.date == today,
-                isPassed = day.date < today,
-                visibleIds = PrayerCalculator.visibleIds(settings, day.date)
-            )
+    // شبكة تكيّفية: عمود واحد على الهاتف، عمودان على التابلت، وثلاثة على
+    // الحاسوب/الشاشات العريضة — دون تغيير تسلسل الأيام (RTL يتبع LayoutDirection).
+    if (calendarView == "grid") {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = KararTokens.Size.calendarCardMinWidth),
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = contentPadding.calculateTopPadding() + 8.dp,
+                bottom = contentPadding.calculateBottomPadding() + 8.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) { HeaderCard() }
+
+            // ---- بطاقات الأيام ----
+            items(
+                count = days.size,
+                key = { index -> days[index].date.toString() }
+            ) { index ->
+                val day = days[index]
+                DayCard(
+                    day = day,
+                    mode = mode,
+                    isToday = day.date == today,
+                    isPassed = day.date < today,
+                    visibleIds = PrayerCalculator.visibleIds(settings, day.date)
+                )
+            }
+        }
+    } else {
+        // ---- الجدول (calendar_hub) — عرض 30 يومًا في جدول كامل ----
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = contentPadding.calculateTopPadding() + 8.dp,
+                bottom = contentPadding.calculateBottomPadding() + 8.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            item(key = "header") { HeaderCard() }
+            item(key = "table") {
+                MonthTableCard(
+                    monthTitle = monthTitle,
+                    hijriSub = monthSubtitle,
+                    cityName = state.settings.cityName,
+                    days = days,
+                    mode = mode,
+                    today = today,
+                    visible = PrayerCalculator.visibleIds(settings, today)
+                )
+            }
         }
     }
 }
@@ -856,3 +900,146 @@ private data class CalendarDay(
     val times: Map<String, Double>,
     val hijri: HijriDate
 )
+
+/**
+ * الجدول الكامل (نموذج المرجع `calendar_hub`):
+ * جدول أفقي قابل للتمرير، بعرض كل يوم في صف واحد — التاريخان معًا،
+ * ثم الأوقات المختارة كأعمدة حسب إعدادات المستخدم.
+ */
+@Composable
+private fun MonthTableCard(
+    monthTitle: String,
+    hijriSub: String,
+    cityName: String,
+    days: List<CalendarDay>,
+    mode: CalendarMode,
+    today: LocalDate,
+    visible: List<String>
+) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
+        // شريط الهيدر السماوي: عنوان الشهر + المدينة — كما في عنصر المرجع.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(KararColors.Teal.copy(alpha = 0.12f))
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Text(
+                text = "$monthTitle — $cityName",
+                color = KararColors.Teal,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Box(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+            Column {
+                // رأس الجدول
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(KararColors.SurfaceHigh)
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TableHeadCell("التاريخ الهجري", modifier = Modifier.size(width = 110.dp, height = 40.dp))
+                    TableHeadCell("الميلادي", modifier = Modifier.size(width = 100.dp, height = 40.dp))
+                    visible.forEach { id ->
+                        TableHeadCell(
+                            shortLabel(id),
+                            modifier = Modifier.size(width = 74.dp, height = 40.dp)
+                        )
+                    }
+                }
+                TableDivider()
+
+                days.forEach { day ->
+                    val isToday = day.date == today
+                    Row(
+                        modifier = Modifier.background(
+                            if (isToday) KararColors.Teal.copy(alpha = 0.12f) else Color.Transparent
+                        ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // التاريخ الهجري + اسم اليوم من أسبوع
+                        Column(Modifier.size(width = 110.dp, height = 52.dp).padding(horizontal = 6.dp)) {
+                            Text(
+                                text = "${day.hijriDay} ${day.hijri.monthName}",
+                                color = if (isToday) KararColors.Teal else KararColors.TextPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = PrayerCalculator.weekDays[day.date.dayOfWeek.ordinal],
+                                color = KararColors.TextMuted,
+                                fontSize = 9.sp
+                            )
+                        }
+                        // التاريخ الميلادي
+                        Text(
+                            text = "${day.date.dayOfMonth.toString().padStart(2, '0')}-${day.date.monthNumber.toString().padStart(2, '0')}-${day.date.year}",
+                            color = KararColors.TextMuted,
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.size(width = 100.dp, height = 52.dp).padding(horizontal = 4.dp)
+                        )
+                        visible.forEach { id ->
+                            val raw = day.times[id] ?: 0.0
+                            val (time, amPm, _) = PrayerCalculator.formatHour(raw)
+                            val isMag = id == "maghrib"
+                            Text(
+                                text = "$time ${if (amPm.startsWith("م")) "م" else "ص"}",
+                                color = if (isMag) KararColors.Teal else KararColors.TextPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = if (isMag) FontWeight.Black else FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.size(width = 74.dp, height = 52.dp).padding(horizontal = 4.dp)
+                            )
+                        }
+                    }
+                    TableDivider()
+                }
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = hijriSub,
+            color = KararColors.TextMuted,
+            fontSize = 9.sp,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun TableHeadCell(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        color = KararColors.Teal,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        modifier = modifier.padding(horizontal = 4.dp),
+        maxLines = 2,
+        softWrap = true
+    )
+}
+
+@Composable
+private fun TableDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(KararColors.Border)
+    )
+}
