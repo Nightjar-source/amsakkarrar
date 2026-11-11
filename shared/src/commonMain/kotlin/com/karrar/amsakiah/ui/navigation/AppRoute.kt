@@ -110,6 +110,6 @@ fun AppRoute.toDestination(): AppDestination? = when (this) {
     AppRoute.Qibla,
     AppRoute.Tasks,
     AppRoute.Jinan,
-    AppRoute.JinanReader -> AppDestination.KEYS
+    is AppRoute.JinanReader -> AppDestination.KEYS
     AppRoute.Widgets -> AppDestination.SETTINGS
 }

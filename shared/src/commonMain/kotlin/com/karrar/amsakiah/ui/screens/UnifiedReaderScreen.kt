@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,6 +67,7 @@ fun UnifiedReaderScreen(
     var fontSize by remember { mutableFloatStateOf(20f) }
     var showMenu by remember { mutableStateOf(false) }
     var readingBackground by remember { mutableStateOf("paper") }
+    var chromeVisible by remember { mutableStateOf(true) }
 
     val body = listOf(
         "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
@@ -84,7 +86,9 @@ fun UnifiedReaderScreen(
         else -> androidx.compose.ui.graphics.Color(0xFFFAF9F4)  // ورقية
     }
 
-    Box(modifier = Modifier.background(backColor)) {
+    Box(modifier = Modifier
+        .background(backColor)
+        .fillMaxSize()) {
         // محتوى القراءة المتاح للتمرير Spot
         Column(
             modifier = Modifier
@@ -112,7 +116,8 @@ fun UnifiedReaderScreen(
             Spacer(Modifier.height(80.dp))
         }
 
-        // الشريط العائم: زر رجوع فقط + عنوان + قائمة خيارات — لا شيء آخر
+        // الشريط العائم: زر رجوع فقط + عنوان + قائمة خيارات — يظهر ويختفي بالكامل
+        if (chromeVisible) {
         Row(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -185,7 +190,38 @@ fun UnifiedReaderScreen(
                         text = { Text(if (isPaper) "خلفية داكنة" else "خلفية ورقية") },
                         onClick = { readingBackground = if (isPaper) "dark" else "paper" }
                     )
+                    DropdownMenuItem(
+                        text = { Text("قراءة بلا واجهة — ملء الشاشة") },
+                        onClick = {
+                            showMenu = false
+                            chromeVisible = false
+                        }
+                    )
                 }
+            }
+        }
+        }
+
+        // عند إخفاء الواجهة: نقطة صغيرة شفافة في الأسفل تستعيد الأزرار بلمسة واحدة
+        if (!chromeVisible) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 18.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .clickable { chromeVisible = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isDark) androidx.compose.ui.graphics.Color(0xB3FFFFFF)
+                            else androidx.compose.ui.graphics.Color(0x33000000)
+                        )
+                )
             }
         }
     }

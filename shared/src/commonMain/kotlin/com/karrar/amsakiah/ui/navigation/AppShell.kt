@@ -382,7 +382,7 @@ fun AppShell(
                                 }
                             )
                         }
-                        entry(AppRoute.JinanReader) { route ->
+                        entry<AppRoute.JinanReader> { route ->
                             // كل مقتطف يقرأ نفسه من الملف المُدمج بالكامل (ولا تُحمل من جديد).
                             UnifiedReaderScreen(
                                 contentId = route.contentId,

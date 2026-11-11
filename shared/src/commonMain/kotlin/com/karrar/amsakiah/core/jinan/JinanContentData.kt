@@ -872,19 +872,8 @@ object JinanContentData {
         JinanItem(1014, "الناس", ""),
     )
 
-    val audioTracks = listOf(
-        AudioTrack(1, "أذان", "أحمد الدباغ", fileName = "ahmad_aldabbaq.mp3"),
-        AudioTrack(2, "أذان", "عامر الكاظمي", fileName = "amr_kadhemi.mp3"),
-        AudioTrack(3, "أذان", "حسن رضائي", fileName = "hassan_rezai.mp3"),
-        AudioTrack(4, "أذان", "جليل الكربلائي", fileName = "jalil_karbalae.mp3"),
-        AudioTrack(5, "أذان", "ميثم التمار", fileName = "maitham_tammar.mp3"),
-        AudioTrack(6, "التكبير", subtitle = "تكبير", fileName = "takber.mp3"),
-        AudioTrack(7, "دعاء الندبة", subtitle = "صوتي", fileName = "dua_nudba.mp3"),
-        AudioTrack(8, "زيارة عاشوراء", subtitle = "صوتي", fileName = "ziyara_ashura.mp3"),
-        AudioTrack(9, "دعاء التوسل", subtitle = "صوتي", fileName = "dua_tawassul.mp3"),
-        AudioTrack(10, "دعاء كميل", subtitle = "صوتي", fileName = "dua_kumayl.mp3"),
-        AudioTrack(11, "المناجاة الشعبانية", subtitle = "صوتي", fileName = "munajat_shabaniyya.mp3"),
-    )
+    // ملاحظة: لم تُنقل ملفات الصوت نهائيًا — المحتوى نصي أوفلاين فقط.
+    // عند طلب المراجع الصوتي، تُضاف لاحقًا كنماذج صوتية منفصلة.
 
     fun findItemById(id: Int): JinanItem? {
         for (part in bookParts) {
@@ -900,10 +889,3 @@ object JinanContentData {
         return null
     }
 }
-
-val quranReciters: List<Pair<String, String>> = listOf(
-    Pair("عبد الباسط عبد الصمد", "https://server7.mp3quran.net/basit/"),
-    Pair("محمود خليل الحصري", "https://server13.mp3quran.net/husr/"),
-    Pair("محمد صديق المنشاوي", "https://server11.mp3quran.net/minsh/"),
-    Pair("مشاري بن راشد العفاسي", "https://server8.mp3quran.net/afs/")
-)
