@@ -672,7 +672,7 @@ private fun SettingsHero(
             )
             HeroAction(
                 text = if (settings.use24Hour) "24 ساعة" else "12 ساعة",
-                icon = Icons.Filled.Schedule,
+                icon = Icons.Filled.AccessTime,
                 color = KararColors.Gold,
                 container = KararColors.Gold.copy(alpha = 0.12f),
                 border = KararColors.Gold.copy(alpha = 0.30f),
@@ -868,7 +868,7 @@ private fun DailyTimesGrid(settings: AppSettings) {
                     rowIds.forEach { id ->
                         DailyTimeCell(
                             id = id,
-                            time = PrayerCalculator.formatHour(times[id] ?: 0.0, state.settings.use24Hour),
+                            time = PrayerCalculator.formatHour(times[id] ?: 0.0, settings.use24Hour),
                             modifier = Modifier.weight(1f)
                         )
                     }

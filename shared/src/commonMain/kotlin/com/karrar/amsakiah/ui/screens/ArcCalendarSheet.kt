@@ -193,7 +193,8 @@ fun ArcCalendarSheet(
                                         onClick = {
                                             onSelectDate(cell.day.date)
                                             onDismiss()
-                                        }
+                                        },
+                                        use24Hour = settings.use24Hour
                                     )
                                 }
                             }
@@ -239,7 +240,7 @@ private fun MonthStepChip(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ArcDayCell(cell: MonthCell.Day, isToday: Boolean, onClick: () -> Unit) {
+private fun ArcDayCell(cell: MonthCell.Day, isToday: Boolean, onClick: () -> Unit, use24Hour: Boolean) {
     val background by animateColorAsState(
         targetValue = if (isToday) KararColors.Gold.copy(alpha = 0.18f) else Color.Transparent,
         animationSpec = KararTokens.Motion.effects(),
@@ -275,13 +276,13 @@ private fun ArcDayCell(cell: MonthCell.Day, isToday: Boolean, onClick: () -> Uni
             fontWeight = FontWeight.Bold
         )
         Text(
-            "ف ${PrayerCalculator.formatHour(cell.day.times["fajr"] ?: 0.0, state.settings.use24Hour).first}",
+            "ف ${PrayerCalculator.formatHour(cell.day.times["fajr"] ?: 0.0, use24Hour).first}",
             color = KararColors.TextMuted,
             fontSize = 6.sp,
             maxLines = 1
         )
         Text(
-            "م ${PrayerCalculator.formatHour(cell.day.times["maghrib"] ?: 0.0, state.settings.use24Hour).first}",
+            "م ${PrayerCalculator.formatHour(cell.day.times["maghrib"] ?: 0.0, use24Hour).first}",
             color = KararColors.TextMuted,
             fontSize = 6.sp,
             maxLines = 1

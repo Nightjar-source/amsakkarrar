@@ -365,7 +365,8 @@ fun CalendarScreen(state: AppState, contentPadding: PaddingValues) {
                     mode = mode,
                     isToday = day.date == today,
                     isPassed = day.date < today,
-                    visibleIds = PrayerCalculator.visibleIds(settings, day.date)
+                    visibleIds = PrayerCalculator.visibleIds(settings, day.date),
+                    use24Hour = state.settings.use24Hour
                 )
             }
         }
@@ -654,7 +655,8 @@ private fun DayCard(
     mode: CalendarMode,
     isToday: Boolean,
     isPassed: Boolean,
-    visibleIds: List<String>
+    visibleIds: List<String>,
+    use24Hour: Boolean
 ) {
     val shape = RoundedCornerShape(24.dp)
     Column(
@@ -776,7 +778,8 @@ private fun DayCard(
                         PrayerTimeCell(
                             id = id,
                             rawHour = day.times[id] ?: 0.0,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            use24Hour = use24Hour
                         )
                     }
                     // إبقاء عرض الخلايا ثابتًا (الثلث) في الصف الأخير الناقص.
@@ -788,8 +791,8 @@ private fun DayCard(
 }
 
 @Composable
-private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Modifier) {
-    val (time, amPm, _) = PrayerCalculator.formatHour(rawHour, state.settings.use24Hour)
+private fun PrayerTimeCell(id: String, rawHour: Double, modifier: Modifier = Modifier, use24Hour: Boolean) {
+    val (time, amPm, _) = PrayerCalculator.formatHour(rawHour, use24Hour)
     val shortAmPm = if (amPm.startsWith("م")) "م" else "ص"
     Box(
         modifier = modifier

@@ -118,7 +118,7 @@ object PrayerCalculator {
         )
 
     fun hijriFor(settings: AppSettings, date: LocalDate): HijriDate =
-        AstronomicalEngine.getHijriDateSafe(
+        AstronomicalEngine.calculateHijriDate(
             date.year, date.monthNumber, date.dayOfMonth,
             isShiaMode = methodFor(settings.methodCode).isShia,
             adjustmentDays = settings.hijriOffset
@@ -149,10 +149,10 @@ object PrayerCalculator {
     }
 
     fun formatHour(rawHour: Double): Triple<String, String, String> =
-        AstronomicalEngine.formatArcHour(rawHour)
+        AstronomicalEngine.formatHourOfDay(rawHour)
 
     fun formatHour(rawHour: Double, use24Hour: Boolean): Triple<String, String, String> =
-        AstronomicalEngine.formatArcHour(rawHour, use24Hour)
+        AstronomicalEngine.formatHourOfDay(rawHour, use24Hour)
 
     /** هل الإمساك ظاهر في هذا التاريخ وفق وضع العرض المختار؟ */
     fun imsakVisible(settings: AppSettings, date: LocalDate = todayDate(settings)): Boolean =

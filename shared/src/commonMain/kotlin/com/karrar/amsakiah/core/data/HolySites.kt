@@ -51,16 +51,17 @@ object HolySites {
         HolySite("مقبرة المعلاة", "مكة المكرمة", "السعودية", 21.4280, 39.8200, "🪦", SiteKind.MOSQUE, "مقبرة المعلاة")
     )
 
-    private const val DTR = PI / 180.0
+    // نستخدم ثابت المحرك الفلكي نفسه كي تبقى الحسابات موحدة، لا يُعاد تعريفها هنا.
+    // private const val DEGREES_TO_RADIANS = PI / 180.0
 
     fun distanceKm(lat: Double, lon: Double, site: HolySite): Double =
-        AstronomicalEngine.calculateDistance(lat, lon, site.lat, site.lon)
+        AstronomicalEngine.greatCircleDistanceKm(lat, lon, site.lat, site.lon)
 
     /** اتجاه الموقع من نقطة المستخدم (0 = شمال) */
     fun bearingFrom(lat: Double, lon: Double, site: HolySite): Double {
-        val dLon = (site.lon - lon) * DTR
-        val lat1 = lat * DTR
-        val lat2 = site.lat * DTR
+        val dLon = (site.lon - lon) * AstronomicalEngine.DEGREES_TO_RADIANS
+        val lat1 = lat * AstronomicalEngine.DEGREES_TO_RADIANS
+        val lat2 = site.lat * AstronomicalEngine.DEGREES_TO_RADIANS
         val y = sin(dLon) * cos(lat2)
         val x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
         val deg = atan2(y, x) * 180.0 / PI
@@ -68,10 +69,10 @@ object HolySites {
     }
 
     fun qiblaBearing(lat: Double, lon: Double): Double =
-        AstronomicalEngine.calculateQiblaAndMoon(lat, lon, AstronomicalEngine.getJulianDay(2026, 1, 1)).qiblaBearing
+        AstronomicalEngine.calculateQiblaAndMoonPhase(lat, lon, AstronomicalEngine.calculateJulianDay(2026, 1, 1)).qiblaBearing
 
     fun qiblaDistance(lat: Double, lon: Double): Long =
-        AstronomicalEngine.calculateDistance(lat, lon, 21.4225, 39.8262).roundToLong()
+        AstronomicalEngine.greatCircleDistanceKm(lat, lon, 21.4225, 39.8262).roundToLong()
 
     fun sortedByDistance(lat: Double, lon: Double): List<Pair<HolySite, Double>> =
         all.map { it to distanceKm(lat, lon, it) }.sortedBy { it.second }

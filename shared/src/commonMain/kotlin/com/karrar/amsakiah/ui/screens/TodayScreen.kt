@@ -144,7 +144,7 @@ fun TodayScreen(
     val countdownIds = remember(settings, date) { PrayerCalculator.liveIds(settings, date) }
 
     val phase = remember(todayTimes, tomorrowTimes, nowSeconds, isShia) {
-        computeArcPhase(nowSeconds, todayTimes, tomorrowTimes, isShia)
+        computeArcPhase(nowSeconds, todayTimes, tomorrowTimes, isShia, state.settings.use24Hour)
     }
     val isNight = remember(todayTimes, nowSeconds) {
         val sunrise = secondsOf(todayTimes["sunrise"] ?: 6.0)
@@ -309,6 +309,7 @@ fun TodayScreen(
                 targetId = targetId,
                 targetIsTomorrow = targetIsTomorrow,
                 compact = compact,
+                use24Hour = state.settings.use24Hour,
                 onOpenCalendar = { showArcCalendar = true },
                 onPrayerClick = { id ->
                     if (countdownIds.isNotEmpty()) {
@@ -695,6 +696,7 @@ private fun BottomArea(
     targetId: String?,
     targetIsTomorrow: Boolean,
     compact: Boolean,
+    use24Hour: Boolean,
     onOpenCalendar: () -> Unit,
     onPrayerClick: (String) -> Unit
 ) {
@@ -732,6 +734,7 @@ private fun BottomArea(
             targetId = targetId,
             targetIsTomorrow = targetIsTomorrow,
             compact = compact,
+            use24Hour = use24Hour,
             onPrayerClick = onPrayerClick
         )
     }
@@ -745,6 +748,7 @@ private fun PrayerStrip(
     targetId: String?,
     targetIsTomorrow: Boolean,
     compact: Boolean,
+    use24Hour: Boolean,
     onPrayerClick: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -797,7 +801,7 @@ private fun PrayerStrip(
                     val todayHour = todayTimes[id] ?: 0.0
                     val showTomorrow = id == targetId && targetIsTomorrow
                     val rawHour = if (showTomorrow) tomorrowTimes[id] ?: todayHour else todayHour
-                    val formatted = PrayerCalculator.formatHour(rawHour, state.settings.use24Hour)
+                    val formatted = PrayerCalculator.formatHour(rawHour, use24Hour)
                     PrayerCard(
                         id = id,
                         label = PrayerMeta.label(id),
@@ -951,7 +955,8 @@ private fun computeArcPhase(
     nowSeconds: Int,
     times: Map<String, Double>,
     tomorrowTimes: Map<String, Double>,
-    isShia: Boolean
+    isShia: Boolean,
+    use24Hour: Boolean = false
 ): ArcPhase {
     val fajr = times["fajr"] ?: 5.0
     val sunrise = times["sunrise"] ?: 6.5
@@ -961,7 +966,7 @@ private fun computeArcPhase(
     val sunriseSec = secondsOf(sunrise)
     val sunsetSec = secondsOf(sunset)
     val maghribSec = secondsOf(maghrib)
-    fun timeText(hour: Double): String = PrayerCalculator.formatHour(hour, state.settings.use24Hour).first
+    fun timeText(hour: Double): String = PrayerCalculator.formatHour(hour, use24Hour).first
 
     return when {
         // 1) الليل: من المغرب إلى الفجر
