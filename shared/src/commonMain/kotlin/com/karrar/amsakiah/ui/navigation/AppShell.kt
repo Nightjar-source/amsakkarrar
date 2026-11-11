@@ -124,6 +124,10 @@ import com.karrar.amsakiah.ui.theme.KararTokens
 import com.karrar.amsakiah.ui.theme.LocalKararPalette
 import kotlinx.coroutines.delay
 
+// آخر وقت معالجة زر الرجوع — على مستوى الملف حتى لا يُعاد تهيئته مع كل Composition؛
+// يمنع تنفيذ ضغطة واحدة مرتين (NavDisplay + معالج iOS).
+private var lastBackMark: kotlin.time.TimeMark? = null
+
 /**
  * الشل الرئيسي — Material 3 Expressive + Compose Adaptive.
  *
@@ -241,8 +245,6 @@ fun AppShell(
     }
 
     // آخر وقت معالجة زر الرجوع — يمنع تنفيذ ضغطة واحدة مرتين (NavDisplay + معالج iOS).
-    private var lastBackMark: kotlin.time.TimeMark? = null
-
     fun back() {
         // تفاصيل الدعاء أولًا: يُدار داخل شاشة الأدعية نفسها.
         if (duaDetailOpen) {
