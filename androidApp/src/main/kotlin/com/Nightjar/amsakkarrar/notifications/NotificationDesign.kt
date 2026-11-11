@@ -138,8 +138,8 @@ object NotificationDesign {
     }
 
     /** الدقائق المتبقية بصيغة قصيرة للشريحة (Live Update short critical text). */
-    private fun shortCriticalText(remainingSeconds: Long): String {
-        val remainingMinutes = (remainingSeconds + 59) / 60
+    private fun shortCriticalText(remainingSeconds: Int): String {
+        val remainingMinutes = (remainingSeconds.toLong() + 59) / 60
         val hours = remainingMinutes / 60
         val minutes = remainingMinutes % 60
         return if (hours > 0L) "$hours:${minutes.toString().padStart(2, '0')}" else "${minutes} د"

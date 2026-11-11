@@ -5,12 +5,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.text.FontFamily
+import androidx.glance.text.FontWeight
 import com.Nightjar.amsakkarrar.R
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -166,7 +165,7 @@ private fun WidgetFrame(
 }
 
 /** كشيدة الشهر: «رمضـ 16 ـان» — الحروف ذهبية والرقم أبيض (بخط ريم كوفي كما في المرجع). */
-private val ReemKufi = FontFamily(Font(R.font.reem_kufi))
+private val ReemKufi = FontFamily(R.font.reem_kufi)
 
 @Composable
 private fun WidgetKashida(snapshot: PrayerSnapshot, fontSize: Int = 26) {
