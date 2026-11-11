@@ -7,54 +7,60 @@ object AstronomicalEngine {
     const val DEGREES_TO_RADIANS: Double = PI / 180.0
     const val RADIANS_TO_DEGREES: Double = 180.0 / PI
 
-    fun normalizeAngleInDegrees(a: Double): Double {
-        val b = a - 360.0 * floor(a / 360.0)
-        return if (b < 0) b + 360.0 else b
+    fun normalizeAngleInDegrees(angleDegrees: Double): Double {
+        val normalized = angleDegrees - 360.0 * floor(angleDegrees / 360.0)
+        return if (normalized < 0) normalized + 360.0 else normalized
     }
 
-    fun normalizeHourOfDay(a: Double): Double {
-        val b = a - 24.0 * floor(a / 24.0)
-        return if (b < 0) b + 24.0 else b
+    fun normalizeHourOfDay(hour: Double): Double {
+        val normalized = hour - 24.0 * floor(hour / 24.0)
+        return if (normalized < 0) normalized + 24.0 else normalized
     }
 
-    fun sineOfDegrees(d: Double): Double = sin(d * DEGREES_TO_RADIANS)
-    fun cosineOfDegrees(d: Double): Double = cos(d * DEGREES_TO_RADIANS)
-    fun arcSineOfDegrees(x: Double): Double = asin(x) * RADIANS_TO_DEGREES
-    fun arcCosineOfDegrees(x: Double): Double = acos(x) * RADIANS_TO_DEGREES
-    fun arctangentOfDegrees(y: Double, x: Double): Double = atan2(y, x) * RADIANS_TO_DEGREES
+    fun sineOfDegrees(angleDegrees: Double): Double = sin(angleDegrees * DEGREES_TO_RADIANS)
+    fun cosineOfDegrees(angleDegrees: Double): Double = cos(angleDegrees * DEGREES_TO_RADIANS)
+    fun arcSineOfDegrees(value: Double): Double = asin(value) * RADIANS_TO_DEGREES
+    fun arcCosineOfDegrees(value: Double): Double = acos(value) * RADIANS_TO_DEGREES
+    fun arctangentOfDegrees(sineValue: Double, cosineValue: Double): Double = atan2(sineValue, cosineValue) * RADIANS_TO_DEGREES
 
-    fun greatCircleDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r = 6371.0
-        val dLat = (lat2 - lat1) * DEGREES_TO_RADIANS
-        val dLon = (lon2 - lon1) * DEGREES_TO_RADIANS
-        val a = sin(dLat / 2).pow(2) + cos(lat1 * DEGREES_TO_RADIANS) * cos(lat2 * DEGREES_TO_RADIANS) * sin(dLon / 2).pow(2)
-        return r * (2 * atan2(sqrt(a), sqrt(1 - a)))
+    fun greatCircleDistanceKm(latitude1: Double, longitude1: Double, latitude2: Double, longitude2: Double): Double {
+        val earthRadiusKm = 6371.0
+        val deltaLatitude = (latitude2 - latitude1) * DEGREES_TO_RADIANS
+        val deltaLongitude = (longitude2 - longitude1) * DEGREES_TO_RADIANS
+        val a = sin(deltaLatitude / 2).pow(2) +
+            cos(latitude1 * DEGREES_TO_RADIANS) * cos(latitude2 * DEGREES_TO_RADIANS) * sin(deltaLongitude / 2).pow(2)
+        return earthRadiusKm * (2 * atan2(sqrt(a), sqrt(1 - a)))
     }
 
     fun calculateJulianDay(year: Int, month: Int, day: Int): Double {
-        var y = year
-        var m = month
-        if (m <= 2) {
-            y -= 1
-            m += 12
+        var effectiveYear = year
+        var effectiveMonth = month
+        if (effectiveMonth <= 2) {
+            effectiveYear -= 1
+            effectiveMonth += 12
         }
-        val a = floor(y / 100.0)
-        val b = 2 - a + floor(a / 4.0)
-        return floor(365.25 * (y + 4716)) + floor(30.6001 * (m + 1)) + day + b - 1524.5
+        val century = floor(effectiveYear / 100.0)
+        val gregorianCorrection = 2 - century + floor(century / 4.0)
+        return floor(365.25 * (effectiveYear + 4716)) + floor(30.6001 * (effectiveMonth + 1)) + day + gregorianCorrection - 1524.5
     }
 
-    data class SolarPosition(val declination: Double, val eqt: Double)
+    data class SolarPosition(val declination: Double, val equationOfTime: Double)
 
-    fun calculateSolarPosition(jd: Double): SolarPosition {
-        val d = jd - 2451545.0
-        val g = normalizeAngleInDegrees(357.529 + 0.98560028 * d)
-        val q = normalizeAngleInDegrees(280.459 + 0.98564736 * d)
-        val l = normalizeAngleInDegrees(q + 1.915 * sineOfDegrees(g) + 0.02 * sineOfDegrees(2 * g))
-        val e = 23.439 - 0.00000036 * d
-        val ra = arctangentOfDegrees(cosineOfDegrees(e) * sineOfDegrees(l), cosineOfDegrees(l)) / 15.0
-        val declination = arcSineOfDegrees(sineOfDegrees(e) * sineOfDegrees(l))
-        val eqt = q / 15.0 - normalizeHourOfDay(ra)
-        return SolarPosition(declination, eqt)
+    fun calculateSolarPosition(julianDay: Double): SolarPosition {
+        val daysSinceJ2000 = julianDay - 2451545.0
+        val meanAnomaly = normalizeAngleInDegrees(357.529 + 0.98560028 * daysSinceJ2000)
+        val meanLongitude = normalizeAngleInDegrees(280.459 + 0.98564736 * daysSinceJ2000)
+        val trueLongitude = normalizeAngleInDegrees(
+            meanLongitude + 1.915 * sineOfDegrees(meanAnomaly) + 0.02 * sineOfDegrees(2 * meanAnomaly)
+        )
+        val obliquityOfEcliptic = 23.439 - 0.00000036 * daysSinceJ2000
+        val rightAscension = arctangentOfDegrees(
+            cosineOfDegrees(obliquityOfEcliptic) * sineOfDegrees(trueLongitude),
+            cosineOfDegrees(trueLongitude)
+        ) / 15.0
+        val declination = arcSineOfDegrees(sineOfDegrees(obliquityOfEcliptic) * sineOfDegrees(trueLongitude))
+        val equationOfTime = meanLongitude / 15.0 - normalizeHourOfDay(rightAscension)
+        return SolarPosition(declination, equationOfTime)
     }
 
     fun calculateHourAngle(angle: Double, declination: Double, latitude: Double): Double {
@@ -63,22 +69,23 @@ object AstronomicalEngine {
         return arcCosineOfDegrees(cosHA) / 15.0
     }
 
-    fun calculateQiblaAndMoonPhase(lat: Double, lon: Double, jd: Double): QiblaAndMoon {
-        val kaabaLat = 21.4225
-        val kaabaLon = 39.8262
-        val dLon = (kaabaLon - lon) * DEGREES_TO_RADIANS
-        val latRad = lat * DEGREES_TO_RADIANS
-        val kaabaLatRad = kaabaLat * DEGREES_TO_RADIANS
+    fun calculateQiblaAndMoonPhase(userLatitude: Double, userLongitude: Double, julianDay: Double): QiblaAndMoon {
+        val kaabaLatitude = 21.4225
+        val kaabaLongitude = 39.8262
+        val deltaLongitude = (kaabaLongitude - userLongitude) * DEGREES_TO_RADIANS
+        val userLatitudeRadians = userLatitude * DEGREES_TO_RADIANS
+        val kaabaLatitudeRadians = kaabaLatitude * DEGREES_TO_RADIANS
 
-        val y = sin(dLon)
-        val x = cos(latRad) * tan(kaabaLatRad) - sin(latRad) * cos(dLon)
-        var qibla = arctangentOfDegrees(y, x)
-        qibla = (qibla + 360.0) % 360.0
+        val numerator = sin(deltaLongitude)
+        val denominator = cos(userLatitudeRadians) * tan(kaabaLatitudeRadians) -
+            sin(userLatitudeRadians) * cos(deltaLongitude)
+        var qiblaBearing = arctangentOfDegrees(numerator, denominator)
+        qiblaBearing = (qiblaBearing + 360.0) % 360.0
 
-        val distToKaaba = greatCircleDistanceKm(lat, lon, kaabaLat, kaabaLon).roundToLong()
+        val distanceToKaaba = greatCircleDistanceKm(userLatitude, userLongitude, kaabaLatitude, kaabaLongitude).roundToLong()
 
         // دورة القمر الفلكية (الشهر الاقتراني = 29.530588853 يوماً)
-        val moonCycle = ((jd - 2451550.1) / 29.530588853) % 1.0
+        val moonCycle = ((julianDay - 2451550.1) / 29.530588853) % 1.0
         val normalizedPhase = if (moonCycle < 0) moonCycle + 1.0 else moonCycle
         val illumination = ((1 - cos(normalizedPhase * 2 * PI)) / 2.0 * 100.0).roundToInt()
         val moonAgeDays = ((normalizedPhase * 29.530588853 * 10.0).roundToInt() / 10.0).toString()
@@ -95,7 +102,7 @@ object AstronomicalEngine {
         }
 
         return QiblaAndMoon(
-            qiblaBearing = qibla,
+            qiblaBearing = qiblaBearing,
             distanceKm = distToKaaba,
             phaseName = phaseName,
             phaseSymbol = phaseSymbol,
@@ -116,9 +123,9 @@ object AstronomicalEngine {
         highLatRule: HighLatitudeRule = HighLatitudeRule.AQRAB_45,
         asrMethod: String = "shafii"
     ): PrayerTimes {
-        val jd = calculateJulianDay(year, month, day)
-        val (declination, eqt) = calculateSolarPosition(jd)
-        val noonUtc = normalizeHourOfDay(12.0 - eqt)
+        val julianDay = calculateJulianDay(year, month, day)
+        val (declination, equationOfTime) = calculateSolarPosition(julianDay)
+        val noonUtc = normalizeHourOfDay(12.0 - equationOfTime)
 
         val fajrAngle = method.fajr
         val maghribAngle = method.maghribVal
@@ -284,19 +291,19 @@ object AstronomicalEngine {
             isfar = isfarUtc?.let { toLocal(it) },
             isHighLatAnomaly = isSummerAnomaly,
             declination = ((declination * 100.0).roundToInt() / 100.0).toString(),
-            eqtMinutes = ((eqt * 60.0 * 10.0).roundToInt() / 10.0).toString(),
+            equationOfTimeMinutes = ((equationOfTime * 60.0 * 10.0).roundToInt() / 10.0).toString(),
             dayLengthHours = (((sunsetUtc - sunriseUtc) * 10.0).roundToInt() / 10.0).toString(),
             nightLengthHours = ((nightDuration * 10.0).roundToInt() / 10.0).toString()
         )
     }
 
     fun calculateHijriDate(year: Int, month: Int, day: Int, isShiaMode: Boolean = true, adjustmentDays: Int = 0): HijriDate {
-        val jd = calculateJulianDay(year, month, day)
+        val julianDay = calculateJulianDay(year, month, day)
         val shiaOffset = if (isShiaMode) -1 else 0
-        val jdHijri = jd - 1948439.5 + 0.5 + shiaOffset + adjustmentDays
+        val julianDayHijri = julianDay - 1948439.5 + 0.5 + shiaOffset + adjustmentDays
 
-        val cycles = floor(jdHijri / 10631.0).toInt()
-        val rem = floor(jdHijri % 10631.0).toInt()
+        val cycles = floor(julianDayHijri / 10631.0).toInt()
+        val rem = floor(julianDayHijri % 10631.0).toInt()
         val leapYears = intArrayOf(2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29)
 
         var yearInCycle = 1
@@ -337,26 +344,26 @@ object AstronomicalEngine {
             monthName = monthNames.getOrElse(hMonth - 1) { "محرم" },
             year = max(1, hYear),
             monthNum = hMonth,
-            jd = jd
+            julianDay = julianDay
         )
     }
 
     fun formatHourOfDay(rawHourFloat: Double, use24Hour: Boolean = false): Triple<String, String, String> {
         if (rawHourFloat.isNaN()) return if (use24Hour) Triple("00:00", "", "00:00") else Triple("00:00", "صباحاً", "00:00")
         val local = ((rawHourFloat % 24.0) + 24.0) % 24.0
-        var h = floor(local).toInt()
-        var m = floor((local - h) * 60.0 + 0.5).toInt()
-        if (m >= 60) {
-            h = (h + 1) % 24
-            m = 0
+        var localHour = floor(local).toInt()
+        var localMinute = floor((local - localHour) * 60.0 + 0.5).toInt()
+        if (localMinute >= 60) {
+            localHour = (localHour + 1) % 24
+            localMinute = 0
         }
-        val mStr = m.toString().padStart(2, '0')
-        val h24Str = h.toString().padStart(2, '0')
+        val mStr = localMinute.toString().padStart(2, '0')
+        val h24Str = localHour.toString().padStart(2, '0')
         return if (use24Hour) {
             Triple("$h24Str:$mStr", "", "$h24Str:$mStr")
         } else {
-            val ap = if (h >= 12) "مساءً" else "صباحاً"
-            val h12 = if (h % 12 == 0) 12 else h % 12
+            val ap = if (localHour >= 12) "مساءً" else "صباحاً"
+            val h12 = if (localHour % 12 == 0) 12 else localHour % 12
             Triple("$h12:$mStr", ap, "$h24Str:$mStr")
         }
     }

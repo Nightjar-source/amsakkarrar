@@ -51,8 +51,7 @@ object HolySites {
         HolySite("مقبرة المعلاة", "مكة المكرمة", "السعودية", 21.4280, 39.8200, "🪦", SiteKind.MOSQUE, "مقبرة المعلاة")
     )
 
-    // نستخدم ثابت المحرك الفلكي نفسه كي تبقى الحسابات موحدة، لا يُعاد تعريفها هنا.
-    // private const val DEGREES_TO_RADIANS = PI / 180.0
+    // دالة المساعد: نستخدم ثابت المحرك الفلكي (لا يُعاد تعريفه هنا).
 
     fun distanceKm(lat: Double, lon: Double, site: HolySite): Double =
         AstronomicalEngine.greatCircleDistanceKm(lat, lon, site.lat, site.lon)
