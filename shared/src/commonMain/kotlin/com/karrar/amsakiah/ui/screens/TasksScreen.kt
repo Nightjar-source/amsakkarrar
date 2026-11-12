@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,6 +61,7 @@ import com.karrar.amsakiah.ui.theme.KararColors
  * حذف من قائمة المهام المتراكمة سابقًا (اللي كانت 710 بواً مهمل) ليكون للمستخدم
  * الانطلاقة النظيفة: لا شيء مسبق، فقط ما اختاره بنفسه.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TasksScreen(
     state: AppState,
