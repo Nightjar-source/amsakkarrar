@@ -77,6 +77,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
+import androidx.navigation3.runtime.NavKey
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -104,6 +108,7 @@ import com.karrar.amsakiah.core.state.ToastMessage
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.adaptive.AppWidthSizeClass
 import com.karrar.amsakiah.ui.adaptive.NavigationLayout
+import com.karrar.amsakiah.ui.adaptive.isCompact
 import com.karrar.amsakiah.ui.adaptive.rememberAppAdaptiveLayout
 import com.karrar.amsakiah.ui.adaptive.topBarHeight
 import com.karrar.amsakiah.ui.components.DuaPlayerOverlay
@@ -121,6 +126,7 @@ import com.karrar.amsakiah.ui.screens.CalendarScreen
 import com.karrar.amsakiah.ui.screens.DuasScreen
 import com.karrar.amsakiah.ui.screens.FiqhScreen
 import com.karrar.amsakiah.ui.screens.KeysScreen
+import com.karrar.amsakiah.ui.screens.JinanDetailPlaceholder
 import com.karrar.amsakiah.ui.screens.JinanScreen
 import com.karrar.amsakiah.ui.screens.DailyDeedsScreen
 import com.karrar.amsakiah.ui.screens.QuranScreen
@@ -151,7 +157,7 @@ private var lastBackMark: kotlin.time.TimeMark? = null
  * - **مشغّل أدعية واحد** مرفوع إلى الشل: شريط مدمج ≤ 30dp، ويمكن فصله ليصبح
  *   كرة عائمة تُسحب إلى أي مكان.
  */
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class, ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun AppShell(
     state: AppState,
@@ -187,7 +193,12 @@ fun AppShell(
     val isToday = currentRoute == AppRoute.Today && !duaDetailOpen
     // «اليوم» يخفي شريط العنوان فقط — شريط التنقل السفلي يبقى كما في المرجع.
     // يخفي شريطَي الواجهة بالكامل فقط في وضع القراءة (دعاء/قارئ الجنان).
-    val immersive = (currentRoute == AppRoute.Duas && duaDetailOpen) || currentRoute is AppRoute.JinanReader
+    // في الوضع المدمج (هاتف) نخفي الواجهة في وضع القراءة؛ على الشاشات متعددة
+    // الألواح (متوسط + عريض) يعرض التفصيل بجانب الفهرسة فلا داعي للإخفاء.
+    val compactWidth = layout.widthSizeClass.isCompact
+    val immersive =
+        (compactWidth && currentRoute == AppRoute.Duas && duaDetailOpen) ||
+            (compactWidth && currentRoute is AppRoute.JinanReader)
     val showTopBar = !isToday && !immersive
 
     // ---------- التكيّف الرسمي (M3 Expressive + Compose Adaptive) ----------
@@ -343,6 +354,11 @@ fun AppShell(
                     .fillMaxHeight()
                     .fillMaxWidth()
 
+                // المشهد القائم/التفصيلي الرسمي (M3 Adaptive 1.3.0): على الشاشات
+                // المتوسطة والعريضة/المطواة تُعرض فهرسة «مفاتيح الجنان» والنص المفتوح
+                // جنبًا إلى جنب داخل نفس الـpane scaffold — والتوقع الرجعي يعمل معها.
+                val listDetailSceneStrategy = rememberListDetailSceneStrategy<NavKey>()
+
                 // Nav3: كل شاشة Scene مبني من الـback stack؛ الانتقالات نابضية
                 // وتتبع اتجاه المنصة (أندرويد shared-axis / iOS Cupertino).
                 NavDisplay(
@@ -351,6 +367,7 @@ fun AppShell(
                         .align(Alignment.TopCenter)
                         .then(contentModifier),
                     contentAlignment = Alignment.TopCenter,
+                    sceneStrategies = listOf(listDetailSceneStrategy),
                     onBack = ::back,
                     // الخفة: بلا SizeTransform — لا يُعاد قياس/قصّ المشهد بين الشاشات،
                     // والشاشات هنا كلها بعرض واحد أصلًا، فإلغاؤه يوفّر طبقة قصّ لكل إطار.
@@ -426,7 +443,12 @@ fun AppShell(
                         entry(AppRoute.Widgets) {
                             WidgetsScreen(state = state, contentPadding = contentPadding)
                         }
-                        entry(AppRoute.Jinan) {
+                        entry(
+                            AppRoute.Jinan,
+                            metadata = ListDetailSceneStrategy.listPane(
+                                detailPlaceholder = { JinanDetailPlaceholder() }
+                            )
+                        ) {
                             // تحميل محتوى مفاتيح الجنان (2.9MB) عند الحاجة فقط.
                             LaunchedEffect(Unit) { state.prepareJinanContent() }
                             JinanScreen(
@@ -436,7 +458,9 @@ fun AppShell(
                                 }
                             )
                         }
-                        entry<AppRoute.JinanReader> { route ->
+                        entry<AppRoute.JinanReader>(
+                            metadata = ListDetailSceneStrategy.detailPane()
+                        ) { route ->
                             // كل مقتطف يقرأ نفسه من الملف المُدمج بالكامل (ولا تُحمل من جديد).
                             val favIds = state.settings.favoriteJinanItems
                             val isFav = route.contentId in favIds
@@ -477,6 +501,7 @@ fun AppShell(
                         AppRoute.Tasks -> "المهام والملاحظات"
                         AppRoute.Jinan -> "مفاتيح الجنان"
                         AppRoute.DailyDeeds -> "أعمال اليوم"
+                        is AppRoute.JinanReader -> (currentRoute as AppRoute.JinanReader).title
                         else -> null
                     }
                     UnifiedTopBar(

@@ -24,7 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material3.Icon
@@ -115,7 +115,7 @@ fun KeysScreen(
             id = "tasks",
             title = "المهام والملاحظات",
             subtitle = "⭐ محفوظاتي من «مفاتيح الجنان» + ملاحظاتي بين إيديك",
-            icon = Icons.Filled.EventNote,
+            icon = Icons.AutoMirrored.Filled.EventNote,
             accent = KararColors.Amber,
             onClick = onOpenTasks
         )

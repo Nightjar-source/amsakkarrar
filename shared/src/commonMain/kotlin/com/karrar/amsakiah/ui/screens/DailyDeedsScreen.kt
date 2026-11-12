@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,9 +41,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.core.jinan.DailyDeed
 import com.karrar.amsakiah.core.jinan.DailyDeedSource
 import com.karrar.amsakiah.core.jinan.JinanItem
 import com.karrar.amsakiah.core.jinan.dailyDeeds
+import com.karrar.amsakiah.core.jinan.monthDayDeeds
+import com.karrar.amsakiah.core.jinan.weekdayDeeds
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.components.GlassCard
@@ -49,10 +54,15 @@ import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.theme.KararColors
 
 /**
- * «أعمال اليوم» — معروض حي من «مفاتيح الجنان»: اليوم الهجري + أعمال الليلة/اليوم/يوم الأسبوع.
+ * «أعمال اليوم» — شاشة مخصَّصة من «مفاتيح الجنان»: أعمال الليلة/اليوم/يوم الأسبوع.
  *
- * الأقسام الثلاثة تُملأ تلقائيًا من `JinanContentData` بمطابقة (رقم اليوم الهجري + اسم الشهر + اسم اليوم)،
- * والضغط على أي عمل يفتح القارئ الموحّد. نجمة ⭐ تجعل العمل يظهر في شاشة «أعمال اليوم (المهام)».
+ * ثلاثة تبويبات (مستطيلات كبسولة واحدة الاختيار — بجميع الشاشات):
+ * 1) «اليوم» — ويُملأ تلقائيًا (اليوم الهجري + يوم الأسبوع + الليلة منذ مساء أمس).
+ * 2) «هذا الشهر» — كل أيام الشهر الهجري (١…٣٠) بطيئيات تناظرية: تظهر أعمال كل ليلة/يوم هجري.
+ * 3) «كل أيام الأسبوع» — الاثنين…الأحد (كاسم العنوان المتعلق به في مفاتيح الجنان).
+ *
+ * البطاقات مستطيلات تكيفية (Adaptive، لا تتقلص)؛ الفتح يفتح «القارئ الموحّد»،
+ * والنجمة تنقل العمل إلى «أعمال اليوم (المهام)».
  */
 @Composable
 fun DailyDeedsScreen(
@@ -63,16 +73,25 @@ fun DailyDeedsScreen(
     val settings = state.settings
     val today = remember(settings.hijriOffset) { PrayerCalculator.todayDate(settings) }
     val hijri = remember(today, settings.hijriOffset) { PrayerCalculator.hijriFor(settings, today) }
-    val deeds = remember(today, hijri) { dailyDeeds(today, hijri) }
     val weekdayName = PrayerCalculator.weekDays.getOrNull(today.dayOfWeek.ordinal).orEmpty()
     val favorites = settings.favoriteJinanItems
 
-    val nightDeeds = deeds.filter { it.source == DailyDeedSource.MONTH_NIGHT }
-    val dayDeeds = deeds.filter { it.source == DailyDeedSource.MONTH_DAY }
-    val weekdayDeeds = deeds.filter { it.source == DailyDeedSource.WEEKDAY }
+    val toggleFavorite: (Int) -> Unit = { id ->
+        state.update { s ->
+            val next = if (id in s.favoriteJinanItems) s.favoriteJinanItems - id else s.favoriteJinanItems + id
+            s.copy(favoriteJinanItems = next)
+        }
+    }
 
-    // شبكة تكيّفية رسمية (Adaptive): عمود واحد على COMPACT، عمودان MEDIUM+ —
-    // بطاقات الأعمال لا تتقلص؛ تتسع فقط حين تتوفر مساحة كافية.
+    val deedsToday = remember(today, hijri) { dailyDeeds(today, hijri) }
+
+    // التبويب النشط: 0 = اليوم، 1 = هذا الشهر، 2 = كل أيام الأسبوع.
+    var selectedTab by remember { mutableStateOf(0) }
+    var selectedDay by remember(hijri.day) { mutableStateOf(hijri.day) }
+    var selectedWeekday by remember(today.dayOfWeek.ordinal) { mutableStateOf(today.dayOfWeek.ordinal) }
+    // أسماء أيام الأسبوع بالترتيب الرسمي (الاثنين أولاً — نفس تسلسل kotlinx dayOfWeek).
+    val weekDays = listOf("الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد")
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 430.dp),
         modifier = Modifier.fillMaxSize().padding(contentPadding),
@@ -137,7 +156,133 @@ fun DailyDeedsScreen(
             }
         }
 
-        if (deeds.isEmpty()) {
+        // ---------- اختيار التبويب ----------
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(50))
+                    .background(KararColors.CardSoft)
+                    .border(1.dp, KararColors.Border, RoundedCornerShape(50))
+                    .padding(4.dp)
+            ) {
+                val tabs = listOf("اليوم", "هذا الشهر", "كل أيام الأسبوع")
+                tabs.forEachIndexed { index, title ->
+                    val selected = selectedTab == index
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(50))
+                            .background(if (selected) KararColors.Gold else androidx.compose.ui.graphics.Color.Transparent)
+                            .clickable { selectedTab = index }
+                            .padding(vertical = 7.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = title,
+                            color = if (selected) KararColors.OnGold else KararColors.TextSecondary,
+                            fontSize = 11.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        // ---------- تبويب «هذا الشهر» — اختيار اليوم الهجري ----------
+        if (selectedTab == 1) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(30) { index ->
+                        val day = index + 1
+                        val selected = selectedDay == day
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (selected) KararColors.Gold.copy(alpha = 0.18f) else KararColors.CardSoft)
+                                .border(
+                                    1.dp,
+                                    if (selected) KararColors.Gold else KararColors.Border,
+                                    RoundedCornerShape(16.dp)
+                                )
+                                .clickable { selectedDay = day }
+                                .padding(horizontal = 13.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$day",
+                                color = if (selected) KararColors.Gold else KararColors.TextSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---------- تبويب «كل أيام الأسبوع» — اختيار يوم الأسبوع ----------
+        if (selectedTab == 2) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(weekDays.size) { index ->
+                        val name = weekDays[index]
+                        val selected = selectedWeekday == index
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (selected) KararColors.Gold.copy(alpha = 0.18f) else KararColors.CardSoft)
+                                .border(
+                                    1.dp,
+                                    if (selected) KararColors.Gold else KararColors.Border,
+                                    RoundedCornerShape(16.dp)
+                                )
+                                .clickable { selectedWeekday = index }
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = name,
+                                color = if (selected) KararColors.Gold else KararColors.TextSecondary,
+                                fontSize = 11.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---------- المجموعات حسب التبويب ----------
+        val groups: List<Pair<String, List<DailyDeed>>> = when (selectedTab) {
+            1 -> monthDayDeeds(selectedDay)
+                .let { deeds ->
+                    val night = deeds.filter { it.source == DailyDeedSource.MONTH_NIGHT }
+                    val day = deeds.filter { it.source == DailyDeedSource.MONTH_DAY }
+                    listOf(
+                        "أعمال ليلة $selectedDay (كل الأشهر)" to night,
+                        "أعمال يوم $selectedDay (كل الأشهر)" to day
+                    ).filter { it.second.isNotEmpty() }
+                }
+            2 -> {
+                val name = weekDays.getOrNull(selectedWeekday).orEmpty()
+                listOf(
+                    "أعمال يوم $name" to weekdayDeeds(name)
+                ).filter { it.second.isNotEmpty() }
+            }
+            else -> {
+                val night = deedsToday.filter { it.source == DailyDeedSource.MONTH_NIGHT }
+                val day = deedsToday.filter { it.source == DailyDeedSource.MONTH_DAY }
+                val week = deedsToday.filter { it.source == DailyDeedSource.WEEKDAY }
+                listOf(
+                    "أعمال هذه الليلة (${night.size})" to night,
+                    "أعمال اليوم (${day.size})" to day,
+                    "أعمال يوم $weekdayName (${week.size})" to week
+                ).filter { it.second.isNotEmpty() }
+            }
+        }
+
+        if (groups.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -146,7 +291,11 @@ fun DailyDeedsScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            "لا توجد أعمال موقوتة اليوم في «مفاتيح الجنان»",
+                            when (selectedTab) {
+                                1 -> "لا توجد أعمال موقوتة لليوم $selectedDay في «مفاتيح الجنان»"
+                                2 -> "لا توجد أعمال موقوتة ليوم ${weekDays.getOrNull(selectedWeekday)} في «مفاتيح الجنان»"
+                                else -> "لا توجد أعمال موقوتة اليوم في «مفاتيح الجنان»"
+                            },
                             color = KararColors.TextPrimary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
@@ -160,71 +309,17 @@ fun DailyDeedsScreen(
                     }
                 }
             }
-        }
-
-        // ---------- أعمال هذه الليلة ----------
-        if (nightDeeds.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("أعمال هذه الليلة (${nightDeeds.size})") }
-            items(nightDeeds, key = { "n-${it.item.id}" }) { deed ->
-                DeedRow(
-                    deed = deed,
-                    isFavorite = deed.item.id in favorites,
-                    onToggleFavorite = {
-                        state.update { s ->
-                            val next = if (deed.item.id in s.favoriteJinanItems) {
-                                s.favoriteJinanItems - deed.item.id
-                            } else {
-                                s.favoriteJinanItems + deed.item.id
-                            }
-                            s.copy(favoriteJinanItems = next)
-                        }
-                    },
-                    onOpen = { onOpenReader(deed.item) }
-                )
-            }
-        }
-
-        // ---------- أعمال اليوم ----------
-        if (dayDeeds.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("أعمال اليوم (${dayDeeds.size})") }
-            items(dayDeeds, key = { "d-${it.item.id}" }) { deed ->
-                DeedRow(
-                    deed = deed,
-                    isFavorite = deed.item.id in favorites,
-                    onToggleFavorite = {
-                        state.update { s ->
-                            val next = if (deed.item.id in s.favoriteJinanItems) {
-                                s.favoriteJinanItems - deed.item.id
-                            } else {
-                                s.favoriteJinanItems + deed.item.id
-                            }
-                            s.copy(favoriteJinanItems = next)
-                        }
-                    },
-                    onOpen = { onOpenReader(deed.item) }
-                )
-            }
-        }
-
-        // ---------- أعمال يوم الأسبوع ----------
-        if (weekdayDeeds.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("أعمال يوم $weekdayName (${weekdayDeeds.size})") }
-            items(weekdayDeeds, key = { "w-${it.item.id}" }) { deed ->
-                DeedRow(
-                    deed = deed,
-                    isFavorite = deed.item.id in favorites,
-                    onToggleFavorite = {
-                        state.update { s ->
-                            val next = if (deed.item.id in s.favoriteJinanItems) {
-                                s.favoriteJinanItems - deed.item.id
-                            } else {
-                                s.favoriteJinanItems + deed.item.id
-                            }
-                            s.copy(favoriteJinanItems = next)
-                        }
-                    },
-                    onOpen = { onOpenReader(deed.item) }
-                )
+        } else {
+            groups.forEach { (title, deeds) ->
+                item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(title) }
+                items(deeds, key = { deed -> "${selectedTab}-${deed.source}-${deed.item.id}" }) { deed ->
+                    DeedRow(
+                        deed = deed,
+                        isFavorite = deed.item.id in favorites,
+                        onToggleFavorite = { toggleFavorite(deed.item.id) },
+                        onOpen = { onOpenReader(deed.item) }
+                    )
+                }
             }
         }
     }
@@ -232,7 +327,7 @@ fun DailyDeedsScreen(
 
 @Composable
 private fun DeedRow(
-    deed: com.karrar.amsakiah.core.jinan.DailyDeed,
+    deed: DailyDeed,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     onOpen: () -> Unit
@@ -295,4 +390,3 @@ private fun DeedRow(
         )
     }
 }
-

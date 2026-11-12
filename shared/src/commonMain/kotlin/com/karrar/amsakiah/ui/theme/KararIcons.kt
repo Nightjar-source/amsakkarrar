@@ -4,7 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Balance
 import androidx.compose.material.icons.filled.BlurCircular
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Tune
@@ -32,7 +32,7 @@ object KararIcons {
     val Settings: ImageVector = Icons.Filled.Tune
     val Calendar: ImageVector = Icons.Filled.CalendarMonth
     val Qibla: ImageVector = Icons.Filled.Mosque
-    val Duas: ImageVector = Icons.Filled.MenuBook
+    val Duas: ImageVector = Icons.AutoMirrored.Filled.MenuBook
     val Tasbih: ImageVector = Icons.Filled.BlurCircular
     val Fiqh: ImageVector = Icons.Filled.Balance
 

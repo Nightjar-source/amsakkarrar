@@ -76,3 +76,18 @@ pwsh -File scripts/klibs-audit.ps1
 
 > لا توجد اعتمادية جديدة في `commonMain`، لذلك دعم iOS لم يتأثر.
 > `kotlinx-datetime` بقي على `0.6.2`، وGradle Wrapper بقي `9.4.1`.
+
+## فحص 2026-11-12 / 2026-11-13 (adaptive-navigation3 + M3 Expressive)
+
+| الاعتمادية | المستقر عند الفحص (klibs.io) | الحالة |
+| --- | --- | --- |
+| `org.jetbrains.compose.material3.adaptive:adaptive` (+ layout/navigation) | **1.3.0** | ✅ مستقر مثبت |
+| `androidx.compose.material3.adaptive:adaptive` (Android) | **1.3.0** | ✅ مستقر مثبت |
+| `org.jetbrains.compose.material3.adaptive:adaptive-navigation3` | **1.3.0** | ✅ مستقر — **أُضيفت جديدة** للمشهد قائم/تفصيل |
+| `androidx.navigation3:navigation3-runtime/ui` | **1.2.1** | ✅ مستقر مثبت |
+| `org.jetbrains.androidx.navigation3:navigation3-ui` | **1.2.0** | ✅ مستقر مثبت |
+| `org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3` | **2.11.0** | ✅ مستقر مثبت |
+| `org.jetbrains.compose.material3:material3` | **1.12.0-alpha03** (المضمَّنة مع CMP 1.12.2) | ⚠️ `MaterialExpressiveTheme`/`MotionScheme` **غير علنيتين** في هذا الخط (internal) — لا يمكن تفعيلهما؛ استخدم `MaterialTheme` مع M3 tokens إلى أن تُصدر نسخة علنية |
+
+- `MaterialExpressiveTheme` لم تُستخدم — لا وجود علني لها في هذه النسخة، والتوثيق
+  المبني لمستقر androidx (1.10.0) يصف APIs لم تُصدر بعد في خط KMP 1.12.2.

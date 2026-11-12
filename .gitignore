@@ -12,3 +12,5 @@
 /.agents/
 /content-factory/
 /skills-lock.json
+# YouTube session caches (yt.py) — تُقرأ محليًا ولا تُرفع أبدًا
+content-factory/.yt-session-*.json

@@ -20,7 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -40,13 +41,42 @@ import com.karrar.amsakiah.core.jinan.JinanContentData
 import com.karrar.amsakiah.core.jinan.JinanItem
 import com.karrar.amsakiah.ui.theme.KararColors
 
+@Composable
+internal fun JinanDetailPlaceholder() {
+    // تُعرض حين لا يوجد نص مفتوح بعد (الشاشات اللوحية/المتوسطة).
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Filled.Key,
+                contentDescription = null,
+                tint = KararColors.Gold.copy(alpha = 0.85f),
+                modifier = Modifier.size(54.dp)
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "اختر نصًا من «مفاتيح الجنان»",
+                color = KararColors.TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "تظهر الأدعية والصلوات والزيارات مباشرة في هذه اللوحة.",
+                color = KararColors.TextMuted,
+                fontSize = 11.sp,
+                lineHeight = 17.sp
+            )
+        }
+    }
+}
+
 /**
  * شاشة «مفاتيح الجنان» — فهرس الأجزاء والجدران والأدعية من مصباح المتهجّد
  * وكامل مفاتيح الجنان بترقيم مرجعي.
  *
- * تعقيدات متعمدة:
- * - لا تدخل نص JSON الكامل (2.9MB) في الـCompose graph حتى لا suspend composition.
- * - نُحمل الفهرس مرة واحدة (`by lazy` داخل [JinanContentData]).
+ * - لا يدخل نص JSON الكامل (2.9MB) في الـCompose graph؛ الفهرس يُحمل مرة واحدة (`by lazy`).
+ * - في الشاشات المتوسطة والعريضة/المطويات تعمل الشاشة بجانب القارئ بوصفها
+ *   «القائمة» في مشهد List-Detail الرسمي التابع لـNavigation 3 + Adaptive.
  */
 @Composable
 fun JinanScreen(
@@ -106,7 +136,7 @@ fun JinanScreen(
                         )
                     }
                     Icon(
-                        Icons.Filled.MenuBook,
+                        Icons.AutoMirrored.Filled.MenuBook,
                         contentDescription = null,
                         tint = KararColors.Gold.copy(alpha = 0.9f),
                         modifier = Modifier.size(30.dp)

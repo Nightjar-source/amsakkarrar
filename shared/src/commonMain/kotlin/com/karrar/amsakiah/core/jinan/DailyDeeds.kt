@@ -113,6 +113,56 @@ private fun dayOrdinals(day: Int): List<String> = when (day) {
 /** ترتيب الاختبار: الليلة أولًا (الوقت بعد المغرب) أم اليوم. */
 private val weekDays = listOf("الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد")
 
+/** أعمال يوم الأسبوع (بالاسم العربي كما في العناوين). */
+fun weekdayDeeds(weekdayName: String): List<DailyDeed> {
+    if (weekdayName.isBlank()) return emptyList()
+    val out = linkedMapOf<Int, DailyDeed>()
+    for (indexed in jinanIndexed) {
+        if (containsAny(indexed.item.title, listOf(weekdayName))) {
+            out[indexed.item.id] = DailyDeed(
+                indexed.item,
+                indexed.chapterTitle,
+                indexed.sectionTitle,
+                DailyDeedSource.WEEKDAY
+            )
+        }
+    }
+    return out.values.toList()
+}
+
+/**
+ * أعمال ليلة/يوم هجري محدّد (رقم 1..30).
+ *
+ * @param monthNum إن مررت شهرًا هجريًا محددًا (مثلًا الشهر الحالي) تُستبعد عناوين
+ *   الأشهر الأخرى كي تظهر أعمال هذا الشهر فقط — كما في «أعمال اليوم».
+ *   إن تُرك `null` تُعرض نتائج كل الأشهر التي لم يذكر فيها العنوان اسم شهر.
+ */
+fun monthDayDeeds(day: Int, monthNum: Int? = null): List<DailyDeed> {
+    val ordinals = dayOrdinals(day)
+    if (ordinals.isEmpty()) return emptyList()
+    val otherMonth = monthNum?.let { m ->
+        otherMonthRoots.entries
+            .filter { it.key != m }
+            .flatMap { it.value }
+            .map { norm(it) }
+    }.orEmpty()
+    val out = linkedMapOf<Int, DailyDeed>()
+    for (indexed in jinanIndexed) {
+        val t = norm(indexed.item.title)
+        val hasOrdinal = ordinals.any { t.contains(norm(it)) }
+        if (!hasOrdinal) continue
+        val mentionsNight = t.contains(norm("ليلة")) || t.contains(norm("الليلة"))
+        val mentionsDay = t.contains(norm("اليوم")) || t.contains(norm("يوم"))
+        if (!mentionsNight && !mentionsDay) continue
+        if (otherMonth.any { t.contains(it) }) continue
+        val src = if (mentionsNight) DailyDeedSource.MONTH_NIGHT else DailyDeedSource.MONTH_DAY
+        out.getOrPut(indexed.item.id) {
+            DailyDeed(indexed.item, indexed.chapterTitle, indexed.sectionTitle, src)
+        }
+    }
+    return out.values.toList()
+}
+
 /**
  * الأعمال اليومية المطابقة لتاريخ اليوم (وفجره الليلة الماضية) من «مفاتيح الجنان».
  *
@@ -126,46 +176,10 @@ private val weekDays = listOf("الاثنين", "الثلاثاء", "الأرب�
  */
 fun dailyDeeds(today: LocalDate, hijri: HijriDate): List<DailyDeed> {
     val weekdayName = weekDays.getOrNull(today.dayOfWeek.ordinal).orEmpty()
-    val ordinals = dayOrdinals(hijri.day)
-
-    val otherMonth = otherMonthRoots.entries
-        .filter { it.key != hijri.monthNum }
-        .flatMap { it.value }
-        .map { norm(it) }
-
-    val results = linkedMapOf<Int, DailyDeed>()
-
-    // 1) أعمال يوم الأسبوع
-    if (weekdayName.isNotBlank()) {
-        for (indexed in jinanIndexed) {
-            if (containsAny(indexed.item.title, listOf(weekdayName))) {
-                results[indexed.item.id] = DailyDeed(indexed.item, indexed.chapterTitle, indexed.sectionTitle, DailyDeedSource.WEEKDAY)
-            }
-        }
-    }
-
-    // 2) + 3) أعمال الليلة/اليوم — مطالبة بالرقم الهجري
-    if (ordinals.isNotEmpty()) {
-        for (indexed in jinanIndexed) {
-            val t = norm(indexed.item.title)
-            val hasOrdinal = ordinals.any { t.contains(norm(it)) }
-            if (!hasOrdinal) continue
-            val mentionsNight = t.contains(norm("ليلة")) || t.contains(norm("الليلة"))
-            val mentionsDay = t.contains(norm("اليوم")) || t.contains(norm("يوم"))
-            if (!mentionsNight && !mentionsDay) continue
-            // شهر آخر: استبعاد (رجب/شعبان/رمضان… غير شهرنا)
-            if (otherMonth.any { t.contains(it) }) continue
-            // العناوين التي تحمل رقم ليلة/يوم هجري بلا اسم شهر مقبولة إجمالًا
-            // (مثل «الليلة الثالثة عشرة») — تسري على كل الأشهر.
-            val src = if (mentionsNight) DailyDeedSource.MONTH_NIGHT else DailyDeedSource.MONTH_DAY
-            results.getOrPut(indexed.item.id) {
-                DailyDeed(indexed.item, indexed.chapterTitle, indexed.sectionTitle, src)
-            }
-        }
-    }
-
+    val month = monthDayDeeds(hijri.day, hijri.monthNum)
+    val week = weekdayDeeds(weekdayName)
     // ترتيب: ليلة ← يوم ← أسبوع
-    return results.values.sortedBy {
+    return (month + week).sortedBy {
         when (it.source) {
             DailyDeedSource.MONTH_NIGHT -> 0
             DailyDeedSource.MONTH_DAY -> 1

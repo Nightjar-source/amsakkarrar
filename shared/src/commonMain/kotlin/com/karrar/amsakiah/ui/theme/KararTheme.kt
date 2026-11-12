@@ -165,6 +165,11 @@ fun KararTheme(
     ApplySystemBarAppearance(lightBackground = !dark)
 
     CompositionLocalProvider(LocalKararPalette provides palette) {
+        // ملاحظة: MaterialExpressiveTheme غير علنية (internal) في material3 المضمَّنة
+        // مع Compose Multiplatform 1.12.2 — لا يمكن تفعيلها قبل إصدارها رسميًا علنيًا.
+        // تبقى MaterialTheme مع KararTypography (وزن bold للنصوص المهمة = معادل
+        // emphasized) و KararShapes، وهو ما توصي به كل من الوثائق الرسمية
+        // وMaterial 3 Expressive للأسطح المخصصة.
         MaterialTheme(
             colorScheme = if (dark) KararDarkScheme else KararLightScheme,
             typography = KararTypography,
