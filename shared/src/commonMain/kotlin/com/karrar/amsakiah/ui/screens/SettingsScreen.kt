@@ -523,7 +523,7 @@ fun SettingsScreen(
                     Text("إعادة تعيين كل الإعدادات", color = KararColors.Danger, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("إمساكية كرار 2026", color = KararColors.Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("إمساكية كرار", color = KararColors.Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Text("الإصدار 1.3.0 — أوفلاين بالكامل", color = KararColors.TextMuted, fontSize = 10.sp)
                     Text("تطوير: كرار", color = KararColors.TextMuted, fontSize = 10.sp)
                 }

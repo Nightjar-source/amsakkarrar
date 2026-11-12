@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.resources.Res
 import com.karrar.amsakiah.resources.app_icon
 import com.karrar.amsakiah.ui.startup.StartupGate
+import com.karrar.amsakiah.ui.theme.KararFonts
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -318,6 +319,7 @@ fun SplashScreen(modifier: Modifier = Modifier) {
                             ),
                             fontSize = titleSize,
                             fontWeight = FontWeight.Bold,
+                            fontFamily = KararFonts.ReemKufi,
                             shadow = Shadow(
                                 color = Color(0x6600F2FE),
                                 blurRadius = 18f
