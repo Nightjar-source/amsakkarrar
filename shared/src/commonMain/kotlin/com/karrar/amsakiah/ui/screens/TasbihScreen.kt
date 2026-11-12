@@ -1,12 +1,10 @@
 package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -43,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,7 +75,10 @@ import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.components.SpringDialog
+import com.karrar.amsakiah.ui.motion.ambientMotionEnabled
+import com.karrar.amsakiah.ui.motion.motionSpatial
 import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -424,7 +426,8 @@ private fun TasbihCounterTab(
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.95f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        // ضغط سريع (M3 Expressive): نابض مكاني حاد بلا ارتداد مرئي.
+        animationSpec = motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast),
         label = "tasbihScale"
     )
     val progress = (count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
@@ -959,12 +962,17 @@ private fun CompletionDialog(
     onChange: () -> Unit
 ) {
     val pulse = rememberInfiniteTransition(label = "completePulse")
-    val scale by pulse.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.12f,
-        animationSpec = infiniteRepeatable(tween(850), RepeatMode.Reverse),
-        label = "completeScale"
-    )
+    // «تقليل الحركة»: بطاقة النجاح ثابتة بلا نبض.
+    val ambient = ambientMotionEnabled()
+    val scaleState: State<Float> = if (ambient) {
+        pulse.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.12f,
+            animationSpec = infiniteRepeatable(tween(850, easing = KararTokens.Motion.Fluid), RepeatMode.Reverse),
+            label = "completeScale"
+        )
+    } else remember { mutableStateOf(1f) }
+    val scale by scaleState
     SpringDialog(visible = visible, onDismissRequest = onContinue) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),

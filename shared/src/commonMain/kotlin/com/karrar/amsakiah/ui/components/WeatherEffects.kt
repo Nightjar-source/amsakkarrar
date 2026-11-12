@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
+import com.karrar.amsakiah.ui.motion.ambientMotionEnabled
 import kotlin.math.PI
 import kotlin.math.ceil
 import kotlin.math.sin
@@ -44,10 +45,12 @@ fun WeatherEffects(
     if (!isCloudy && !isRain && !isSnow) return
 
     val transition = rememberInfiniteTransition(label = "weather")
+    // «تقليل الحركة»: تبقى طبقات الطقس مرسومة لكن ساكنة تمامًا (بلا انجراف/سقوط).
+    val ambient = ambientMotionEnabled()
     // الخفة: كل تأثير يُنشئ مؤشّره فقط عند الحاجة. قبل ذلك كانت مؤشّرات
     // المطر والثلج تعمل حتى في يوم صافٍ فيه غيوم فقط، فتُبطل رسم الطبقة
     // 60 مرة في الثانية بلا سبب.
-    val drift: State<Float>? = if (isCloudy || isRain || isSnow) {
+    val drift: State<Float>? = if (ambient && (isCloudy || isRain || isSnow)) {
         transition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
@@ -58,7 +61,7 @@ fun WeatherEffects(
             label = "cloud-drift"
         )
     } else null
-    val rain: State<Float>? = if (isRain) {
+    val rain: State<Float>? = if (ambient && isRain) {
         transition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
@@ -69,7 +72,7 @@ fun WeatherEffects(
             label = "rain-fall"
         )
     } else null
-    val snow: State<Float>? = if (isSnow) {
+    val snow: State<Float>? = if (ambient && isSnow) {
         transition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,

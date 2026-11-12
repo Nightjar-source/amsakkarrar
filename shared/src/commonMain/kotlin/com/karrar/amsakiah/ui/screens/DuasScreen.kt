@@ -62,8 +62,11 @@ import com.karrar.amsakiah.core.data.ShiaDuasLibrary
 import com.karrar.amsakiah.ui.adaptive.contentEnd
 import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.SectionTitle
+import com.karrar.amsakiah.ui.motion.effectsSpec
+import com.karrar.amsakiah.ui.motion.spatialSpec
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.platform.PlatformBackHandler
+import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 
@@ -83,6 +86,8 @@ fun DuasScreen(
 ) {
     var selectedId by remember { mutableStateOf<String?>(null) }
     val selected = ShiaDuasLibrary.byId(selectedId)
+    // «تقليل الحركة»: تبديل الفهرس/الدعاء بتلاشٍ قصير بلا انزلاق.
+    val reduceMotion = rememberReduceMotion()
 
     // الشل يعرض اسم الدعاء في شريط العنوان الموحّد نفسه (لا شريط ثانٍ).
     LaunchedEffect(selected?.id) {
@@ -104,20 +109,20 @@ fun DuasScreen(
                 if (targetState != null) {
                     // دخول شاشة الدعاء: انزلاق خفيف من جهة البداية + تلاشٍ نابض.
                     (
-                        slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { it / 4 } +
-                            fadeIn(animationSpec = KararTokens.Motion.effects())
+                        slideInHorizontally(animationSpec = spatialSpec(reduceMotion)) { it / 4 } +
+                            fadeIn(animationSpec = effectsSpec(reduceMotion))
                         ).togetherWith(
-                        slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -it / 6 } +
-                            fadeOut(animationSpec = KararTokens.Motion.effects())
+                        slideOutHorizontally(animationSpec = spatialSpec(reduceMotion)) { -it / 6 } +
+                            fadeOut(animationSpec = effectsSpec(reduceMotion))
                         )
                 } else {
                     // العودة إلى الفهرس: عكس الاتجاه.
                     (
-                        slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { -it / 6 } +
-                            fadeIn(animationSpec = KararTokens.Motion.effects())
+                        slideInHorizontally(animationSpec = spatialSpec(reduceMotion)) { -it / 6 } +
+                            fadeIn(animationSpec = effectsSpec(reduceMotion))
                         ).togetherWith(
-                        slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { it / 4 } +
-                            fadeOut(animationSpec = KararTokens.Motion.effects())
+                        slideOutHorizontally(animationSpec = spatialSpec(reduceMotion)) { it / 4 } +
+                            fadeOut(animationSpec = effectsSpec(reduceMotion))
                         )
                 }
             },

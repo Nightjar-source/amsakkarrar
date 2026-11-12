@@ -69,6 +69,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -106,8 +107,14 @@ import com.karrar.amsakiah.ui.adaptive.rememberAppAdaptiveLayout
 import com.karrar.amsakiah.ui.adaptive.topBarHeight
 import com.karrar.amsakiah.ui.components.DuaPlayerOverlay
 import com.karrar.amsakiah.ui.components.GlassSurface
+import com.karrar.amsakiah.ui.motion.ambientMotionEnabled
+import com.karrar.amsakiah.ui.motion.effectsSpec
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
+import com.karrar.amsakiah.ui.motion.spatialSpec
 import com.karrar.amsakiah.ui.platform.PlatformBackHandler
 import com.karrar.amsakiah.ui.platform.isIosUi
+import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.screens.CalendarScreen
 import com.karrar.amsakiah.ui.screens.DuasScreen
@@ -151,6 +158,8 @@ fun AppShell(
     modifier: Modifier = Modifier
 ) {
     val layout = rememberAppAdaptiveLayout()
+    // «تقليل الحركة» من النظام: تُلغى انزلاقات الشاشات والتبويبات فقط.
+    val reduceMotion = rememberReduceMotion()
 
     // ---------- حالة التنقل: Navigation 3 (State-driven) ----------
     // الـback stack نفسه هو الحالة: SnapshotStateList يحفظه عبر rememberNavBackStack
@@ -320,8 +329,8 @@ fun AppShell(
                     // الخفة: بلا SizeTransform — لا يُعاد قياس/قصّ المشهد بين الشاشات،
                     // والشاشات هنا كلها بعرض واحد أصلًا، فإلغاؤه يوفّر طبقة قصّ لكل إطار.
                     sizeTransform = null,
-                    transitionSpec = { sceneTransition(navDirection) },
-                    popTransitionSpec = { sceneTransition(-navDirection) },
+                    transitionSpec = { sceneTransition(navDirection, reduceMotion) },
+                    popTransitionSpec = { sceneTransition(-navDirection, reduceMotion) },
                     entryProvider = entryProvider {
                         entry(AppRoute.Today) {
                             TodayScreen(
@@ -518,8 +527,13 @@ fun AppShell(
  * نفسه بكتابة بكسل أقل، فيبقى التنقل ثابت الإطارات على الأجهزة المتوسطة.
  *
  * [direction] = 1 للأمام (دفع/تبويب أعلى)، -1 للخلف (سحب/تبويب أدنى).
+ * [reduceMotion] = «تقليل الحركة» في النظام: تلاشٍ قصير بلا أي انزلاق مكاني.
  */
-private fun sceneTransition(direction: Int): ContentTransform {
+private fun sceneTransition(direction: Int, reduceMotion: Boolean): ContentTransform {
+    if (reduceMotion) {
+        val fade = tween<Float>(durationMillis = KararTokens.Motion.fastMs)
+        return fadeIn(animationSpec = fade).togetherWith(fadeOut(animationSpec = fade))
+    }
     val travel: (Int) -> Int = { full -> if (direction >= 0) full else -full }
     return when {
         isIosUi -> (
@@ -587,6 +601,8 @@ private fun UnifiedTopBar(
     height: Dp = KararTokens.Size.topBarHeight,
     modifier: Modifier = Modifier
 ) {
+    // «تقليل الحركة»: عنوان الشريط يظهر/يختفي بتلاشٍ بلا انزلاق.
+    val reduceMotion = rememberReduceMotion()
     Row(
         modifier = modifier
             .widthIn(max = KararTokens.Size.topBarMaxWidth)
@@ -621,12 +637,13 @@ private fun UnifiedTopBar(
                     AnimatedContent(
                         targetState = title,
                         transitionSpec = {
+                            // lambda غير تركيبية: تمرير حالة التركيب المحيط.
                             (
-                                slideInVertically(animationSpec = KararTokens.Motion.spatial()) { -it / 2 } +
-                                    fadeIn(animationSpec = KararTokens.Motion.effects())
+                                slideInVertically(animationSpec = spatialSpec(reduceMotion)) { -it / 2 } +
+                                    fadeIn(animationSpec = effectsSpec(reduceMotion))
                                 ).togetherWith(
-                                slideOutVertically(animationSpec = KararTokens.Motion.spatial()) { it / 2 } +
-                                    fadeOut(animationSpec = KararTokens.Motion.effects())
+                                slideOutVertically(animationSpec = spatialSpec(reduceMotion)) { it / 2 } +
+                                    fadeOut(animationSpec = effectsSpec(reduceMotion))
                             )
                         },
                         label = "topbar-title",
@@ -734,7 +751,7 @@ private fun FloatingBottomBar(
             val targetOffset = slotWidth * current.ordinal + (slotWidth - indicatorWidth) / 2
             val offsetX by animateFloatAsState(
                 targetValue = targetOffset.value,
-                animationSpec = KararTokens.Motion.spatial(),
+                animationSpec = motionSpatial(),
                 label = "nav-m3-offset"
             )
             val density = LocalDensity.current.density
@@ -839,7 +856,7 @@ private fun SideNavigation(
     val targetWidth = if (expanded) KararTokens.Size.drawerWidth else KararTokens.Size.railWidth
     val width by animateDpAsState(
         targetValue = targetWidth,
-        animationSpec = KararTokens.Motion.spatial(),
+        animationSpec = motionSpatial(),
         label = "side-width"
     )
     Box(
@@ -962,11 +979,11 @@ private fun AppToastHost(state: AppState, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         AnimatedVisibility(
             visible = locating || toast != null,
-            enter = slideInVertically(KararTokens.Motion.spatial()) { -it / 2 } +
-                fadeIn(KararTokens.Motion.effects()),
+            enter = slideInVertically(motionSpatial()) { -it / 2 } +
+                fadeIn(motionEffects()),
             exit = slideOutVertically(
-                KararTokens.Motion.spatial(stiffness = KararTokens.Motion.SpatialStiffnessFast)
-            ) { -it / 2 } + fadeOut(KararTokens.Motion.effects())
+                motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast)
+            ) { -it / 2 } + fadeOut(motionEffects())
         ) {
             val current = toast
             if (current == null) {
@@ -1078,24 +1095,32 @@ private fun ToastPill(
 @Composable
 private fun LocatingPill() {
     val transition = rememberInfiniteTransition(label = "locating")
-    val progress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "locating-progress"
-    )
-    val pulse by transition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "locating-pulse"
-    )
+    // «تقليل الحركة»: الحلقات والنبض يتوقفان — النص وحده يشرح الحالة.
+    val ambient = ambientMotionEnabled()
+    val progressState: State<Float> = if (ambient) {
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1800, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "locating-progress"
+        )
+    } else remember { mutableStateOf(0.5f) }
+    val pulseState: State<Float> = if (ambient) {
+        transition.animateFloat(
+            initialValue = 0.85f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 900, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "locating-pulse"
+        )
+    } else remember { mutableStateOf(1f) }
+    val progress by progressState
+    val pulse by pulseState
     val radarGold = KararColors.Gold
     val pillColor = Color(0xF0121A2C)
     val onPill = Color(0xFFF2F5FA)

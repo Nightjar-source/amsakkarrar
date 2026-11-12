@@ -23,6 +23,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
+import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.delay
 
@@ -59,10 +62,12 @@ fun SpringDialog(
     content: @Composable () -> Unit
 ) {
     // مدة التفريغ أطول من أبطأ منحنى خروج (spatial slow ≈ 470ms).
+    // «تقليل الحركة»: لا حركة خروج ننتظرها، والبطاقة تظهر/تختفي فورًا بلا زووم.
+    val reduceMotion = rememberReduceMotion()
     var composing by remember { mutableStateOf(visible) }
-    LaunchedEffect(visible) {
+    LaunchedEffect(visible, reduceMotion) {
         if (visible) composing = true else {
-            delay(450)
+            delay(if (reduceMotion) 0L else 450L)
             composing = false
         }
     }
@@ -70,18 +75,18 @@ fun SpringDialog(
     // ---- التعتيمة: تلاشٍ بنابض التأثيرات (لا ترتد) ----
     val scrimAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = KararTokens.Motion.effects(KararTokens.Motion.EffectsStiffnessSlow),
+        animationSpec = motionEffects<Float>(KararTokens.Motion.EffectsStiffnessSlow),
         label = "spring-dialog-scrim"
     )
     // ---- البطاقة: تلاشٍ + زووم بنابض مكاني + انزلاق طفيف ----
     val cardAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "spring-dialog-alpha"
     )
     val cardScale by animateFloatAsState(
         targetValue = if (visible) 1f else 0.84f,
-        animationSpec = KararTokens.Motion.spatial(
+        animationSpec = motionSpatial(
             dampingRatio = 0.62f,
             stiffness = KararTokens.Motion.SpatialStiffnessSlow
         ),
@@ -89,7 +94,7 @@ fun SpringDialog(
     )
     val cardOffsetY by animateFloatAsState(
         targetValue = if (visible) 0f else 44f,
-        animationSpec = KararTokens.Motion.spatial(dampingRatio = 0.68f),
+        animationSpec = motionSpatial(dampingRatio = 0.68f),
         label = "spring-dialog-offset"
     )
 

@@ -88,6 +88,11 @@ import com.karrar.amsakiah.ui.components.KashidaHeader
 import com.karrar.amsakiah.ui.components.SKY_ARC_STAGE_ASPECT
 import com.karrar.amsakiah.ui.components.SkyArc
 import com.karrar.amsakiah.ui.components.WeatherEffects
+import com.karrar.amsakiah.ui.motion.effectsSpec
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
+import com.karrar.amsakiah.ui.motion.spatialSpec
+import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararIcons
 import com.karrar.amsakiah.ui.theme.KararTokens
@@ -621,12 +626,12 @@ private fun CountdownSection(
                 val active = index == currentActive
                 val width by animateDpAsState(
                     targetValue = if (active) 28.dp else 8.dp,
-                    animationSpec = KararTokens.Motion.spatial(),
+                    animationSpec = motionSpatial(),
                     label = "countdown-dot-width"
                 )
                 val color by animateColorAsState(
                     targetValue = if (active) KararColors.Gold else Color.White.copy(alpha = 0.20f),
-                    animationSpec = KararTokens.Motion.effects(),
+                    animationSpec = motionEffects(),
                     label = "countdown-dot-color"
                 )
                 Box(
@@ -644,6 +649,7 @@ private fun CountdownSection(
 
 @Composable
 private fun CountdownDigit(value: String, compact: Boolean) {
+    val reduceMotion = rememberReduceMotion()
     Box(
         modifier = Modifier
             .size(
@@ -656,14 +662,15 @@ private fun CountdownDigit(value: String, compact: Boolean) {
         AnimatedContent(
             targetState = value,
             transitionSpec = {
+                // `transitionSpec` lambda غير تركيبية: القيم تُمرَّر من التركيب المحيط.
                 (
                     slideInVertically(
-                        animationSpec = KararTokens.Motion.spatial()
-                    ) { full -> full } + fadeIn(KararTokens.Motion.effects())
+                        animationSpec = spatialSpec(reduceMotion)
+                    ) { full -> full } + fadeIn(effectsSpec(reduceMotion))
                     ).togetherWith(
                     slideOutVertically(
-                        animationSpec = KararTokens.Motion.spatial()
-                    ) { full -> -full } + fadeOut(KararTokens.Motion.effects())
+                        animationSpec = spatialSpec(reduceMotion)
+                    ) { full -> -full } + fadeOut(effectsSpec(reduceMotion))
                 )
             },
             label = "countdown-digit"
@@ -838,22 +845,22 @@ private fun PrayerCard(
     val shape = RoundedCornerShape(if (compact) 20.dp else 24.dp)
     val scale by animateFloatAsState(
         targetValue = if (active) 1.1f else 1f,
-        animationSpec = KararTokens.Motion.spatial(),
+        animationSpec = motionSpatial(),
         label = "prayer-card-scale"
     )
     val lift by animateDpAsState(
         targetValue = if (active) (-10).dp else 0.dp,
-        animationSpec = KararTokens.Motion.spatial(),
+        animationSpec = motionSpatial(),
         label = "prayer-card-lift"
     )
     val background by animateColorAsState(
         targetValue = if (active) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f),
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "prayer-card-bg"
     )
     val borderColor by animateColorAsState(
         targetValue = if (active) Color.White.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.05f),
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "prayer-card-border"
     )
 

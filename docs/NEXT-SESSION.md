@@ -5,6 +5,18 @@
 
 ---
 
+<!-- 2026-11-12 — ملاحظة إنتاج السلسلة الجديدة (أضيفت دون تعديل الأصل) -->
+## ⚠️ مؤقت: استُنفدت حصة الرفع اليومية في 2026-11-12 — المتبقي يُستكمل بعد التصفير
+
+**فيديو واحد عام الآن** (على القناتين): AR `JbvceSmn5sY` (ثيمبنيل ✅) + EN `e0DOV2uJN-E` (ثيمبنيل 429).
+**خاص ومجدول (لا تلمس التوقيت):** ep12 (2026-11-13T05:00Z، AR iGvfbk70bzY / EN cqNnQNh9CLU)، ep13 (11-13T17، AR 5FAAPS0YKTo / EN -G0d2eSsi5A)، ep14 (11-14T05، AR EJdQL3o_UNY / EN ils6GAzuG3A)، ep15 (11-14T17، AR Om94lf7WO6k / EN bXqVXG3MHRY)، ep16 (11-15T05، AR E7CNy7o8l_A / EN KVyjJRHZe0Q)، ep17 (11-15T17، AR kQNMs-YUZo4 / EN 04AIwAovKfA)، ep18 (11-16T05، AR **مرفوض uploadLimitExceeded** / EN BsyXBWb8iBA)، ep19 (11-16T17، AR **مرفوض** / EN weqNc0HD8EM)، ep20 (11-17T05، AR/EN **مرفوضان**)، ep21 (11-17T17، AR/EN **مرفوضان**)، ep22 (11-18T05، AR/EN **مرفوضان**).
+**سبب:** كلا القناتين استُنفدتا (حساب جديد AR صغير + EN بعد 9 رفعات) — "The user has exceeded the number of videos they may upload"، ليس حصة API.
+**بعد التصفير (Pacific ≈ 10:00 توقيت العراق) نفذ بالترتيب:** AR: ep18 `2026-11-16T05:00:00Z`، ep19 `2026-11-16T17:00:00Z`، ep20 `2026-11-17T05:00:00Z`، ep21 `2026-11-17T17:00:00Z`، ep22 `2026-11-18T05:00:00Z` (5 رفعات)؛ EN: ep20، ep21، ep22 بنفس التوقيت (3 رفعات).
+**بعدها الثيمبنيل:** بلغ EN حد الثيمبنيل (429). بعد التصفير: `powershell tools\set_thumb.ps1 -Channel ar|en -VideoId <id> -ThumbPath episodes/<ep>/assets/thumb-<lang>.png` للحلقات غير المؤكدة.
+تفاصيل أكثر في `build_log_tabizay-session.txt`.
+
+---
+
 ## 1. الحالة الآن
 
 | البند | القيمة |
@@ -40,6 +52,27 @@
 - **تحقق قواعد البيانات الأوفلاين**: المدن 17 (تشمل الـ13 في المرجع + 4)،
   وطرق الحساب 13 (تشمل كل طرق المرجع + إضافات)، وقواعد خطوط العرض 8،
   والتاريخ الهجري/الإزاحات/قوائم العرض مطابقة.
+
+### 1.1a احترام «تقليل الحركة» + توحيد مواصفات الحركة — 2026-11-12 (جارية)
+
+- نظام حركة موحّد في `ui/motion/Motion.kt`:
+  `motionSpatial()` / `motionEffects()` (تركيبية) و `spatialSpec(reduceMotion)` /
+  `effectsSpec(reduceMotion)` (غير تركيبية لـ `transitionSpec`) + `ambientMotionEnabled()`.
+- «تقليل الحركة» يُحترم من النظام على أندرويد (`ANIMATOR_DURATION_SCALE == 0` عبر
+  `ContentObserver`، تبديل لحظي) وiOS (`UIAccessibilityIsReduceMotionEnabled`)،
+  والتنفيذ في `ui/platform/ReduceMotion.*` (expect/actual).
+- الحركات المكانية كلها قاطعت فورًا (snap) عند طلب تقليل الحركة؛ التلاشي/اللون يبقى.
+- البيئية اللانهائية (نجوم/سحاب/مطر/ثلج/رادار/نبض نجاح) تتجمد في وضع «تقليل الحركة».
+- `AppShell` انتقالات NavDisplay: تلاشٍ قصير `fastMs` بلا انزلاق في وضع التقليل.
+- `SpringSheet` / `SpringDialog`: بلا انزلاق/زووم وتفريغ `delay(0)` عند التقليل.
+- `TodayScreen` عدّاد الساعات، `DuasScreen` تبديل الفهرس/الدعاء، رأس شريط العنوان:
+  نفس قاعدة الانتقال عند التقليل.
+- `SplashScreen`: الحلقات/النجوم تتجمد، والدخول `snapTo` بلا انزلاق/زووم.
+- شريط التنقل الكبسولي وRail/Drawer يستخدمون `motionSpatial` (تكثف لحظي عند التقليل).
+- كشف شارة ثيم الضبط (expandHorizontally) وتوسع MergedAccordion و
+  DuaFloatingPlayer وArcCalendarSheet وTodayScreen (progress) — كلُّها عبر المواصفات.
+- تحسين أداء: قراءة دوران حلقات الـSplash داخل `graphicsLayer { }` (لا إعادة تركيب لكل إطار).
+- وثيقة: `docs/motion-system.md`.
 
 ### 1.2 إعادة تصميم الشاشات — 2026-11-08 (مدفوعة في v1.3.0)
 

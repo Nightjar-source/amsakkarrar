@@ -36,8 +36,9 @@ import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.components.SpringSheet
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
 import com.karrar.amsakiah.ui.theme.KararColors
-import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -240,17 +241,17 @@ private fun MonthStepChip(label: String, onClick: () -> Unit) {
 private fun ArcDayCell(cell: MonthCell.Day, isToday: Boolean, onClick: () -> Unit, use24Hour: Boolean) {
     val background by animateColorAsState(
         targetValue = if (isToday) KararColors.Gold.copy(alpha = 0.18f) else Color.Transparent,
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "arc-cal-bg"
     )
     val border by animateColorAsState(
         targetValue = if (isToday) KararColors.Gold else Color.Transparent,
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "arc-cal-border"
     )
     val scale by animateFloatAsState(
         targetValue = if (isToday) 1f else 0.98f,
-        animationSpec = KararTokens.Motion.spatial(),
+        animationSpec = motionSpatial(),
         label = "arc-cal-scale"
     )
 

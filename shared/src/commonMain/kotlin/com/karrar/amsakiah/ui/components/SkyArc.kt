@@ -24,6 +24,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.ui.motion.motionEffects
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlin.math.PI
 import kotlin.math.cos
@@ -115,7 +116,7 @@ fun SkyArc(
     // في أي لحظة بدل إعادة تشغيل مدة ثابتة، فلا «قفزة» عند تقادم الوقت).
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = KararTokens.Motion.effects(
+        animationSpec = motionEffects(
             stiffness = KararTokens.Motion.EffectsStiffnessSlow,
             dampingRatio = 1f
         ),

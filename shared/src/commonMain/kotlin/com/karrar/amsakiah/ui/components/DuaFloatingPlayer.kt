@@ -51,9 +51,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.theme.KararColors
-import com.karrar.amsakiah.ui.theme.KararTokens
 
 /**
  * مشغّل الأدعية — نسخة واحدة بسيطة وأنيقة:
@@ -83,7 +84,7 @@ fun DuaPlayerOverlay(
     }
     val progress by animateFloatAsState(
         targetValue = target.coerceIn(0f, 1f),
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "dua-progress"
     )
 
@@ -101,10 +102,10 @@ fun DuaPlayerOverlay(
         ) {
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn(KararTokens.Motion.effects()) +
-                    slideInVertically(KararTokens.Motion.spatial()) { it / 2 },
-                exit = fadeOut(KararTokens.Motion.effects()) +
-                    slideOutVertically(KararTokens.Motion.spatial()) { it / 2 }
+                enter = fadeIn(motionEffects()) +
+                    slideInVertically(motionSpatial()) { it / 2 },
+                exit = fadeOut(motionEffects()) +
+                    slideOutVertically(motionSpatial()) { it / 2 }
             ) {
                 ExpandedDuaPlayer(
                     controller = controller,

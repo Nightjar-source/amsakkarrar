@@ -40,7 +40,7 @@ import com.karrar.amsakiah.ui.components.SpringDialog
 import com.karrar.amsakiah.ui.navigation.AppShell
 import com.karrar.amsakiah.ui.splash.SplashScreen
 import com.karrar.amsakiah.ui.theme.KararTheme
-import com.karrar.amsakiah.ui.theme.KararTokens
+import com.karrar.amsakiah.ui.motion.motionEffects
 import kotlinx.coroutines.delay
 
 @Composable
@@ -122,7 +122,7 @@ fun App() {
 
                 AnimatedVisibility(
                     visible = showSplash,
-                    exit = fadeOut(animationSpec = KararTokens.Motion.effects())
+                    exit = fadeOut(animationSpec = motionEffects())
                 ) {
                     SplashScreen()
                 }

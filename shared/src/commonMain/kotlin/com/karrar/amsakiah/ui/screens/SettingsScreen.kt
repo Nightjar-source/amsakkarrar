@@ -1,6 +1,10 @@
 package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -86,6 +90,8 @@ import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SpringSheet
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.delay
@@ -1559,7 +1565,15 @@ private fun ThemeModeRow(
                             tint = if (selected) KararColors.OnGold else KararColors.TextSecondary,
                             modifier = Modifier.size(13.dp)
                         )
-                        AnimatedVisibility(visible = selected) {
+                        AnimatedVisibility(
+                            visible = selected,
+                            // كشف أفقي نابض (M3 Expressive) بدل الظهور المفاجئ،
+                            // ويتحول إلى قطع فوري في وضع «تقليل الحركة».
+                            enter = expandHorizontally(motionSpatial()) +
+                                fadeIn(motionEffects()),
+                            exit = shrinkHorizontally(motionSpatial()) +
+                                fadeOut(motionEffects())
+                        ) {
                             Text(
                                 ThemeMode.label(mode),
                                 color = KararColors.OnGold,

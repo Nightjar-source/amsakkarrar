@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -44,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.resources.Res
 import com.karrar.amsakiah.resources.app_icon
+import com.karrar.amsakiah.ui.motion.ambientMotionEnabled
+import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.startup.StartupGate
 import com.karrar.amsakiah.ui.theme.KararFonts
 import com.karrar.amsakiah.ui.theme.KararTokens
@@ -116,31 +120,44 @@ fun SplashScreen(modifier: Modifier = Modifier) {
     }
 
     val transition = rememberInfiniteTransition(label = "splash")
+    // «تقليل الحركة»: مشهد ساكن تمامًا — لا دوران حلقات ولا نجوم وامضة،
+    // والشعار والعنوان يظهران فورًا بلا انزلاق.
+    val ambient = ambientMotionEnabled()
+    val reduceMotion = rememberReduceMotion()
     // زمن دوري 20 ثانية — تُشتق منه كل الحركات لتبقى متزامنة وخفيفة.
-    val time by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(20_000, easing = LinearEasing)),
-        label = "time"
-    )
-    val ringA by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(9_000, easing = LinearEasing)),
-        label = "ringA"
-    )
-    val ringB by transition.animateFloat(
-        initialValue = 360f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(tween(14_000, easing = LinearEasing)),
-        label = "ringB"
-    )
-    val ringC by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(22_000, easing = LinearEasing)),
-        label = "ringC"
-    )
+    val timeState: State<Float> = if (ambient) {
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(20_000, easing = LinearEasing)),
+            label = "time"
+        )
+    } else remember { mutableStateOf(0f) }
+    val ringAState: State<Float> = if (ambient) {
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(9_000, easing = LinearEasing)),
+            label = "ringA"
+        )
+    } else remember { mutableStateOf(0f) }
+    val ringBState: State<Float> = if (ambient) {
+        transition.animateFloat(
+            initialValue = 360f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(tween(14_000, easing = LinearEasing)),
+            label = "ringB"
+        )
+    } else remember { mutableStateOf(0f) }
+    val ringCState: State<Float> = if (ambient) {
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(22_000, easing = LinearEasing)),
+            label = "ringC"
+        )
+    } else remember { mutableStateOf(0f) }
+    val time by timeState
 
     val iconAnim = remember { Animatable(0f) }
     val titleAnim = remember { Animatable(0f) }
@@ -154,6 +171,13 @@ fun SplashScreen(modifier: Modifier = Modifier) {
     }
 
     LaunchedEffect(Unit) {
+        if (reduceMotion) {
+            // «تقليل الحركة»: يظهر كل شيء في مكانه النهائي فورًا.
+            iconAnim.snapTo(1f)
+            titleAnim.snapTo(1f)
+            signatureAnim.snapTo(1f)
+            return@LaunchedEffect
+        }
         launch {
             kotlinx.coroutines.delay(80)
             // نابض بطيء بلا ارتداد: يصل بسلاسة ثم يستقر، فلا «توقّف مفاجئ»
@@ -279,9 +303,9 @@ fun SplashScreen(modifier: Modifier = Modifier) {
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Ring(rotation = ringA, diameter = logoBox, color = Color(0xFF00F2FE), width = 2.5f * unit)
-                        Ring(rotation = ringB, diameter = logoBox * 0.823f, color = Color(0xFFA18CD1), width = 2f * unit)
-                        Ring(rotation = ringC, diameter = logoBox * 0.677f, color = Color(0xFFFBC2EB), width = 1.2f * unit)
+                        Ring(rotation = { ringAState.value }, diameter = logoBox, color = Color(0xFF00F2FE), width = 2.5f * unit)
+                        Ring(rotation = { ringBState.value }, diameter = logoBox * 0.823f, color = Color(0xFFA18CD1), width = 2f * unit)
+                        Ring(rotation = { ringCState.value }, diameter = logoBox * 0.677f, color = Color(0xFFFBC2EB), width = 1.2f * unit)
                     }
 
                     // الشعار الشفاف كما هو — دون قصّ دائري أو مربّع
@@ -359,11 +383,12 @@ fun SplashScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Ring(rotation: Float, diameter: androidx.compose.ui.unit.Dp, color: Color, width: Float) {
+private fun Ring(rotation: () -> Float, diameter: androidx.compose.ui.unit.Dp, color: Color, width: Float) {
     Canvas(
         modifier = Modifier
             .size(diameter)
-            .graphicsLayer { rotationZ = rotation }
+            // القراءة داخل كتلة الطبقة (draw) لا في التركيب: لا إعادة تركيب لكل إطار.
+            .graphicsLayer { rotationZ = rotation() }
     ) {
         val stroke = width.dp.toPx()
         // توهج خارجي خفيف

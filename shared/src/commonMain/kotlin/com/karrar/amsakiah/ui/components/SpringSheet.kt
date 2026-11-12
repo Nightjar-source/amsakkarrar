@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
+import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.delay
@@ -63,27 +66,29 @@ fun SpringSheet(
     dragHandle: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    // «تقليل الحركة»: لا انزلاق، والورقة تظهر/تختفي فورًا.
+    val reduceMotion = rememberReduceMotion()
     var composing by remember { mutableStateOf(visible) }
-    LaunchedEffect(visible) {
+    LaunchedEffect(visible, reduceMotion) {
         if (visible) composing = true else {
-            delay(480)
+            delay(if (reduceMotion) 0L else 480L)
             composing = false
         }
     }
 
     val scrimAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = KararTokens.Motion.effects(KararTokens.Motion.EffectsStiffnessSlow),
+        animationSpec = motionEffects<Float>(KararTokens.Motion.EffectsStiffnessSlow),
         label = "spring-sheet-scrim"
     )
     val sheetAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "spring-sheet-alpha"
     )
     val sheetOffset by animateFloatAsState(
         targetValue = if (visible) 0f else 280f,
-        animationSpec = KararTokens.Motion.spatial(
+        animationSpec = motionSpatial(
             dampingRatio = 0.72f,
             stiffness = KararTokens.Motion.SpatialStiffnessSlow
         ),

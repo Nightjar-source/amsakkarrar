@@ -43,6 +43,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatial
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 
@@ -88,12 +90,12 @@ fun MergedAccordion(
 
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = KararTokens.Motion.spatial(),
+        animationSpec = motionSpatial(),
         label = "accordion-chevron"
     )
     val dividerAlpha by animateFloatAsState(
         targetValue = if (expanded) 1f else 0f,
-        animationSpec = KararTokens.Motion.effects(),
+        animationSpec = motionEffects(),
         label = "accordion-divider"
     )
 
@@ -180,11 +182,11 @@ fun MergedAccordion(
 
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically(animationSpec = KararTokens.Motion.spatial()) +
-                fadeIn(animationSpec = KararTokens.Motion.effects()),
+            enter = expandVertically(animationSpec = motionSpatial()) +
+                fadeIn(animationSpec = motionEffects()),
             exit = shrinkVertically(
-                animationSpec = KararTokens.Motion.spatial(KararTokens.Motion.SpatialStiffnessFast)
-            ) + fadeOut(animationSpec = KararTokens.Motion.effects())
+                animationSpec = motionSpatial(KararTokens.Motion.SpatialStiffnessFast)
+            ) + fadeOut(animationSpec = motionEffects())
         ) {
             Column(
                 modifier = Modifier
