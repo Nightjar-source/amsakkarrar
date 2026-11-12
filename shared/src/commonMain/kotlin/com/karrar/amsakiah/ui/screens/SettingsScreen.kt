@@ -80,6 +80,9 @@ import com.karrar.amsakiah.core.settings.ThemeMode
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.state.PrayerMeta
+import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
+import com.karrar.amsakiah.ui.adaptive.contentEnd
+import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SpringSheet
@@ -129,8 +132,8 @@ fun SettingsScreen(
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
+            start = contentPadding.contentStart(ScreenHorizontalMargin),
+            end = contentPadding.contentEnd(ScreenHorizontalMargin),
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp
         ),
@@ -188,7 +191,11 @@ fun SettingsScreen(
                     }
                 },
                 onIp = { scope.launch { state.detectLocationByIp() } },
-                onSelectMethod = { code -> state.update { it.copy(methodCode = code) } }
+                onSelectMethod = { code ->
+                    state.update {
+                        it.copy(methodCode = code, highLatRule = PrayerCalculator.autoHighLatForMethod(code))
+                    }
+                }
             )
         }
 
@@ -263,7 +270,11 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
                     MethodSelector(
                         selected = settings.methodCode,
-                        onSelect = { code -> state.update { it.copy(methodCode = code) } }
+                        onSelect = { code ->
+                            state.update {
+                                it.copy(methodCode = code, highLatRule = PrayerCalculator.autoHighLatForMethod(code))
+                            }
+                        }
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -524,7 +535,7 @@ fun SettingsScreen(
                 }
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("إمساكية كرار", color = KararColors.Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("الإصدار 1.3.0 — أوفلاين بالكامل", color = KararColors.TextMuted, fontSize = 10.sp)
+                    Text("الإصدار 1.5.9 — أوفلاين بالكامل", color = KararColors.TextMuted, fontSize = 10.sp)
                     Text("تطوير: كرار", color = KararColors.TextMuted, fontSize = 10.sp)
                 }
             }

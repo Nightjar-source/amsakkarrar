@@ -45,6 +45,9 @@ import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.state.PrayerMeta
 import com.karrar.amsakiah.core.widgets.WidgetPinBridge
+import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
+import com.karrar.amsakiah.ui.adaptive.contentEnd
+import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.theme.KararColors
@@ -165,8 +168,8 @@ fun WidgetsScreen(state: AppState, contentPadding: PaddingValues) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
+            start = contentPadding.contentStart(ScreenHorizontalMargin),
+            end = contentPadding.contentEnd(ScreenHorizontalMargin),
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + 12.dp
         ),

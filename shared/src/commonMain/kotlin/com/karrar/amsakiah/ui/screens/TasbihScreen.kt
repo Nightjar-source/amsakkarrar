@@ -69,6 +69,9 @@ import com.karrar.amsakiah.core.data.TasbihPresets
 import com.karrar.amsakiah.core.feedback.playTasbihClick
 import com.karrar.amsakiah.core.feedback.playTasbihComplete
 import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
+import com.karrar.amsakiah.ui.adaptive.contentEnd
+import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SectionTitle
@@ -183,8 +186,8 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(
-                start = 16.dp,
-                end = 16.dp,
+                start = contentPadding.contentStart(ScreenHorizontalMargin),
+                end = contentPadding.contentEnd(ScreenHorizontalMargin),
                 top = contentPadding.calculateTopPadding() + 8.dp,
                 bottom = contentPadding.calculateBottomPadding() + 16.dp
             ),

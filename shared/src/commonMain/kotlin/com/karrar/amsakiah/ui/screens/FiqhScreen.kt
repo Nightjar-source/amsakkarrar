@@ -33,6 +33,9 @@ import com.karrar.amsakiah.core.astronomy.HighLatitudeRule
 import com.karrar.amsakiah.core.astronomy.OfflineCities
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
+import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
+import com.karrar.amsakiah.ui.adaptive.contentEnd
+import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SectionTitle
@@ -163,8 +166,8 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
                 .widthIn(max = KararTokens.Size.readingMaxWidth)
                 .fillMaxHeight(),
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
+                start = contentPadding.contentStart(ScreenHorizontalMargin),
+                end = contentPadding.contentEnd(ScreenHorizontalMargin),
                 top = contentPadding.calculateTopPadding() + 8.dp,
                 bottom = contentPadding.calculateBottomPadding() + 8.dp
             ),
@@ -199,7 +202,14 @@ fun FiqhScreen(state: AppState, contentPadding: PaddingValues) {
             GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { state.update { it.copy(methodCode = method.code) } },
+                    .clickable {
+                        state.update {
+                            it.copy(
+                                methodCode = method.code,
+                                highLatRule = PrayerCalculator.autoHighLatForMethod(method.code)
+                            )
+                        }
+                    },
                 corner = 18.dp,
                 color = if (selected) Color(0x1AFFD700) else KararColors.CardSoft,
                 borderColor = if (selected) KararColors.Gold else KararColors.Border,

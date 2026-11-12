@@ -54,6 +54,9 @@ import com.karrar.amsakiah.core.permissions.rememberPermissionController
 import com.karrar.amsakiah.core.sensors.createCompassProvider
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
+import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
+import com.karrar.amsakiah.ui.adaptive.contentEnd
+import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.InfoChip
 import com.karrar.amsakiah.ui.components.MoonPhaseIcon
@@ -112,8 +115,8 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
+            start = contentPadding.contentStart(ScreenHorizontalMargin),
+            end = contentPadding.contentEnd(ScreenHorizontalMargin),
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp
         ),

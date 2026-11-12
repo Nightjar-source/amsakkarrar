@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
@@ -189,9 +190,11 @@ fun AppShell(
     val navigationBottom = bottomInsets.asPaddingValues().calculateBottomPadding()
 
     val layoutDirection = LocalLayoutDirection.current
-    val cutout = WindowInsets.displayCutout.asPaddingValues()
-    val cutoutStart = cutout.calculateStartPadding(layoutDirection)
-    val cutoutEnd = cutout.calculateEndPadding(layoutDirection)
+    // مصدر واحد للمسافات الآمنة الأفقية: safeDrawing يشمل الثقب + أشرطة النظام
+    // الجانبية (أفقي/DeX/نافذة حرة). الخلفية تبقى full-bleed، والإزاحة للمحتوى فقط.
+    val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
+    val safeStart = safeDrawing.calculateStartPadding(layoutDirection)
+    val safeEnd = safeDrawing.calculateEndPadding(layoutDirection)
 
     val settings = state.settings
 
@@ -207,9 +210,9 @@ fun AppShell(
         else -> statusTop + 8.dp + asTopBarHeight + 10.dp
     }
     val contentPadding = PaddingValues(
-        start = cutoutStart,
+        start = safeStart,
         top = contentTop,
-        end = cutoutEnd,
+        end = safeEnd,
         bottom = navBarReserve + 36.dp +
             if (player.hasTrack) KararTokens.Size.playerDockHeight + 10.dp else 0.dp
     )
@@ -287,7 +290,11 @@ fun AppShell(
                 SideNavigation(
                     current = currentTab,
                     expanded = layout.navigationLayout == NavigationLayout.DRAWER,
-                    onSelect = ::select
+                    onSelect = ::select,
+                    safeStart = safeStart,
+                    safeEnd = safeEnd,
+                    topInset = statusTop,
+                    bottomInset = navigationBottom
                 )
             }
 
@@ -455,7 +462,7 @@ fun AppShell(
                         height = asTopBarHeight,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = statusTop + 8.dp, start = 12.dp + cutoutStart, end = 12.dp + cutoutEnd)
+                            .padding(top = statusTop + 8.dp, start = 12.dp + safeStart, end = 12.dp + safeEnd)
                     )
                 }
             }
@@ -467,7 +474,7 @@ fun AppShell(
             DuaPlayerOverlay(
                 controller = player,
                 bottomReserve = navBarReserve,
-                horizontalPadding = 12.dp + cutoutStart,
+                horizontalPadding = 12.dp + safeStart,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -479,8 +486,8 @@ fun AppShell(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
-                        start = 12.dp + cutoutStart,
-                        end = 12.dp + cutoutEnd,
+                        start = 12.dp + safeStart,
+                        end = 12.dp + safeEnd,
                         bottom = navigationBottom + 12.dp
                     )
             )
@@ -494,8 +501,8 @@ fun AppShell(
                 .align(Alignment.TopCenter)
                 .padding(
                     top = statusTop + (if (showTopBar) asTopBarHeight + 16.dp else 14.dp),
-                    start = 16.dp + cutoutStart,
-                    end = 16.dp + cutoutEnd
+                    start = 16.dp + safeStart,
+                    end = 16.dp + safeEnd
                 )
         )
     }
@@ -823,7 +830,11 @@ private fun FlexibleNavItem(
 private fun SideNavigation(
     current: AppDestination,
     expanded: Boolean,
-    onSelect: (AppDestination) -> Unit
+    onSelect: (AppDestination) -> Unit,
+    safeStart: Dp,
+    safeEnd: Dp,
+    topInset: Dp,
+    bottomInset: Dp
 ) {
     val targetWidth = if (expanded) KararTokens.Size.drawerWidth else KararTokens.Size.railWidth
     val width by animateDpAsState(
@@ -834,8 +845,13 @@ private fun SideNavigation(
     Box(
         modifier = Modifier
             .fillMaxHeight()
-            .width(width + 20.dp)
-            .padding(start = 10.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
+            .width(width + 20.dp + safeStart + safeEnd)
+            .padding(
+                start = 10.dp + safeStart,
+                end = 10.dp + safeEnd,
+                top = 12.dp + topInset,
+                bottom = 12.dp + bottomInset
+            ),
         contentAlignment = Alignment.Center
     ) {
         GlassSurface(

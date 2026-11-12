@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.core.data.ShiaDuasLibrary
+import com.karrar.amsakiah.ui.adaptive.contentEnd
+import com.karrar.amsakiah.ui.adaptive.contentStart
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.ui.platform.PlatformBackHandler
@@ -195,10 +197,11 @@ private fun DuaList(
         modifier = Modifier
             .fillMaxWidth()
             .imeNestedScroll(),
-        // الحواف من الجهزة إلى الحافة للتمرير؛ المحتوى يحمل حشوته داخل كل عنصر.
+        // الحواف من الجهاز إلى الحافة للتمرير؛ المحتوى يحمل حشوته داخل كل عنصر،
+        // مع احترام المسافة الآمنة للنظام (ثقب/شريط جانبي) على مستوى الشبكة.
         contentPadding = PaddingValues(
-            start = 0.dp,
-            end = 0.dp,
+            start = contentPadding.contentStart(),
+            end = contentPadding.contentEnd(),
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + bottomInset + 8.dp + imeBottom
         ),

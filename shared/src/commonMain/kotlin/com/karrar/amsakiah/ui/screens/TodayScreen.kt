@@ -21,14 +21,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -81,7 +74,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
@@ -198,13 +190,8 @@ fun TodayScreen(
         }
     }
 
-    // هوامش آمنة أفقية (ثقوب الإطار/الأشرطة/الكابشن) — تُطبق على القوس فقط
-    // حتى لا تتداخل أطرافه (الشروق/المغرب ونصوصها) مع الحافة الفعلية.
-    val safeInsets = WindowInsets.safeDrawing.asPaddingValues()
-    val layoutDirection = LocalLayoutDirection.current
-    val arcSafeStart = safeInsets.calculateStartPadding(layoutDirection) + 8.dp
-    val arcSafeEnd = safeInsets.calculateEndPadding(layoutDirection) + 8.dp
-
+    // المسافات الآمنة الأفقية تُطبَّق مرة واحدة في الشل (safeDrawing) عبر
+    // contentPadding؛ هنا هامش تصميم بسيط فقط حتى لا يُحسب الثقب مرّتين.
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -276,8 +263,10 @@ fun TodayScreen(
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                // المساحة المتاحة فعليًا بعد هوامش الأمان (ثقب/حواف/DeX/نافذة حرة)
-                val availableW = (maxWidth - arcSafeStart - arcSafeEnd).coerceAtLeast(1.dp)
+                // المساحة المتاحة فعليًا داخل المسرح بعد هامش التصميم الموحّد
+                // (16dp لكل جهة — نفس `p-4` في المرجع). الهوامش الآمنة للنظام
+                // وصلت أصلًا عبر contentPadding من الشل.
+                val availableW = (maxWidth - 32.dp).coerceAtLeast(1.dp)
                 // نسبة المسرح من SkyArc تشمل هامش النصّين الطرفيين ⇒ لا فراغ ميّت
                 // ولا قصّ لكلمة «الشروق» أو «المغرب».
                 val arcHeight = minOf(maxHeight, availableW / SKY_ARC_STAGE_ASPECT)
@@ -293,10 +282,8 @@ fun TodayScreen(
                     rightLabel = phase.rightLabel,
                     rightTime = PrayerCalculator.formatHour(phase.rightHour, state.settings.use24Hour).first,
                     subPhaseBadge = phase.badge,
-                    modifier = Modifier
-                        .size(width = arcWidth, height = arcHeight)
-                        // هوامش آمنة أفقية تمنع الطرف (الشروق/المغرب) من ملامسة الحافة الفعلية
-                        .padding(start = arcSafeStart, end = arcSafeEnd)
+                    // لا padding إضافي بعد size: الحشو بعد القياس يضاعف الهامش ويصغّر القوس.
+                    modifier = Modifier.size(width = arcWidth, height = arcHeight)
                 )
             }
 

@@ -62,6 +62,22 @@ object PrayerCalculator {
     fun highLatFor(code: String): HighLatitudeRule =
         HighLatitudeRule.entries.firstOrNull { it.code == code } ?: HighLatitudeRule.AQRAB_48
 
+    /**
+     * القاعدة التلقائية لخطوط العرض عند تغيير طريقة الحساب — منقولة من مرجع الكفيل:
+     * - الشيعي (الكفيل/لندن) → أقرب 48°
+     * - الشيعي (ليفا/طهران/غيرها) → أقرب 45°
+     * - السني (كل الطرق الأخرى) → الفاصل الثابت 90 دقيقة
+     * يبقى للمستخدم تعديلها يدويًا من شاشة الفقه بعد ذلك.
+     */
+    fun autoHighLatForMethod(code: String): String {
+        val shia = methodFor(code).isShia
+        return when {
+            !shia -> HighLatitudeRule.FIXED_90.code
+            code == "alkafeel" || code == "london_shia" -> HighLatitudeRule.AQRAB_48.code
+            else -> HighLatitudeRule.AQRAB_45.code
+        }
+    }
+
     fun zoneOf(settings: AppSettings): TimeZone =
         runCatching { TimeZone.of(settings.timeZoneId) }.getOrDefault(TimeZone.currentSystemDefault())
 
