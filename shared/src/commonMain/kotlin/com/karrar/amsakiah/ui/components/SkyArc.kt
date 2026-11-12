@@ -49,6 +49,22 @@ private const val ARC_CY = 260f
 private const val ARC_RX = 170f
 private const val ARC_RY = 240f
 
+/**
+ * هامش أفقي إضافي بوحدات `viewBox` يُضاف على جانبي مسرح القوس.
+ *
+ * في المرجع (`amsak3d.tsx`) يحمل الـ`<svg>` الصنف `overflow-visible`، لذلك يمتدّ
+ * نصّا الطرفين (الشروق/الغروب/المغرب/الفجر) خارج حدود الـviewBox ولا يُقصّان.
+ * في Compose نُوسّع المساحة الفعّالة بنفس المقدار، فيبقى النص كاملًا ومتوسّطًا
+ * تحت نقطة طرفه، ولا يلمس حافة الشاشة (ثقب/شريط/DeX/نافذة حرة).
+ */
+const val SKY_ARC_EDGE_MARGIN_UNITS: Float = 16f
+
+/**
+ * نسبة أبعاد «مسرح» القوس بعد إضافة الهامش الجانبي:
+ * `(356 + 2×16) / 298`. تُستخدم لحساب أبعاد المكوّن دون فراغ ميّت.
+ */
+const val SKY_ARC_STAGE_ASPECT: Float = 388f / 298f
+
 /** محطة على القوس عند نسبة زمنية t (0 = اليسار/البداية، 1 = اليمين/النهاية). */
 private fun arcPoint(t: Float): Pair<Float, Float> {
     val angle = PI - (t.coerceIn(0f, 1f) * PI)
@@ -109,8 +125,13 @@ fun SkyArc(
     Box(modifier = modifier) {
         Canvas(Modifier.fillMaxSize()) {
             // ---- مقياس viewBox داخل المساحة (xMidYMid meet) ----
-            val s = min(size.width / VB_W, size.height / VB_H)
-            val ox0 = (size.width - VB_W * s) / 2f - VB_X * s
+            // نُدخل الهامش الجانبي داخل المعادلة نفسها (لا حشو خارجي)، فتنكمش
+            // الهندسة قليلًا ويبقى للنصّين الطرفيين متّسع حقيقي داخل مساحة الرسم.
+            // s صغيرة (1.12.2) + inset مكافئ لـ DrawScope.inset أفقياً.
+            val edgeMargin = SKY_ARC_EDGE_MARGIN_UNITS
+            val effectiveW = VB_W + edgeMargin * 2f
+            val s = min(size.width / effectiveW, size.height / VB_H)
+            val ox0 = (size.width - effectiveW * s) / 2f - (VB_X - edgeMargin) * s
             val oy0 = (size.height - VB_H * s) / 2f - VB_Y * s
 
             fun px(x: Float) = ox0 + x * s
@@ -140,7 +161,11 @@ fun SkyArc(
                     textDirection = if (ltr) TextDirection.Ltr else TextDirection.Rtl
                 )
                 val layout = measurer.measure(AnnotatedString(text), style)
-                val left = if (centered) px(xUnits) - layout.size.width / 2f else px(xUnits)
+                val rawLeft = if (centered) px(xUnits) - layout.size.width / 2f else px(xUnits)
+                // حماية أخيرة: لا يخرج أي حرف عن مساحة الرسم مهما كان طول النص
+                // (نص طويل/تغيير حجم خط/عرض نافذة ضيق في DeX أو النوافذ الحرة).
+                val maxLeft = (size.width - layout.size.width).coerceAtLeast(0f)
+                val left = rawLeft.coerceIn(0f, maxLeft)
                 if (shadowUnits > 0f) {
                     drawText(
                         textLayoutResult = layout,
@@ -155,15 +180,22 @@ fun SkyArc(
             }
 
             // ---- مسار القوس الكامل ----
+            // بناء هندسي رسمي: `Path.addArc` على القطع الناقص نفسه
+            // `M 30 260 A 170 240 0 0 1 370 260` بدل تقريب بـ120 خطًا.
+            // الزاوية 180° = الطرف الأيسر، والزيادة حتى 360° تمرّ بالقمة وتنتهي يمينًا.
             fun buildArc(from: Float, to: Float): Path {
                 val path = Path()
-                val steps = 120
-                val total = ((to - from).coerceIn(0f, 1f) * steps).toInt().coerceAtLeast(2)
-                for (i in 0..total) {
-                    val t = from + (to - from) * (i.toFloat() / total)
-                    val (ux, uy) = arcPoint(t)
-                    if (i == 0) path.moveTo(px(ux), py(uy)) else path.lineTo(px(ux), py(uy))
-                }
+                if (to <= from) return path
+                path.addArc(
+                    oval = Rect(
+                        left = px(ARC_CX - ARC_RX),
+                        top = py(ARC_CY - ARC_RY),
+                        right = px(ARC_CX + ARC_RX),
+                        bottom = py(ARC_CY + ARC_RY)
+                    ),
+                    startAngleDegrees = 180f + 180f * from,
+                    sweepAngleDegrees = 180f * (to - from)
+                )
                 return path
             }
 

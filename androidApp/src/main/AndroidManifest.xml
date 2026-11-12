@@ -13,8 +13,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- ترقية الإشعار الحي إلى Live Update (Now Bar / شريحة شريط الحالة على أندرويد 16+) -->
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
-    <!-- Android 16: الإشعارات الحية المروَّجة (Live Updates / Now Bar) -->
-    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -49,6 +47,12 @@
         <!-- Samsung DeX: لا يُنهى التطبيق عند وصل/فصل شاشة خارجية -->
         <meta-data
             android:name="com.samsung.android.keepalive.density"
+            android:value="true" />
+
+        <!-- النوافذ الحرة (Desktop windowing / Android 15+):
+             يسمح للنظام بعرض خيار «نافذة جديدة» لنسخ متعددة من التطبيق. -->
+        <property
+            android:name="android.window.PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI"
             android:value="true" />
 
         <activity

@@ -93,6 +93,7 @@ import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.state.PrayerMeta
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.components.KashidaHeader
+import com.karrar.amsakiah.ui.components.SKY_ARC_STAGE_ASPECT
 import com.karrar.amsakiah.ui.components.SkyArc
 import com.karrar.amsakiah.ui.components.WeatherEffects
 import com.karrar.amsakiah.ui.theme.KararColors
@@ -275,9 +276,12 @@ fun TodayScreen(
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                val ratio = 356f / 298f
-                val arcHeight = minOf(maxHeight, maxWidth / ratio)
-                val arcWidth = arcHeight * ratio
+                // المساحة المتاحة فعليًا بعد هوامش الأمان (ثقب/حواف/DeX/نافذة حرة)
+                val availableW = (maxWidth - arcSafeStart - arcSafeEnd).coerceAtLeast(1.dp)
+                // نسبة المسرح من SkyArc تشمل هامش النصّين الطرفيين ⇒ لا فراغ ميّت
+                // ولا قصّ لكلمة «الشروق» أو «المغرب».
+                val arcHeight = minOf(maxHeight, availableW / SKY_ARC_STAGE_ASPECT)
+                val arcWidth = arcHeight * SKY_ARC_STAGE_ASPECT
                 SkyArc(
                     progress = phase.progress,
                     isNight = isNight,
