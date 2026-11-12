@@ -660,7 +660,16 @@
 - **القوس 3D من `amsak3d.tsx` مُعاد:** `MoonPhaseIcon.kt` (قابل لإعادة الاستخدام في بطاقة Qibla) و`MoonPhase.kt` (محرك الطور مطابقة API الرسمي `getMoonDetailsByHijriDay`) يعيدان رسم: الشمس (تدرج + 12 شعاع + هالة) والقمر (هالة مزدوجة + فوهات + طور بمساري قوسين + هلال متزايد/متناقص/بدر حسابًا). القطرات والألوان مطابقة للمرجع.
 - **المفاتيح:** بلاطة «أعمال اليوم» جديدة (الكهرمان/`CalendarToday`)؛ بلاطة «المهام والملاحظات» القديمة.
 - **متبقي:** تحقق محلي/بصري لكل ما سبق — CI وحده القَيْد؛ لا يوجد جهاز.
-- **Baseline CI صالح لإصدارات الأفق 1.5.9 (10508).**
+- **الوسم:** لم تُوسم بعد (تنتظر تحقق الجهاز).
+- **آخر CI:** `a63a2d6` → **ناجح** (#43203488968) — APK موقّع 56,358,092 بايت مؤرشف.
+- **Strict warning:** بواجهات SpringDialog/SpringSheet (من جلسة منقطعة) — تعمل داخل نفس النافذة، خلف captionBar تلقائيًا، ولا تُحجب على الأجهزة القديمة.
+
+### 1.22 جلسة 2026-11-12 (هـ) — استكمال كل ما لم يُتحقق + بوابة CI
+
+- **الحالة:** CI `a63a2d6` **أخضر** (#43203488968). APK: `amsakkarrar-signed-apk`، 56,358,092 بايت.
+- **修:** `automirrored` صغيرة (TasksScreen)؛ تم جرّ كل الاستيرادات المفقودة (Dp/dp/getValue/padding/Text) وحذف `calculateBottomPadding`/`calculateTopPadding` غير artily imported (دوال أعضاء في PaddingValues)؛ `ExperimentalLayoutApi` OptIn للـIME في المهام/الأدعية.
+- **ملاحظة تقنية:** `PaddingValues.calculateTopPadding()/calculateBottomPadding()/calculateStartPadding()` هي **دوال أعضاء** في واجهة `PaddingValues` — لا تستوردها أصلًا.
+- **متبقي لا خروج منه تقنيًا:** التحقق البصري على جهاز؛ Native checks.
 
 ---
 
