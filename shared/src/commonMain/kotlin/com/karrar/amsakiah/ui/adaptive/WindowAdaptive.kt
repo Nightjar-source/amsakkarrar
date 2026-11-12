@@ -49,16 +49,13 @@ enum class AppHeightSizeClass {
     EXPANDED
 }
 
-/** شكل التنقل الجذري المناسب لعرض النافذة الحالي. */
+/** شكل التنقل الجذري المناسب لعرض النافذة الحالي (M3 Expressive). */
 enum class NavigationLayout {
-    /** شريط سفلي عائم/ممتد — للهواتف. */
+    /** شريط سفلي عائم/ممتد — للهواتف (كومباكت). */
     BOTTOM_BAR,
 
-    /** شريط تنقل جانبي (NavigationRail) — للشاشات المتوسطة والمطويات. */
-    RAIL,
-
-    /** درج تنقل دائم (PermanentNavigationDrawer) — للتابلت والشاشات العريضة. */
-    DRAWER
+    /** شريط تنقل جانبي (NavigationRail) — للشاشات المتوسطة والعريضة. */
+    RAIL
 }
 
 /**
@@ -123,19 +120,21 @@ val AppWidthSizeClass.supportsTwoPane: Boolean
     get() = this != AppWidthSizeClass.COMPACT
 
 /**
- * القاعدة التصميمية للتنقل، مستمدة من إرشادات Material 3 الرسمية:
+ * القاعدة التصميمية للتنقل، مستمدة من Material 3 Expressive الرسمية:
  *
  * | العرض            | التنقل                       |
  * | ---------------- | ---------------------------- |
  * | Compact          | شريط سفلي                    |
- * | Medium           | شريط جانبي (Rail)            |
- * | Expanded +       | درج تنقل دائم                |
+ * | Medium           | شريط جانبي (Rail) 64dp       |
+ * | Expanded +       | شريط جانبي (Rail) 72dp       |
  *
  * حالات خاصة:
  * - ارتفاع مضغوط (هاتف بالعرض أو مطوية أفقية): الشريط الجانبي أنسب من الشريط
  *   السفلي لأنه لا يسرق المساحة العمودية القليلة.
  * - وضع الطاولة (Tabletop): تُبقى أدوات التنقل في النصف السفلي القابل للمس،
  *   لذلك نعتمد الشريط السفلي حتى على العروض المتوسطة والكبيرة.
+ * - في M3 Expressive الـ Navigation Drawer لم تعد مُوصى بها؛ البديل الرسمي
+ *   هو الـ Collapsed Navigation Rail (أخبار/أيقونات+تسميات سطرية).
  */
 fun resolveNavigationLayout(
     widthSizeClass: AppWidthSizeClass,
@@ -145,8 +144,7 @@ fun resolveNavigationLayout(
     isTabletop -> NavigationLayout.BOTTOM_BAR
     heightSizeClass == AppHeightSizeClass.COMPACT && !widthSizeClass.isCompact -> NavigationLayout.RAIL
     widthSizeClass.isCompact -> NavigationLayout.BOTTOM_BAR
-    widthSizeClass == AppWidthSizeClass.MEDIUM -> NavigationLayout.RAIL
-    else -> NavigationLayout.DRAWER
+    else -> NavigationLayout.RAIL
 }
 
 /** بناء [AppAdaptiveLayout] من معلومات النافذة الخام. */

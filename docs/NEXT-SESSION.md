@@ -53,6 +53,29 @@
   وطرق الحساب 13 (تشمل كل طرق المرجع + إضافات)، وقواعد خطوط العرض 8،
   والتاريخ الهجري/الإزاحات/قوائم العرض مطابقة.
 
+### 1.1b تكيّف M3 Expressive + Adaptive API + Navigation 3 — 2026-11-12 (جارية)
+
+- **الاعتماديات (klibs.io 2026-11-12)**: كل الإصدارات المستقرة الحديثة —
+  KMP adaptive `adaptive/adaptive-layout/adaptive-navigation` **1.3.0**،
+  androidx `navigation3-runtime/ui` **1.2.1**، KMP nav3-ui **1.2.0**،
+  `lifecycle-viewmodel-navigation3` **2.11.0**، androidx adaptive **1.3.0**.
+  لا تغييرات مطلوبة — كل شيء على أحدث مستقر بالفعل.
+- **WindowInsets** (اللانهائية الرسمية): top = `statusBars ∪ captionBar ∪ displayCutout`؛
+  bottom = `navigationBars ∪ displayCutout`؛ أفقي = `safeDrawing` (يشمل العتاد الجانبي
+  في DeX/Freeform). الخلفية full-bleed؛ الإزاحة للمحتوى فقط.
+- **التنقل متكيّف ديناميكيًا رسميًا (M3 Expressive)**:
+  Compact → شريط سفلي؛ Medium/foldables → **Rail 64dp**؛ Expanded/Large/XL والأجهزة
+  شبه المسطحة (ChromeOS/DeX/لابتوب) → **Rail 72dp** (التنسيق official-dp).
+- **DRAWER أُزيلت**: M3 Expressive لا يوصّفها؛ الـ Rail المطوي (Collapsed Navigation
+  Rail) هو البديل الرسمي — كل عنصر أيقونة + تسمية واحدة تحتها.
+- **انتقالات انسيابية بلا إعادة تحميل**: Rail يدخل/يخرج بانزلاق نابض أفقي + تلاشٍ؛
+  الشريط السفلي يدخل/يخرج بانزلاق نابض عمودي + تلاشٍ؛ عرض الـ Rail يتحرك بـ
+  `animateDpAsState(motionSpatial())` بين 64/72dp؛ `navBarReserve` يُلغى تلقائيًا
+  على شاشات الـ Rail ووضع القراءة (لا فسحة ميتة).
+- **AppDestination**: كل وجهة تبقى تسمية قصيرة واحدة (1 كلمة) أسفل الأيقونة — مطابقة
+  لقاعدة M3 أن الـ Rail لا يحذف التسميات.
+- التوثيق: `docs/NEXT-SESSION.md` + `docs/motion-system.md`.
+
 ### 1.1a احترام «تقليل الحركة» + توحيد مواصفات الحركة — 2026-11-12 (جارية)
 
 - نظام حركة موحّد في `ui/motion/Motion.kt`:

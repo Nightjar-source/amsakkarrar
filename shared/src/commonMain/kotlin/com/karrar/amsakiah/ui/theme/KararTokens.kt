@@ -53,8 +53,11 @@ object KararTokens {
         val playerDockHeight = 64.dp
         val touchTarget = 48.dp
         val circleButton = 52.dp
-        val railWidth = 76.dp
-        val drawerWidth = 232.dp
+        /** M3 Expressive: مطويات/شاشات متوسطة (Expressive: Rail 64dp). */
+        val railWidthMedium = 64.dp
+
+        /** M3 Expressive: واسع + Large/XL وأجهزة ChromeOS وDex (Expressive: 72dp). */
+        val railWidthExpanded = 72.dp
         val contentHorizontal = 16.dp
         val contentBottomGap = 104.dp
         val contentTopGap = 74.dp

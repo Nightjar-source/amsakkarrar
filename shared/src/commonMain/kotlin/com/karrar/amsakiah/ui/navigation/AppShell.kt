@@ -102,6 +102,7 @@ import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.ToastKind
 import com.karrar.amsakiah.core.state.ToastMessage
 import com.karrar.amsakiah.core.weather.WeatherInfo
+import com.karrar.amsakiah.ui.adaptive.AppWidthSizeClass
 import com.karrar.amsakiah.ui.adaptive.NavigationLayout
 import com.karrar.amsakiah.ui.adaptive.rememberAppAdaptiveLayout
 import com.karrar.amsakiah.ui.adaptive.topBarHeight
@@ -189,7 +190,19 @@ fun AppShell(
     val immersive = (currentRoute == AppRoute.Duas && duaDetailOpen) || currentRoute is AppRoute.JinanReader
     val showTopBar = !isToday && !immersive
 
+    // ---------- التكيّف الرسمي (M3 Expressive + Compose Adaptive) ----------
+    // هاتف (Compact) → شريط سفلي؛ متوسط (foldables/عريض) → Rail 64dp؛
+    // واسع + Large/XL (ChromeOS/DeX/لابتوب) → Rail 72dp. الانتقالات نابضة
+    // عبر motionSpatial/motionEffects — بلا أي إعادة تحميل للشاشات.
+    val showRail = layout.navigationLayout == NavigationLayout.RAIL
+    val bottomNavVisible = !showRail && !immersive
+    val railWidthTarget =
+        if (layout.widthSizeClass == AppWidthSizeClass.MEDIUM) KararTokens.Size.railWidthMedium
+        else KararTokens.Size.railWidthExpanded
+
     // ---------- الإنسِتس ----------
+    // المعادلة الرسمية: شريط الحالة ∪ شريط العنوان (captionBar — يظهر في DeX/Freeform/الحواسيب)
+    // ∪ الثقب. الأسفل: شريط التنقل ∪ الثقب. كلٌّ كامل full-bleed، والتزاحم على المحتوى فقط.
     val topInsets = WindowInsets.statusBars
         .union(WindowInsets.captionBar)
         .union(WindowInsets.displayCutout)
@@ -211,7 +224,12 @@ fun AppShell(
     val asTopBarHeight = layout.topBarHeight()
 
     // ارتفاع شريط التنقل السفلي + هوامشه — يُحجز للمحتوى والمشغّل.
-    val navBarReserve = navigationBottom + 12.dp + KararTokens.Size.navBarHeight
+    // يُلغى تمامًا على الشاشات الجانبية (Rail) أو في وضع القراءة، فتتمدد المنطقة بالكامل.
+    val navBarReserve = if (bottomNavVisible) {
+        navigationBottom + 12.dp + KararTokens.Size.navBarHeight
+    } else {
+        0.dp
+    }
 
     val contentTop = when {
         isToday -> statusTop + 6.dp
@@ -295,10 +313,18 @@ fun AppShell(
         }
 
         Row(Modifier.fillMaxSize()) {
-            if (layout.navigationLayout != NavigationLayout.BOTTOM_BAR) {
+            // التنقل الجانبي: يظهر/يختفي بانزلاق نابض وتلاشٍ — لا يُعاد تركيب
+            // الشاشات ولا يتغيّر موضع المحتوى فجأة (وزن 1f ثابت).
+            AnimatedVisibility(
+                visible = showRail,
+                enter = slideInHorizontally(animationSpec = motionSpatial()) { -it } +
+                    fadeIn(animationSpec = motionEffects()),
+                exit = slideOutHorizontally(animationSpec = motionSpatial()) { -it } +
+                    fadeOut(animationSpec = motionEffects())
+            ) {
                 SideNavigation(
                     current = currentTab,
-                    expanded = layout.navigationLayout == NavigationLayout.DRAWER,
+                    targetWidth = railWidthTarget,
                     onSelect = ::select,
                     safeStart = safeStart,
                     safeEnd = safeEnd,
@@ -488,17 +514,25 @@ fun AppShell(
             )
         }
 
-        if (layout.navigationLayout == NavigationLayout.BOTTOM_BAR && !immersive) {
+        // شريط التنقل السفلي: يُظهر/يختفي بانزلاق نابض وتلاشٍ — لا يُعاد تركيب الشل.
+        AnimatedVisibility(
+            visible = bottomNavVisible,
+            enter = slideInVertically(animationSpec = motionSpatial()) { it / 2 } +
+                fadeIn(animationSpec = motionEffects()),
+            exit = slideOutVertically(animationSpec = motionSpatial()) { it / 2 } +
+                fadeOut(animationSpec = motionEffects()),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(
+                    start = 12.dp + safeStart,
+                    end = 12.dp + safeEnd,
+                    bottom = navigationBottom + 12.dp
+                )
+        ) {
             FloatingBottomBar(
                 current = currentTab,
-                onSelect = ::select,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(
-                        start = 12.dp + safeStart,
-                        end = 12.dp + safeEnd,
-                        bottom = navigationBottom + 12.dp
-                    )
+                onSelect = ::select
             )
         }
 
@@ -842,18 +876,19 @@ private fun FlexibleNavItem(
     }
 }
 
-/** الشريط الجانبي — Rail على المتوسط، وDrawer موسّع على الواسع، بتوسّع نابض. */
+/** الشريط الجانبي — NavigationRail متوافق مع M3 Expressive (64/72dp حسب فئة النافذة). */
 @Composable
 private fun SideNavigation(
     current: AppDestination,
-    expanded: Boolean,
+    targetWidth: Dp,
     onSelect: (AppDestination) -> Unit,
     safeStart: Dp,
     safeEnd: Dp,
     topInset: Dp,
     bottomInset: Dp
 ) {
-    val targetWidth = if (expanded) KararTokens.Size.drawerWidth else KararTokens.Size.railWidth
+    // عرض نابض: يتكيف مع فئة النافذة الرسمية (64dp medium / 72dp expanded)
+    // ولا توجد قفزات بين الوضع الأفقي والعمودي والمطويات.
     val width by animateDpAsState(
         targetValue = targetWidth,
         animationSpec = motionSpatial(),
@@ -886,7 +921,6 @@ private fun SideNavigation(
                     SideNavItem(
                         destination = destination,
                         selected = destination == current,
-                        expanded = expanded,
                         onClick = { onSelect(destination) }
                     )
                 }
@@ -899,7 +933,6 @@ private fun SideNavigation(
 private fun SideNavItem(
     destination: AppDestination,
     selected: Boolean,
-    expanded: Boolean,
     onClick: () -> Unit
 ) {
     val background by animateColorAsState(
@@ -913,33 +946,31 @@ private fun SideNavItem(
         label = "rail-fg"
     )
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(KararTokens.Size.navItem)
             .clip(RoundedCornerShape(KararTokens.Radius.md))
             .background(background)
-            .clickable(onClick = onClick)
-            .padding(horizontal = if (expanded) 14.dp else 0.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = if (expanded) Arrangement.spacedBy(10.dp) else Arrangement.Center
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = destination.icon,
             contentDescription = destination.title,
             tint = contentColor,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(22.dp)
         )
-        AnimatedVisibility(visible = expanded) {
-            Text(
-                text = destination.shortTitle,
-                color = contentColor,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = destination.shortTitle,
+            color = contentColor,
+            fontSize = 10.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
