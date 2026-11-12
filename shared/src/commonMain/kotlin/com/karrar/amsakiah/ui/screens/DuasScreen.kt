@@ -195,20 +195,21 @@ private fun DuaList(
         modifier = Modifier
             .fillMaxWidth()
             .imeNestedScroll(),
+        // الحواف من الجهزة إلى الحافة للتمرير؛ المحتوى يحمل حشوته داخل كل عنصر.
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
+            start = 0.dp,
+            end = 0.dp,
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + bottomInset + 8.dp + imeBottom
         ),
         verticalArrangement = Arrangement.spacedBy(18.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 placeholder = { Text("ابحث في الأدعية والزيارات...", fontSize = 13.sp) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = KararColors.Gold) },
                 singleLine = true,
@@ -217,7 +218,11 @@ private fun DuaList(
         }
 
         item(span = { GridItemSpan(maxLineSpan) }) {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 item {
                     CategoryChip("الكل", category == null) { category = null }
                 }
@@ -228,7 +233,9 @@ private fun DuaList(
         }
 
         item(span = { GridItemSpan(maxLineSpan) }) {
-            SectionTitle("الأدعية والمناجاة (${filtered.size})")
+            Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
+                SectionTitle("الأدعية والمناجاة (${filtered.size})")
+            }
         }
 
         items(
@@ -236,7 +243,8 @@ private fun DuaList(
             key = { index -> filtered[index].id }
         ) { index ->
             val item = filtered[index]
-            DuaCard(
+            Box(Modifier.padding(horizontal = 8.dp)) {
+                DuaCard(
                 item = item,
                 isCurrent = player.currentId == item.id,
                 isPlaying = player.currentId == item.id && player.playing,
@@ -244,6 +252,7 @@ private fun DuaList(
                 onClick = { onSelect(item) },
                 onPlay = { onPlay(item) }
             )
+            }
         }
     }
 }
