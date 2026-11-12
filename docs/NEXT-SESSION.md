@@ -10,8 +10,8 @@
 | البند | القيمة |
 | --- | --- |
 | الفرع | `main` |
-| آخر التزام كود | `564a260` — مدفوع (v1.5.8 — مفاتيح الجنان + القارئ الموحّد) |
-| الإصدار الحالي | `versionCode 10507` / `versionName 1.5.8` — في الطريق (tag بعد البناء) |
+| آخر التزام كود | `a9a2b4a` + دفعة 2026-11-12 (ج: القارئ الموحّد + أوفلاين القرآن) — مدفوعة `1.5.9 / 10508` |
+| الإصدار الحالي | `versionCode 10508` / `versionName 1.5.9` — لم تُوسم بعد (تنتظر تحقّقًا على الجهاز) |
 | التعديلات معلّقة | تحقق بصري + لمس الودجتات + المشغل — معلّقة على الجهاز |
 ### 1.2 إعادة تصميم الشاشات — 2026-11-08 (مدفوعة في v1.3.0)
 
@@ -630,6 +630,20 @@
   5. إعادة تصميم إشعارات الأذان/العد التنازلي وفق `appkarv/widgetsnotifications.html` (ProgressStyle + طلب INTER_ACTION + سحب الإشعار يوقف الصوت).
   6. شاشة البداية المتحركة (`Startscreen .txt`) — لم تُبنى بعد.
   7. إزالة `derivedStateOf`/`PrayerCalculator` غير المستخدمة من الشل لدى النقل.
+
+### 1.20 جلسة 2026-11-12 (ج) — أوفلاين كامل + القارئ الموحّد القرآني + تجهيزات المنصة (مخطوطة)
+
+- **سياسة الأوفلاين منفّذة:** أزلت الاتكال على الشبكة من نصوص القرآن (`alquran.cloud` كان يقرأ السور ديناميكيًا ← الآن `QuranTexts.bySurah` من `files/quran_texts.json` المضمّن 750KB). أُضيف `core/quran/QuranTexts.kt`. ملفات الصوت للأذان والتكبير مدرجة (`ahmad_aldabbaq`, `amr_kadhemi`, `hassan_rezai`, `jalil_karbalae`, `maitham_tammar`, `takber`, `masbaha_*`) + `quran_texts.json` (1.4MB من مرجع الكفيل).
+- **الشبكة المتبقية (مسموحة حصرًا):** `api.open-meteo.com` (الطقس)، `get.geojs.io` (الموقع بالـIP). لا شيء آخر. `RemoteText.kt/expect-actual` حُذفت بالكامل.
+- **القارئ الموحّد توسّع:** `UnifiedReaderScreen` يقبل `bodyText` (نص جاهز — للأدعية والقرآن) أو `contentId` (مفاتيح الجنان) و`playerSlot` اختياريًا. القرآن عبر `QuranReader` (تحميل مرة واحدة ثم `UnifiedReaderScreen` مع بسملة وتحويل `﴾N﴾` لسطر مستقل). الأدعية عبر نفس القارئ بدل `DuaDetailScreen` (التي حُذفت). أشرطة التطبيق تختفيان `immersive` كوضع قراءة كاملة.
+- **شريط التنقل فوق «اليوم»:** `isToday` لم يعد يشمل `immersive` — «اليوم» الآن يشارك شريط التنقل كما في المرجع؛ `immersive` يعني فقط وضع القراءة الكاملة.
+- **إشعارات الأذان والعد التنازلي:** تطابق `widgetsnotifications.html` حرفيًا (بطاقتان: «رمضان مباشر» بعلم لهب + نقطة حمراء + شريط نهاري/ليلي، وبطاقة «حان الآن موعد …» بحالي/القادمة + «إيقاف الأذان» والسحب يوقفه).
+- **تقويمان منفصلان (مكتملان):** زر التقويم تحت القوس = تقويم شهري هجري (`ArcCalendarSheet`)، وزر الشريط = تقويم السنوات (`CalendarScreen` يحتوي YearPicker + MonthTableCard).
+- **شاشة البداية:** `ui/splash/SplashScreen.kt` مطابقة لـ `Startscreen .txt` (150 نجمة + 15 أيقونة إسلامية عائمة + حلقات + شعار + Reem Kufi).
+- **الحركة:** `KararTokens.Motion` مطابقة لرموز Expressive الرسمية (spatial 0.8/380/800/200، effects 1.0/1600/3800/800).
+- **المنصة:** المانيفست محدّث (`density|keyboard|navigation` في configChanges + `com.samsung.android.keepalive.density` DeX). أيقونة تكيفية بخلفية `system_accent1_100` (values-v31) و`system_neutral1_100` (values-night-v31، fallback `#0B1120` لـ≤11). `baseline-prof.txt` أضيف بتوقيعات ساخنة أولية (غير مكتمل — الكامل عبر macrobenchmark لاحقًا).
+- **M3 Expressive Flexible Navigation Bar:** المؤشر كبسولة `secondaryContainer` 32×56dp.
+- **لم تُفحص بصريًا:** كل الأيقونات/الإشعارات/السبلاش/الحركة تنتظر جهازًا حقيقيًا — البناء الوحيد الموثوق هو CI.
 
 ---
 

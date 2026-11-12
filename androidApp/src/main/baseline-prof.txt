@@ -1,0 +1,7 @@
+# إمساكية كرار — Baseline Profile (توقيعات ساخنة للترجمة المسبقة AOT عند التثبيت).
+# ملاحظة: الأدنى فقط — الجيل الكامل يتطلب macrobenchmark على جهاز حقيقي.
+HSPLandroidx/activity/ComponentActivity;->onCreate(Landroid/os/Bundle;)V
+HSPLandroidx/activity/ComponentActivity;->onStart()V
+HSPLandroidx/activity/ComponentActivity;->onStop()V
+HSPLandroidx/activity/ComponentActivity;->onDestroy()V
+HSPLcom/Nightjar/amsakkarrar/MainActivity;->onCreate(Landroid/os/Bundle;)V

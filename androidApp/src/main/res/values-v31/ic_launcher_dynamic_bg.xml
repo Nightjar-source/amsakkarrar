@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- أندرويد 12+ (API 31+): خلفية الأيقونة من لون تمييز ورق الجدار (الوضع الفاتح) -->
+<resources>
+    <color name="ic_launcher_dynamic_bg">@android:color/system_accent1_100</color>
+</resources>

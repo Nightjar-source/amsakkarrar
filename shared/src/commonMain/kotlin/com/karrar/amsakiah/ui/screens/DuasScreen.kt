@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -124,11 +125,37 @@ fun DuasScreen(
                     player = player
                 )
             } else {
-                DuaDetailScreen(
-                    item = item,
-                    contentPadding = contentPadding,
-                    player = player,
-                    onBack = { selectedId = null }
+                // القارئ الموحّد — نفس تصميم القرآن/الجنان: شريط عائم + إخفاء + ⚙،
+                // واختفاء أشرطة التطبيق عبر الشل (immersive).
+                val duaPlaying = player.currentId == item.id && player.playing
+                UnifiedReaderScreen(
+                    contentId = 0,
+                    title = item.title,
+                    subtitle = item.category,
+                    onBack = { selectedId = null },
+                    onTitleChange = { /* يُمرَّر للشل تلقائيًا عبر LaunchedEffect */ },
+                    bodyText = item.arabicText.ifBlank { item.translation.orEmpty() },
+                    playerSlot = if (item.hasAudio) {
+                        {
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .background(KararColors.Gold)
+                                    .clickable { player.play(item) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (duaPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                    contentDescription = if (duaPlaying) "إيقاف مؤقت" else "تشغيل التسجيل",
+                                    tint = KararColors.OnGold,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        null
+                    }
                 )
             }
         }

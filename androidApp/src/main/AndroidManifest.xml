@@ -46,10 +46,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Caliq">
 
+        <!-- Samsung DeX: لا يُنهى التطبيق عند وصل/فصل شاشة خارجية -->
+        <meta-data
+            android:name="com.samsung.android.keepalive.density"
+            android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|density|uiMode|keyboard|navigation"
             android:launchMode="singleTop"
             android:theme="@style/Theme.Caliq.Splash">
             <intent-filter>

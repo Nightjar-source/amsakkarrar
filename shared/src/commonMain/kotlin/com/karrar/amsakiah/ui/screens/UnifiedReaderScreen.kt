@@ -49,10 +49,15 @@ import com.karrar.amsakiah.ui.theme.KararFonts
 /**
  * القارئ الموحّد — لأي محتوى قابل للقراءة: دعاء/زيارة/مفاتيح الجنان/قرآن.
  *
+ * مصدر النص واحد من اثنين:
+ * - [bodyText] — نص جاهز يُمرَّر مباشرة (الأدعية والقرآن) — يُعرض رغم فقرته كما هي.
+ * - بدونه — تُقرأ المعالجة من [JinanContentTexts] بمعرّفه [contentId] (مفاتيح الجنان).
+ *
  * التصميم:
- * - الشريط العائم: زر رجوع فقط + عنوان + زر ⚙ خفيفة وقائمة الخيارات.
+ * - الشريط العائم: زر رجوع فقط + عنوان + زر ⚙ خفيفة وقائمة الخيارات — يظهر ويختفي بالكامل.
  * - بمساحة كاملة edge-to-edge بلا حواف لونية ولا تابلت محيط.
- * - الخط Amiri والقراءة حيّة.
+ * - الخط Amiri والقراءة حيّة، وزر إخفاء `chrome-free` للملء الكامل.
+ * - [playerSlot] اختياري: زر تشغيل/إيقاف للتسجيلات الصوتية يطفو أسفل الشريط العائم.
  */
 @Composable
 fun UnifiedReaderScreen(
@@ -60,7 +65,9 @@ fun UnifiedReaderScreen(
     title: String,
     subtitle: String,
     onBack: () -> Unit,
-    onTitleChange: (String?) -> Unit = {}
+    onTitleChange: (String?) -> Unit = {},
+    bodyText: String? = null,
+    playerSlot: (@Composable () -> Unit)? = null
 ) {
     LaunchedEffect(title) { onTitleChange(title) }
 
@@ -69,15 +76,19 @@ fun UnifiedReaderScreen(
     var readingBackground by remember { mutableStateOf("paper") }
     var chromeVisible by remember { mutableStateOf(true) }
 
-    val body = listOf(
-        "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-        subtitle.ifBlank { "" },
-        "",
-        "────────────────",
-        JinanContentTexts.getProcessed(contentId).ifBlank { "" },
-        "────────────────",
-        ""
-    ).joinToString("\n")
+    val body = if (bodyText != null) {
+        bodyText
+    } else {
+        listOf(
+            "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+            subtitle.ifBlank { "" },
+            "",
+            "────────────────",
+            JinanContentTexts.getProcessed(contentId).ifBlank { "" },
+            "────────────────",
+            ""
+        ).joinToString("\n")
+    }
 
     val isPaper = readingBackground == "paper"
     val isDark = readingBackground == "dark"
@@ -167,8 +178,7 @@ fun UnifiedReaderScreen(
                 modifier = Modifier.weight(1f)
             )
             // زر الخيارات (ثلاث نقاط) — ⚙ أيضاً: إعدادات القراءة
-            Box {
-                IconButton(onClick = { showMenu = !showMenu }) {
+            Box {                IconButton(onClick = { showMenu = !showMenu }) {
                     Icon(
                         imageVector = if (showMenu) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                         contentDescription = "خيارات",
@@ -200,6 +210,17 @@ fun UnifiedReaderScreen(
                 }
             }
         }
+        }
+
+        // زر المشغل (إن وُجد) — يبقى حتى في وضع القراءة بلا واجهة (التحكم بالصوت)
+        playerSlot?.let { slot ->
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 14.dp, bottom = 20.dp)
+            ) {
+                slot()
+            }
         }
 
         // عند إخفاء الواجهة: نقطة صغيرة شفافة في الأسفل تستعيد الأزرار بلمسة واحدة

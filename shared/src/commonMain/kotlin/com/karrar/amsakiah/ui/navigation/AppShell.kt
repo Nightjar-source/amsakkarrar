@@ -171,8 +171,10 @@ fun AppShell(
     // «اليوم» ولا شيء فوقه؛ أوفتح دعاء/قارئ الجنان يتحولان إلى edge-to-edge
     // بشاشتهما الخاصة (لا شريط التطبيق الرئيسي).
     val isToday = currentRoute == AppRoute.Today && !duaDetailOpen
-    val immersive = isToday || (currentRoute == AppRoute.Duas && duaDetailOpen) || currentRoute is AppRoute.JinanReader
-    val showTopBar = !immersive
+    // «اليوم» يخفي شريط العنوان فقط — شريط التنقل السفلي يبقى كما في المرجع.
+    // يخفي شريطَي الواجهة بالكامل فقط في وضع القراءة (دعاء/قارئ الجنان).
+    val immersive = (currentRoute == AppRoute.Duas && duaDetailOpen) || currentRoute is AppRoute.JinanReader
+    val showTopBar = !isToday && !immersive
 
     // ---------- الإنسِتس ----------
     val topInsets = WindowInsets.statusBars
@@ -429,7 +431,8 @@ fun AppShell(
         }
 
         // مشغّل واحد: مدمج فوق شريط التنقل، أو كرة عائمة تُسحب.
-        if (player.hasTrack) {
+        // لا يظهر فوق تفاصيل الدعاء — زر التشغيل هناك داخل القارئ نفسه.
+        if (player.hasTrack && !duaDetailOpen) {
             DuaPlayerOverlay(
                 controller = player,
                 bottomReserve = navBarReserve,
