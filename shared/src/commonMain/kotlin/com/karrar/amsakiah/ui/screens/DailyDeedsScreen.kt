@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -69,7 +71,10 @@ fun DailyDeedsScreen(
     val dayDeeds = deeds.filter { it.source == DailyDeedSource.MONTH_DAY }
     val weekdayDeeds = deeds.filter { it.source == DailyDeedSource.WEEKDAY }
 
-    LazyColumn(
+    // شبكة تكيّفية رسمية (Adaptive): عمود واحد على COMPACT، عمودان MEDIUM+ —
+    // بطاقات الأعمال لا تتقلص؛ تتسع فقط حين تتوفر مساحة كافية.
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 430.dp),
         modifier = Modifier.fillMaxSize().padding(contentPadding),
         contentPadding = PaddingValues(
             start = 16.dp,
@@ -77,10 +82,11 @@ fun DailyDeedsScreen(
             top = 10.dp,
             bottom = 28.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // ---------- ترويسة التاريخ ----------
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 corner = 24.dp,
@@ -132,7 +138,7 @@ fun DailyDeedsScreen(
         }
 
         if (deeds.isEmpty()) {
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     corner = 20.dp,
@@ -158,7 +164,7 @@ fun DailyDeedsScreen(
 
         // ---------- أعمال هذه الليلة ----------
         if (nightDeeds.isNotEmpty()) {
-            item { SectionTitle("أعمال هذه الليلة (${nightDeeds.size})") }
+            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("أعمال هذه الليلة (${nightDeeds.size})") }
             items(nightDeeds, key = { "n-${it.item.id}" }) { deed ->
                 DeedRow(
                     deed = deed,
@@ -180,7 +186,7 @@ fun DailyDeedsScreen(
 
         // ---------- أعمال اليوم ----------
         if (dayDeeds.isNotEmpty()) {
-            item { SectionTitle("أعمال اليوم (${dayDeeds.size})") }
+            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("أعمال اليوم (${dayDeeds.size})") }
             items(dayDeeds, key = { "d-${it.item.id}" }) { deed ->
                 DeedRow(
                     deed = deed,
@@ -202,7 +208,7 @@ fun DailyDeedsScreen(
 
         // ---------- أعمال يوم الأسبوع ----------
         if (weekdayDeeds.isNotEmpty()) {
-            item { SectionTitle("أعمال يوم $weekdayName (${weekdayDeeds.size})") }
+            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("أعمال يوم $weekdayName (${weekdayDeeds.size})") }
             items(weekdayDeeds, key = { "w-${it.item.id}" }) { deed ->
                 DeedRow(
                     deed = deed,

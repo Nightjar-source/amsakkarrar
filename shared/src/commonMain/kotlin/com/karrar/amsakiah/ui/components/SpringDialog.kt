@@ -3,45 +3,47 @@ package com.karrar.amsakiah.ui.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.coroutines.delay
 
 /**
- * نافذة تأكيد/حوار مدمجة على Spring Motion — تعمل *داخل نفس نافذة التطبيق*.
+ * نافذة تأكيد/حوار على Spring Motion — full-bleed على كل عائلة أندرويد.
  *
- * لماذا ليست `Dialog`؟
- * - نافذة الحوار على أندرويد قد لا تمتد حتى حواف الشاشة على بعض الأجهزة
- *   (Samsung One UI بالذات)، فتظهر "أشرطة فارغة" داكنة حول النافذة وتخالف
- *   معايير edge-to-edge.
- * - هنا: ترسم التعتيمة (scrim) `fillMaxSize` داخل نفس المحتوى، فتمتد خلف
- *   أشرطة النظام تلقائيًا — فلا أشرطة سوداء/فاتحة فارغة أبدًا على أي جهاز.
+ * لماذا ليست الحوارات الافتراضية `Dialog { … }`؟
+ * - الوضع الافتراضي للنافذة (`usePlatformDefaultWidth = true`) يجعل نافذة
+ *   الحوار بحجم البطاقة فقط، فيبقى خطّان داكنان/فارغان أعلى وأسفل منها على
+ *   أجهزة Samsung One UI ومثيلاتها — وهو ما رصده المستخدم.
+ * - هنا: نافذة `Dialog(decorFitsSystemWindows = false, usePlatformDefaultWidth = false)`
+ *   تغطي الشاشة كاملة (خلف أشرطة النظام والمقطوعات)، ونرسم التعتيمة
+ *   (scrim) بأنفسنا = full-bleed حقيقية على أي جهاز.
  *
- * الحركة كلها springs وتُعاد كل فتح/إغلاق:
+ * الحركة كلها springs وتُعاد مع كل فتح/إغلاق:
  * - الدخول: تلاشٍ بنابض التأثيرات + Scale/Offset مكاني للبطاقة.
- * - الخروج: عكس ذلك — ومدة تفريغ الـ[compose] مضبوطة على منحنى النابض
- *   حتى تظهر النوافذ مع كل دخول وخروج بلا أي حفظ للكاش.
+ * - الخروج: عكس ذلك — وشرط `composing` يبقي النافذة حتى تنتهي حركة الخروج
+ *   كاملة (لا تقاطع أي شيء ويُعاد تشغيلها مع كل فتح).
  *
- * توافق One UI Reachability: لا شيء في هذا المكوِّن يعترض إيماءة "سحب
- * الشاشة إلى المنتصف" — فالبطاقة تتمرك تلقائيًا حيث تريد المستخدم أن تُزلَ.
+ * ملاحظة: النقر خارج البطاقة يُدار يدويًا عبر التعتيمة (وليس عبر
+ * `dismissOnClickOutside`) حتى لا تتداخلان الدعوَتان.
  */
 @Composable
 fun SpringDialog(
@@ -49,14 +51,14 @@ fun SpringDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     dismissible: Boolean = true,
-    /** عند true (لوحات فيها حقول إدخال) تُرفَع البطاقة فوق لوحة المفاتيح بنابض. */
+    /** للألواح التي تحتوي حقول إدخال — ترفع البطاقة فوق لوحة المفاتيح. */
     imePadding: Boolean = false,
     scrimColor: Color = KararTokens.Glass.scrim,
     contentPosition: Alignment = Alignment.Center,
     contentPadding: PaddingValues = PaddingValues(24.dp),
     content: @Composable () -> Unit
 ) {
-    // مدة التفريغ يجب أن تتفوق على أبطأ نابض استخدام (spatial slow ≈ 470ms).
+    // مدة التفريغ أطول من أبطأ منحنى خروج (spatial slow ≈ 470ms).
     var composing by remember { mutableStateOf(visible) }
     LaunchedEffect(visible) {
         if (visible) composing = true else {
@@ -71,7 +73,7 @@ fun SpringDialog(
         animationSpec = KararTokens.Motion.effects(KararTokens.Motion.EffectsStiffnessSlow),
         label = "spring-dialog-scrim"
     )
-    // ---- البطاقة: تلاشٍ + زووم + انزلاق بنابض مكاني ----
+    // ---- البطاقة: تلاشٍ + زووم بنابض مكاني + انزلاق طفيف ----
     val cardAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = KararTokens.Motion.effects(),
@@ -79,7 +81,10 @@ fun SpringDialog(
     )
     val cardScale by animateFloatAsState(
         targetValue = if (visible) 1f else 0.84f,
-        animationSpec = KararTokens.Motion.spatial(dampingRatio = 0.62f, stiffness = KararTokens.Motion.SpatialStiffnessSlow),
+        animationSpec = KararTokens.Motion.spatial(
+            dampingRatio = 0.62f,
+            stiffness = KararTokens.Motion.SpatialStiffnessSlow
+        ),
         label = "spring-dialog-scale"
     )
     val cardOffsetY by animateFloatAsState(
@@ -90,38 +95,48 @@ fun SpringDialog(
 
     if (!composing) return
 
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = contentPosition
-    ) {
-        // ── التعتيمة (Full-bleed) — تمتد خلف كل أشرطة النظام بلا استثناء ──
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = scrimAlpha }
-                .background(scrimColor)
-                .clickable(
-                    enabled = dismissible && visible,
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onDismissRequest
-                )
+    Dialog(
+        onDismissRequest = { if (dismissible) onDismissRequest() },
+        properties = DialogProperties(
+            decorFitsSystemWindows = false,
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = dismissible,
+            dismissOnClickOutside = false
         )
-
-        // ── البطاقة المرفوعة ──
-        val base = Modifier.widthIn(max = 420.dp)
-        val imeAware = if (imePadding) base.imePadding() else base
+    ) {
         Box(
-            modifier = imeAware
-                .padding(contentPadding)
-                .graphicsLayer {
-                    alpha = cardAlpha
-                    scaleX = cardScale
-                    scaleY = cardScale
-                    translationY = cardOffsetY
-                }
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = contentPosition
         ) {
-            content()
+            // ── التعتيمة full-bleed: تمتد خلف كل أشرطة النظام والمقطوعات ──
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = scrimAlpha }
+                    .background(scrimColor)
+                    .clickable(
+                        enabled = dismissible && visible,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismissRequest
+                    )
+            )
+
+            // ── البطاقة المرفوعة ──
+            val base = Modifier.widthIn(max = 420.dp)
+            val imeAware = if (imePadding) base.imePadding() else base
+            Box(
+                modifier = imeAware
+                    .padding(contentPadding)
+                    .graphicsLayer {
+                        alpha = cardAlpha
+                        scaleX = cardScale
+                        scaleY = cardScale
+                        translationY = cardOffsetY
+                    }
+            ) {
+                content()
+            }
         }
     }
 }

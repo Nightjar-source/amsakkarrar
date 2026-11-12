@@ -106,6 +106,9 @@ fun SettingsScreen(
 ) {
     val settings = state.settings
     val scope = rememberCoroutineScope()
+    // مواقيت اليوم — تُستخدم في الشبكة اليومية للمعاينة وتنبيه خطوط العرض العليا.
+    val today = remember(settings) { PrayerCalculator.todayDate(settings) }
+    val times = remember(settings, today) { PrayerCalculator.timesFor(settings, today) }
     val permissions = rememberPermissionController()
     // عندما يعود المستخدم من إعدادات النظام نحدّث حالة الصلاحيات فورًا —
     // فتعرف الشاشة إن كانت الصلاحيات صارت مكتملة دون النقر على «تحديث».
@@ -133,6 +136,43 @@ fun SettingsScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+
+        // ==================== تنبيه خطوط العرض العليا (مرصد الكفيل 3D) ====================
+        if (times.isHighLatAnomaly) {
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    corner = 22.dp,
+                    color = KararColors.Amber.copy(alpha = 0.16f),
+                    borderColor = KararColors.Amber.copy(alpha = 0.45f),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(
+                            Icons.Filled.Info,
+                            contentDescription = null,
+                            tint = KararColors.Amber,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "تنبيه فلكي: خطوط العرض العليا (زاوية استثنائية صيفية)",
+                                color = KararColors.Amber,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Text(
+                                text = "منطقتك (${kotlin.math.abs(settings.latitude).toInt()}°) فوق خط عرض 47.5° في فصل الصيف الفلكي (تداخل الشفق). تم تفعيل قانون «${PrayerCalculator.highLatFor(settings.highLatRule).titleAr}» لضبط الصلوات والحد من اضطراب أوقات الفجر والعشاء.",
+                                color = KararColors.TextPrimary,
+                                fontSize = 10.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // ==================== ترويسة الضبط ====================
         item {
@@ -543,19 +583,28 @@ private fun SettingsHero(
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = "إمساكية كرار",
-                    style = TextStyle(
-                        brush = Brush.linearGradient(
-                            listOf(KararColors.Teal, KararColors.Violet)
-                        ),
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.Black,
-                        lineHeight = 30.sp
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.AccessTime,
+                        contentDescription = null,
+                        tint = KararTokens.Accent.teal,
+                        modifier = Modifier.size(26.dp)
                     )
-                )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "مرصد الكفيل 3D",
+                        style = TextStyle(
+                            brush = Brush.linearGradient(
+                                listOf(KararColors.Teal, KararColors.Violet)
+                            ),
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Black,
+                            lineHeight = 30.sp
+                        )
+                    )
+                }
                 Text(
-                    text = "منظومة المواقيت الفلكية الشرعية — أوفلاين بالكامل",
+                    text = "نظام الحسابات الفلكية الشرعية المتكامل للمناطق العادية وخطوط العرض المرتفعة صيفاً — أوفلاين بالكامل",
                     color = KararColors.TextMuted,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
