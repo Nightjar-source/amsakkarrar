@@ -134,7 +134,7 @@ fun DuasScreen(
                     subtitle = item.category,
                     onBack = { selectedId = null },
                     onTitleChange = { /* يُمرَّر للشل تلقائيًا عبر LaunchedEffect */ },
-                    bodyText = item.arabicText.ifBlank { item.translation.orEmpty() },
+                    bodyText = item.arabicText.ifBlank { item.subtitle },
                     playerSlot = if (item.hasAudio) {
                         {
                             Box(
