@@ -21,7 +21,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -74,6 +81,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
@@ -189,6 +197,13 @@ fun TodayScreen(
         }
     }
 
+    // هوامش آمنة أفقية (ثقوب الإطار/الأشرطة/الكابشن) — تُطبق على القوس فقط
+    // حتى لا تتداخل أطرافه (الشروق/المغرب ونصوصها) مع الحافة الفعلية.
+    val safeInsets = WindowInsets.safeDrawing.asPaddingValues()
+    val layoutDirection = LocalLayoutDirection.current
+    val arcSafeStart = safeInsets.calculateStartPadding(layoutDirection) + 8.dp
+    val arcSafeEnd = safeInsets.calculateEndPadding(layoutDirection) + 8.dp
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -276,7 +291,8 @@ fun TodayScreen(
                     subPhaseBadge = phase.badge,
                     modifier = Modifier
                         .size(width = arcWidth, height = arcHeight)
-                        .padding(horizontal = 2.dp)
+                        // هوامش آمنة أفقية تمنع الطرف (الشروق/المغرب) من ملامسة الحافة الفعلية
+                        .padding(start = arcSafeStart, end = arcSafeEnd)
                 )
             }
 
