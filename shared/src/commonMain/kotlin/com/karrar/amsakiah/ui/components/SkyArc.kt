@@ -258,99 +258,137 @@ fun SkyArc(
                 )
             }
 
-            // 4) الشمس أو القمر عند نقطة التقدم
+            // 4) الشمس أو القمر عند نقطة التقدم — طبق الأصل من `amsak3d.tsx`
             val (ux, uy) = arcPoint(animatedProgress)
             val body = Offset(px(ux), py(uy))
 
             if (!isNight) {
-                // هالة الشمس
+                // هالة الشمس الخارجية (r*2.1 ثم r*1.4) + 12 شعاعًا × 5° بعدها القرص
+                val sr = 15f * s
                 drawCircle(
-                    brush = Brush.radialGradient(
-                        colorStops = arrayOf(
-                            0f to Color(0x66FFD54F),
-                            0.45f to Color(0x33FF9F1C),
-                            1f to Color.Transparent
-                        ),
-                        center = body,
-                        radius = 38f * s
-                    ),
-                    radius = 38f * s,
+                    color = Color(0x2EFFA500), // rgba(255,165,0,0.18) — هالة المرجع الأولى
+                    radius = sr * 2.1f,
                     center = body
                 )
-                // قرص الشمس بتدرّج واقعي (نفس ألوان RealisticSunSVG)
+                drawCircle(
+                    color = Color(0x59FFC81E), // rgba(255,200,30,0.35) — الهالة الثانية
+                    radius = sr * 1.4f,
+                    center = body
+                )
+                // 12 شعاعًا — من r*1.15 إلى r*1.55 (نفس RealisticSunSVG)
+                for (deg in 0 until 360 step 30) {
+                    val rad = Math.toRadians(deg.toDouble())
+                    val dx = sin(rad).toFloat() * sr
+                    val dy = cos(rad).toFloat() * sr
+                    drawLine(
+                        color = Color(0xFFFDE047).copy(alpha = 0.75f),
+                        start = Offset(body.x + dx * 1.15f, body.y - dy * 1.15f),
+                        end = Offset(body.x + dx * 1.55f, body.y - dy * 1.55f),
+                        strokeWidth = 1.4f * s,
+                        cap = StrokeCap.Round
+                    )
+                }
+                // قرص الشمس بتدرّج واقعي (الألوان والمركز من المرجع)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colorStops = arrayOf(
                             0f to Color(0xFFFFFFFF),
-                            0.32f to Color(0xFFFFF4CC),
-                            0.72f to Color(0xFFFFB703),
-                            1f to Color(0xFFFF8C00)
+                            0.35f to Color(0xFFFEF08A),
+                            0.75f to Color(0xFFF59E0B),
+                            1f to Color(0xFFEA580C)
                         ),
-                        center = Offset(body.x - 4f * s, body.y - 4f * s),
-                        radius = 17f * s
+                        center = Offset(body.x - sr * 0.3f, body.y - sr * 0.3f),
+                        radius = sr * 0.85f
                     ),
-                    radius = 16f * s,
+                    radius = sr * 0.85f,
+                    center = body
+                )
+            } else {
+                // القمر الواقعي — نفس المرجع: هالة مزدوجة + قرص داكن + طور بقوسين + فوهات
+                val r = 15f * s
+                val geom = com.karrar.amsakiah.core.astronomy.moonGeometry(hijriDay, 1f)
+                val k = geom.illuminationRatio
+                drawCircle(
+                    color = Color(0x24FDE68A), // rgba(253,230,138,.137) ≈ 0x23
+                    radius = r * 1.9f,
                     center = body
                 )
                 drawCircle(
-                    color = Color.White.copy(alpha = 0.55f),
-                    radius = 4.5f * s,
-                    center = Offset(body.x - 5f * s, body.y - 5f * s)
+                    color = Color(0x2EE2E8F0), // rgba(226,232,240,.18)
+                    radius = r * 1.3f,
+                    center = body
                 )
-            } else {
-                // هالة القمر
+                // القرص المظلم (radial من #1E293B @ .92 إلى #090D16 @ .96) + محيط رفيع
                 drawCircle(
                     brush = Brush.radialGradient(
                         colorStops = arrayOf(
-                            0f to Color(0x4DE2E8F0),
-                            0.5f to Color(0x2694A3B8),
-                            1f to Color.Transparent
+                            0f to Color(0xEB1E293B),
+                            1f to Color(0xF6090D16)
                         ),
                         center = body,
-                        radius = 34f * s
+                        radius = r
                     ),
-                    radius = 34f * s,
+                    radius = r,
                     center = body
                 )
-
-                // طور القمر: يوم 1 هلال رقيق، يوم 15 بدر، ثم يعود هلالًا.
-                val phase = (((hijriDay - 1) % 30) / 29f).coerceIn(0f, 1f)
-                val illumination = ((1f - cos(phase * 2f * PI.toFloat())) / 2f).coerceIn(0f, 1f)
-                val r = 15f * s
-                val shadowShift = 2f * r * illumination * (if (phase <= 0.5f) 1f else -1f)
-                val moonClip = Path().apply { addOval(Rect(center = body, radius = r)) }
-                clipPath(moonClip) {
-                    drawCircle(
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.18f),
+                    radius = r,
+                    center = body,
+                    style = Stroke(width = 0.6f * s)
+                )
+                // السطح المضاء — مساران قوسيان
+                if (!geom.isNewMoon) {
+                    val rx = geom.rx * r
+                    val litPath = Path().apply {
+                        moveTo(body.x, body.y - r)
+                        if (geom.isFullMoon) {
+                            addOval(Rect(body.x - r, body.y - r, body.x + r, body.y + r))
+                        } else {
+                            addArc(
+                                Rect(body.x - r, body.y - r, body.x + r, body.y + r),
+                                270f,
+                                if (geom.isWaxing) 180f else -180f
+                            )
+                            val waxingCrescent = geom.isWaxing == (k < 0.5f)
+                            addArc(
+                                Rect(body.x - rx, body.y - r, body.x + rx, body.y + r),
+                                90f,
+                                if (waxingCrescent) -180f else 180f
+                            )
+                            close()
+                        }
+                    }
+                    drawPath(
+                        path = litPath,
                         brush = Brush.radialGradient(
                             colorStops = arrayOf(
-                                0f to Color(0xFFFFFFFF),
-                                0.4f to Color(0xFFE2E8F0),
-                                0.82f to Color(0xFF94A3B8),
-                                1f to Color(0xFF475569)
+                                0f to Color(0xFFFFFDF7),
+                                0.45f to Color(0xFFFDE68A),
+                                0.80f to Color(0xFFE2E8F0),
+                                1f to Color(0xFF94A3B8)
                             ),
-                            center = Offset(body.x - 4f * s, body.y - 4f * s),
-                            radius = r
-                        ),
-                        radius = r,
-                        center = body
+                            center = Offset(body.x - r * 0.24f, body.y - r * 0.3f),
+                            radius = r * 1.5f
+                        )
+                    )
+                    // فوهات المرجع — شفافيتها تتبع الإضاءة
+                    drawCircle(
+                        color = Color(0xFF64748B).copy(alpha = if (k > 0.4f) 0.22f else 0.08f),
+                        radius = r * 0.18f,
+                        center = Offset(body.x - r * 0.28f, body.y - r * 0.2f)
                     )
                     drawCircle(
-                        color = Color(0xE60D1117),
-                        radius = r,
-                        center = Offset(body.x + shadowShift, body.y)
+                        color = Color(0xFF64748B).copy(alpha = 0.20f),
+                        radius = r * 0.15f,
+                        center = Offset(body.x + r * 0.22f, body.y - r * 0.12f)
+                    )
+                    drawCircle(
+                        color = Color(0xFF475569).copy(alpha = 0.18f),
+                        radius = r * 0.22f,
+                        center = Offset(body.x + r * 0.15f, body.y + r * 0.3f)
                     )
                 }
-                // حبيبات خفيفة على سطح القمر
-                drawCircle(
-                    color = Color(0x1A0F172A),
-                    radius = 2.6f * s,
-                    center = Offset(body.x + 4f * s, body.y + 3f * s)
-                )
-                drawCircle(
-                    color = Color(0x140F172A),
-                    radius = 1.8f * s,
-                    center = Offset(body.x - 3f * s, body.y + 6f * s)
-                )
             }
 
             // 5) الوقت الحالي في المنتصف — translate(200, 198)

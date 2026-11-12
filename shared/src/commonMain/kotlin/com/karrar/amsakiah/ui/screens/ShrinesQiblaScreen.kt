@@ -46,14 +46,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.karrar.amsakiah.core.astronomy.moonDetailsByHijriDay
 import com.karrar.amsakiah.core.data.HolySite
 import com.karrar.amsakiah.core.data.HolySites
 import com.karrar.amsakiah.core.data.SiteKind
 import com.karrar.amsakiah.core.permissions.rememberPermissionController
 import com.karrar.amsakiah.core.sensors.createCompassProvider
 import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.InfoChip
+import com.karrar.amsakiah.ui.components.MoonPhaseIcon
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.theme.KararColors
 import kotlinx.coroutines.launch
@@ -266,6 +269,36 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                     if (state.locating) "جارٍ تحديد الموقع..." else "تحديد موقعي عبر GPS (أوفلاين)",
                     fontSize = 13.sp
                 )
+            }
+        }
+
+        // ---------- طور القمر — نفس البطاقة في `amsak3d.tsx` ----------
+        item {
+            val settings = state.settings
+            val today = remember(settings.hijriOffset) { PrayerCalculator.todayDate(settings) }
+            val hijri = remember(today, settings.hijriOffset) { PrayerCalculator.hijriFor(settings, today) }
+            val moon = remember(hijri.day) { moonDetailsByHijriDay(hijri.day) }
+            GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MoonPhaseIcon(hijriDay = hijri.day)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = "${moon.phaseName} (${hijri.day} ${hijri.monthName})",
+                            color = KararColors.TextPrimary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "نسبة إضاءة القمر الفلكية الليلة: ${moon.illumination}%",
+                            color = KararColors.TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
             }
         }
 
