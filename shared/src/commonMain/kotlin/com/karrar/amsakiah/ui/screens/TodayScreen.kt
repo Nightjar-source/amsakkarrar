@@ -321,17 +321,16 @@ fun TodayScreen(
         }
     }
 
-    // تقويم القوس (V7) — نافذة سفلية فوق شاشة اليوم مباشرة.
-    if (showArcCalendar) {
-        ArcCalendarSheet(
-            state = state,
-            onDismiss = { showArcCalendar = false },
-            onOpenFullCalendar = {
-                showArcCalendar = false
-                onOpenFullCalendar()
-            }
-        )
-    }
+    // تقويم القوس (V7) — نافذة سفلية فوق شاشة اليوم مباشرة (SpringMotion).
+    ArcCalendarSheet(
+        visible = showArcCalendar,
+        state = state,
+        onDismiss = { showArcCalendar = false },
+        onOpenFullCalendar = {
+            showArcCalendar = false
+            onOpenFullCalendar()
+        }
+    )
 }
 
 // =====================================================================

@@ -43,9 +43,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -493,9 +491,7 @@ fun SettingsScreen(
         }
     }
 
-    if (showCityPicker) {
-        CityPickerDialog(state = state, onDismiss = { showCityPicker = false })
-    }
+    CityPickerDialog(visible = showCityPicker, state = state, onDismiss = { showCityPicker = false })
 }
 
 // =====================================================================
@@ -1208,14 +1204,12 @@ private fun OffsetCell(
 // اختيار المدينة
 // =====================================================================
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
+private fun CityPickerDialog(visible: Boolean, state: AppState, onDismiss: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var results by remember { mutableStateOf<List<OfflineCity>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // انتظار قصير يجعل الكتابة السريعة تُلغي البحث السابق (debounce)؛
     // كل القراءة/الفك/الفرز على Dispatchers.Default داخل CityDatabase.
@@ -1233,11 +1227,13 @@ private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
         loading = false
     }
 
-    ModalBottomSheet(
+    SpringSheet(
+        visible = visible,
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
         containerColor = KararColors.Card,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        imePadding = true,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        maxHeight = 640.dp
     ) {
         Column(
             modifier = Modifier
@@ -1246,7 +1242,7 @@ private fun CityPickerDialog(state: AppState, onDismiss: () -> Unit) {
                 // محدودة على بعض الأجهزة ما يسبب انهيار القياس. ارتفاع ثابت
                 // معقول مع LazyColumn بوزن كامل يعطي نفس الشكل بأمان.
                 .heightIn(min = 320.dp, max = 640.dp)
-                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {

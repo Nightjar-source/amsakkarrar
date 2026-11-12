@@ -9,18 +9,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
+import com.karrar.amsakiah.ui.components.SpringSheet
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.datetime.DatePeriod
@@ -53,9 +50,9 @@ import kotlin.math.roundToInt
  *   ذهبي، وأسهم الشهر السابق/التالي. اختيار يوم يغلق النافذة.
  * - هناك: منتقي سنة/شهر، تفاصيل كل يوم، والجدول الميلادي.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArcCalendarSheet(
+    visible: Boolean,
     state: AppState,
     onDismiss: () -> Unit,
     onSelectDate: (LocalDate) -> Unit = {},
@@ -67,7 +64,6 @@ fun ArcCalendarSheet(
 
     var year by remember { mutableIntStateOf(todayHijri.year) }
     var month by remember { mutableIntStateOf(todayHijri.monthNum) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val days = remember(settings, year, month, today) {
         buildMonth(settings, year, month, today)
@@ -84,16 +80,16 @@ fun ArcCalendarSheet(
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLayoutDirection provides LayoutDirection.Rtl
     ) {
-        ModalBottomSheet(
+        SpringSheet(
+            visible = visible,
             onDismissRequest = onDismiss,
-            sheetState = sheetState,
             containerColor = KararColors.Card,
-            shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+            contentPadding = PaddingValues(horizontal = 14.dp),
+            maxHeight = 720.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp)
                     .padding(bottom = 18.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

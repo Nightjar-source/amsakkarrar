@@ -16,6 +16,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imeNestedScroll
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -182,14 +187,18 @@ private fun DuaList(
         }
     }
 
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 112.dp),
-        modifier = Modifier.fillMaxWidth(),
+        columns = GridCells.Adaptive(minSize = KararTokens.Size.duaCardMinWidth),
+        modifier = Modifier
+            .fillMaxWidth()
+            .imeNestedScroll(),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
             top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + bottomInset + 8.dp
+            bottom = contentPadding.calculateBottomPadding() + bottomInset + 8.dp + imeBottom
         ),
         verticalArrangement = Arrangement.spacedBy(18.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)

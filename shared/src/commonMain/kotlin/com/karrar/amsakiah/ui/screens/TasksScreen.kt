@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imeNestedScroll
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -64,6 +69,9 @@ fun TasksScreen(
 ) {
     val settings = state.settings
     var noteText by rememberSaveable { mutableStateOf("") }
+    // مساحة تمرير إضافية بمقدار عمق لوحة المفاتيح — الحقل المركّز يبقى ظاهرًا
+    // أثناء الكتابة، وبلا قفزة عند إغلاقها (اللقطة لا تتقلص، فقط التمرير يتقدم).
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
     // محفوظاتي من «مفاتيح الجنان» — نجّم القارئ ⇒ تظهر هنا فورًا.
     val favorites = settings.favoriteJinanItems.mapNotNull { id -> JinanContentData.findItemById(id) }
@@ -71,8 +79,9 @@ fun TasksScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .imeNestedScroll()
             .padding(contentPadding),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp + imeBottom),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
