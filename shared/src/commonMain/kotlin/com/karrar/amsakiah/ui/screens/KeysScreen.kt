@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.Key
@@ -54,9 +55,10 @@ fun KeysScreen(
     onOpenQibla: () -> Unit,
     onOpenTasbih: () -> Unit,
     onOpenTasks: () -> Unit,
-    onOpenJinan: () -> Unit
+    onOpenJinan: () -> Unit,
+    onOpenDailyDeeds: () -> Unit
 ) {
-    // ترتيب الظهور: القرآن ← مفاتيح الجنان ← الأدعية ← البوصلة ← المسبحة ← أعمال اليوم.
+    // ترتيب الظهور: القرآن ← مفاتيح الجنان ← أعمال اليوم ← الأدعية ← البوصلة ← المسبحة ← أعمال اليوم (المهام).
     // كلها منسقة بنفس البناء (كشيدة شفافة + أيقونة دائرية + عنوان) لتوحيد الشكل.
     val tiles = listOf(
         KeyTile(
@@ -74,6 +76,14 @@ fun KeysScreen(
             icon = Icons.Filled.Key,
             accent = KararColors.Gold,
             onClick = onOpenJinan
+        ),
+        KeyTile(
+            id = "dailydeeds",
+            title = "أعمال اليوم",
+            subtitle = "الليلة واليوم ويوم الأسبوع من «مفاتيح الجنان» — تُحدَّث تلقائيًا",
+            icon = Icons.Filled.CalendarToday,
+            accent = KararColors.Amber,
+            onClick = onOpenDailyDeeds
         ),
         KeyTile(
             id = "duas",
@@ -101,8 +111,8 @@ fun KeysScreen(
         ),
         KeyTile(
             id = "tasks",
-            title = "أعمال اليوم",
-            subtitle = "مهام وملاحظات · أعمالنا قبل النوم · تعهدنا اليومي",
+            title = "المهام والملاحظات",
+            subtitle = "⭐ محفوظاتي من «مفاتيح الجنان» + ملاحظاتي بين إيديك",
             icon = Icons.Filled.EventNote,
             accent = KararColors.Amber,
             onClick = onOpenTasks

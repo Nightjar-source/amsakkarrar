@@ -93,12 +93,15 @@ data class AppSettings(
     val customDhikrs: List<TasbihDhikr> = emptyList(),
 
     // ---------- أعمال اليوم (شاشة «المفاتيح» — تذكّر/ملاحظات) ----------
-    /** معرفات الأعمال اليومية التي أكملت في اليوم الحالي (تُصفر مع تغيّر اليوم) */
+    /** معرّفات الأعمال اليومية التي أكملت في اليوم الحالي (تُصفر مع تغيّر اليوم) */
     val todayTasksDone: List<String> = emptyList(),
     /** تاريخ اليوم الذي تُحسب له مهام `todayTasksDone` (ISO yyyy-MM-dd) */
     val todayTasksDate: String = "",
     /** ملاحظات حرة يضيفها المستخدم (الأحدث أولًا) */
     val notes: List<String> = emptyList(),
+
+    /** معرّفات نصوص مفاتيح الجنان التي نجومها المستخدم في القارئ (تُعرض في شاشة «أعمال اليوم») */
+    val favoriteJinanItems: List<Int> = emptyList(),
 
     val version: Int = 1
 )

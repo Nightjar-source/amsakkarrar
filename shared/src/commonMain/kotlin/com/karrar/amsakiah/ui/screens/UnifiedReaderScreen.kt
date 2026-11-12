@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -67,7 +69,9 @@ fun UnifiedReaderScreen(
     onBack: () -> Unit,
     onTitleChange: (String?) -> Unit = {},
     bodyText: String? = null,
-    playerSlot: (@Composable () -> Unit)? = null
+    playerSlot: (@Composable () -> Unit)? = null,
+    isFavorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null
 ) {
     LaunchedEffect(title) { onTitleChange(title) }
 
@@ -177,6 +181,17 @@ fun UnifiedReaderScreen(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
+            // نجمة المفضلة — تُظهر المقتطف في شاشة «المهام والملاحظات»
+            if (onToggleFavorite != null) {
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                        contentDescription = if (isFavorite) "إزالة من المفضلة" else "أضف إلى المفضلة",
+                        tint = if (isFavorite) KararColors.Gold
+                            else if (isDark || !isPaper) KararColors.TextMuted else KararColors.GoldDeep
+                    )
+                }
+            }
             // زر الخيارات (ثلاث نقاط) — ⚙ أيضاً: إعدادات القراءة
             Box {                IconButton(onClick = { showMenu = !showMenu }) {
                     Icon(

@@ -111,6 +111,7 @@ import com.karrar.amsakiah.ui.screens.DuasScreen
 import com.karrar.amsakiah.ui.screens.FiqhScreen
 import com.karrar.amsakiah.ui.screens.KeysScreen
 import com.karrar.amsakiah.ui.screens.JinanScreen
+import com.karrar.amsakiah.ui.screens.DailyDeedsScreen
 import com.karrar.amsakiah.ui.screens.QuranScreen
 import com.karrar.amsakiah.ui.screens.UnifiedReaderScreen
 import com.karrar.amsakiah.ui.screens.SettingsScreen
@@ -335,7 +336,8 @@ fun AppShell(
                                 onOpenQibla = { openKeysChild(AppRoute.Qibla) },
                                 onOpenTasbih = { openKeysChild(AppRoute.Tasbih) },
                                 onOpenTasks = { openKeysChild(AppRoute.Tasks) },
-                                onOpenJinan = { openKeysChild(AppRoute.Jinan) }
+                                onOpenJinan = { openKeysChild(AppRoute.Jinan) },
+                                onOpenDailyDeeds = { openKeysChild(AppRoute.DailyDeeds) }
                             )
                         }
                         entry(AppRoute.Duas) {
@@ -360,7 +362,14 @@ fun AppShell(
                             ShrinesQiblaScreen(state = state, contentPadding = contentPadding)
                         }
                         entry(AppRoute.Tasks) {
-                            TasksScreen(state = state, contentPadding = contentPadding)
+                            val openReader: (com.karrar.amsakiah.core.jinan.JinanItem) -> Unit = { item ->
+                                openKeysChild(AppRoute.JinanReader(item.id, item.title))
+                            }
+                            TasksScreen(
+                                state = state,
+                                contentPadding = contentPadding,
+                                onOpenJinanReader = openReader
+                            )
                         }
                         entry(AppRoute.Fiqh) {
                             FiqhScreen(state = state, contentPadding = contentPadding)
@@ -387,11 +396,31 @@ fun AppShell(
                         }
                         entry<AppRoute.JinanReader> { route ->
                             // كل مقتطف يقرأ نفسه من الملف المُدمج بالكامل (ولا تُحمل من جديد).
+                            val favIds = state.settings.favoriteJinanItems
+                            val isFav = route.contentId in favIds
                             UnifiedReaderScreen(
                                 contentId = route.contentId,
                                 title = route.title,
                                 subtitle = route.title,
-                                onBack = ::back
+                                onBack = ::back,
+                                isFavorite = isFav,
+                                onToggleFavorite = {
+                                    state.update { s ->
+                                        val next = if (isFav) s.favoriteJinanItems - route.contentId else s.favoriteJinanItems + route.contentId
+                                        s.copy(favoriteJinanItems = next)
+                                    }
+                                }
+                            )
+                        }
+                        entry(AppRoute.DailyDeeds) {
+                            // أعمال الليلة/اليوم/يوم الأسبوع — من «مفاتيح الجنان» بمطابقة كاملة.
+                            LaunchedEffect(Unit) { state.prepareJinanContent() }
+                            DailyDeedsScreen(
+                                state = state,
+                                contentPadding = contentPadding,
+                                onOpenReader = { item ->
+                                    openKeysChild(AppRoute.JinanReader(item.id, item.title))
+                                }
                             )
                         }
                     }
@@ -403,8 +432,9 @@ fun AppShell(
                         AppRoute.Quran -> "القرآن الكريم"
                         AppRoute.Tasbih -> "المسبحة"
                         AppRoute.Qibla -> "القبلة والمراقد"
-                        AppRoute.Tasks -> "أعمال اليوم"
+                        AppRoute.Tasks -> "المهام والملاحظات"
                         AppRoute.Jinan -> "مفاتيح الجنان"
+                        AppRoute.DailyDeeds -> "أعمال اليوم"
                         else -> null
                     }
                     UnifiedTopBar(

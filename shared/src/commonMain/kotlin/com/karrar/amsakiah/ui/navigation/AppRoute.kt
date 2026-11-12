@@ -63,6 +63,10 @@ sealed interface AppRoute : NavKey {
     /** فرعية «المفاتيح» — قارئ الجنان الموحّد (لأي دعاء وشهر). */
     @Serializable
     data class JinanReader(val contentId: Int, val title: String) : AppRoute
+
+    /** «أعمال اليوم» — أعمال الليلة/اليوم/يوم الأسبوع من مفاتيح الجنان. */
+    @Serializable
+    data object DailyDeeds : AppRoute
 }
 
 /**
@@ -84,6 +88,7 @@ val appNavConfiguration: SavedStateConfiguration = SavedStateConfiguration {
             subclass(AppRoute.Widgets::class, AppRoute.Widgets.serializer())
             subclass(AppRoute.Jinan::class, AppRoute.Jinan.serializer())
             subclass(AppRoute.JinanReader::class, AppRoute.JinanReader.serializer())
+            subclass(AppRoute.DailyDeeds::class, AppRoute.DailyDeeds.serializer())
         }
     }
 }
@@ -110,6 +115,7 @@ fun AppRoute.toDestination(): AppDestination? = when (this) {
     AppRoute.Qibla,
     AppRoute.Tasks,
     AppRoute.Jinan,
-    is AppRoute.JinanReader -> AppDestination.KEYS
+    is AppRoute.JinanReader,
+    AppRoute.DailyDeeds -> AppDestination.KEYS
     AppRoute.Widgets -> AppDestination.SETTINGS
 }
