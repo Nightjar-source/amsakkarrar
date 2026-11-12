@@ -982,7 +982,7 @@ private fun AppToastHost(state: AppState, modifier: Modifier = Modifier) {
             enter = slideInVertically(motionSpatial()) { -it / 2 } +
                 fadeIn(motionEffects()),
             exit = slideOutVertically(
-                motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast)
+                motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast, dampingRatio = KararTokens.Motion.SpatialDampingFast)
             ) { -it / 2 } + fadeOut(motionEffects())
         ) {
             val current = toast

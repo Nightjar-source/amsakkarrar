@@ -185,7 +185,7 @@ fun MergedAccordion(
             enter = expandVertically(animationSpec = motionSpatial()) +
                 fadeIn(animationSpec = motionEffects()),
             exit = shrinkVertically(
-                animationSpec = motionSpatial(KararTokens.Motion.SpatialStiffnessFast)
+                animationSpec = motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast, dampingRatio = KararTokens.Motion.SpatialDampingFast)
             ) + fadeOut(animationSpec = motionEffects())
         ) {
             Column(

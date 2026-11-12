@@ -16,6 +16,8 @@
 | `SpatialStiffnessDefault` | 380 | الانتقال العام |
 | `SpatialStiffnessFast` | 800 | ضغط/ضغطات سريعة، دخول/خروج |
 | `SpatialStiffnessSlow` | 200 | ورقة/حوار (بطيئة وهادئة) |
+| `SpatialDamping` | 0.8 | الافتراضي/البطيء (لا يرتد كثيرًا) |
+| `SpatialDampingFast` | 0.6 | السريع — ركلة أكبر (expressive fast spatial) |
 | `EffectsStiffnessDefault` | 1600 | لون/تلاشٍ عام |
 | `EffectsStiffnessFast` | 3800 | تلاشٍ سريع |
 | `EffectsStiffnessSlow` | 800 | تلاشي بطيء |

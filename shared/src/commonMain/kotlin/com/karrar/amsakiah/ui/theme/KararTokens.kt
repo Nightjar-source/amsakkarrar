@@ -87,6 +87,8 @@ object KararTokens {
         // القيم مطابقة لرموز ExpressiveMotionTokens الرسمية في material3 1.4.
         // ------------------------------------------------------------------
         const val SpatialDamping = 0.8f
+        /** Expressive: النابض المكاني السريع يرتد أكثر (0.6)، الافتراضي/البطيء 0.8. */
+        const val SpatialDampingFast = 0.6f
         const val SpatialStiffnessDefault = 380f
         const val SpatialStiffnessFast = 800f
         const val SpatialStiffnessSlow = 200f

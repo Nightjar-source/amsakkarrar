@@ -427,7 +427,7 @@ private fun TasbihCounterTab(
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.95f else 1f,
         // ضغط سريع (M3 Expressive): نابض مكاني حاد بلا ارتداد مرئي.
-        animationSpec = motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast),
+        animationSpec = motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast, dampingRatio = KararTokens.Motion.SpatialDampingFast),
         label = "tasbihScale"
     )
     val progress = (count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
