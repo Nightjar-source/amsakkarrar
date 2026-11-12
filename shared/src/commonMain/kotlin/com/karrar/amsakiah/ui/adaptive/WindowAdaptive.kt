@@ -3,6 +3,7 @@ package com.karrar.amsakiah.ui.adaptive
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 
 /**
@@ -102,6 +103,24 @@ fun WindowSizeClass.toAppHeightSizeClass(): AppHeightSizeClass = when {
     isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) -> AppHeightSizeClass.MEDIUM
     else -> AppHeightSizeClass.COMPACT
 }
+
+/** هل النافذة في فئة الارتفاع المضغوط (هاتف بالعرض/مطوية أفقية)؟ */
+val AppHeightSizeClass.compact: Boolean
+    get() = this == AppHeightSizeClass.COMPACT
+
+/** ارتفاع الشريط العلوي ديناميكيًا حسب فئة الارتفاع الرسمية (لا ثابتًا 56dp). */
+fun AppAdaptiveLayout.topBarHeight() = when (heightSizeClass) {
+    AppHeightSizeClass.COMPACT -> 48.dp
+    AppHeightSizeClass.MEDIUM -> 56.dp
+    AppHeightSizeClass.EXPANDED -> 64.dp
+}
+
+/**
+ * هل النافذة لديها عروضٌ كافية لترتيب عمودين جنبًا إلى جنب؟
+ * MEDIUM+ (الهاتف بالعرض، اللوحيات، وضع تقسيم الشاشة متى بلغ العرض 600dp+).
+ */
+val AppWidthSizeClass.supportsTwoPane: Boolean
+    get() = this != AppWidthSizeClass.COMPACT
 
 /**
  * القاعدة التصميمية للتنقل، مستمدة من إرشادات Material 3 الرسمية:

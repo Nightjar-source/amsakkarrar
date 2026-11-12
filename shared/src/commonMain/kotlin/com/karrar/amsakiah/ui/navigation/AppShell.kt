@@ -101,6 +101,7 @@ import com.karrar.amsakiah.core.state.ToastMessage
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.adaptive.NavigationLayout
 import com.karrar.amsakiah.ui.adaptive.rememberAppAdaptiveLayout
+import com.karrar.amsakiah.ui.adaptive.topBarHeight
 import com.karrar.amsakiah.ui.components.DuaPlayerOverlay
 import com.karrar.amsakiah.ui.components.GlassSurface
 import com.karrar.amsakiah.ui.platform.PlatformBackHandler
@@ -193,12 +194,16 @@ fun AppShell(
 
     val settings = state.settings
 
+    // ارتفاع الشريط العلوي — ديناميكي حسب فئة الارتفاع الرسمية (لا ثابت 56dp).
+    val asTopBarHeight = layout.topBarHeight()
+
     // ارتفاع شريط التنقل السفلي + هوامشه — يُحجز للمحتوى والمشغّل.
     val navBarReserve = navigationBottom + 12.dp + KararTokens.Size.navBarHeight
 
     val contentTop = when {
         isToday -> statusTop + 6.dp
-        else -> statusTop + KararTokens.Size.contentTopGap
+        // ديناميكي حسب فئة الارتفاع الرسمية بدلًا من فراغ ثابت 74dp
+        else -> statusTop + 8.dp + asTopBarHeight + 10.dp
     }
     val contentPadding = PaddingValues(
         start = cutoutStart,
@@ -207,7 +212,6 @@ fun AppShell(
         bottom = navBarReserve + 36.dp +
             if (player.hasTrack) KararTokens.Size.playerDockHeight + 10.dp else 0.dp
     )
-
     fun select(destination: AppDestination) {
         val route = destination.toRoute()
         if (currentRoute == route && backStack.size == 1) return
@@ -289,17 +293,12 @@ fun AppShell(
             // لا BoxWithConstraints هنا: كل SubcomposeLayout إضافي يؤجّل تركيب
             // الشل بالكامل عند كل قياس. القيد بالأعراض يُعبَّر عنه بمُعدِّلات
             // عادية، فيبقى مسار القياس خفيفًا أثناء الانتقالات وتغيير الحجم.
+            // بلا حد أقصى للعرض (M3 Adaptive: المحتوى يملأ العرض المتاح في
+            // الهواتف والأفقي؛ النص الطويل وحده يُقيَّد عبر readingMaxWidth).
             Box(Modifier.weight(1f).fillMaxHeight()) {
-                val contentModifier = if (isToday) {
-                    Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth()
-                } else {
-                    Modifier
-                        .fillMaxHeight()
-                        .widthIn(max = KararTokens.Size.contentMaxWidth)
-                        .fillMaxWidth()
-                }
+                val contentModifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth()
 
                 // Nav3: كل شاشة Scene مبني من الـback stack؛ الانتقالات نابضية
                 // وتتبع اتجاه المنصة (أندرويد shared-axis / iOS Cupertino).
@@ -452,6 +451,7 @@ fun AppShell(
                         onAction = {
                             if (currentTab == AppDestination.SETTINGS) openWidgets() else openSettings()
                         },
+                        height = asTopBarHeight,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(top = statusTop + 8.dp, start = 12.dp + cutoutStart, end = 12.dp + cutoutEnd)
@@ -492,7 +492,7 @@ fun AppShell(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(
-                    top = statusTop + (if (showTopBar) KararTokens.Size.topBarHeight + 16.dp else 14.dp),
+                    top = statusTop + (if (showTopBar) asTopBarHeight + 16.dp else 14.dp),
                     start = 16.dp + cutoutStart,
                     end = 16.dp + cutoutEnd
                 )
@@ -576,13 +576,14 @@ private fun UnifiedTopBar(
     actionIcon: ImageVector,
     actionLabel: String,
     onAction: () -> Unit,
+    height: Dp = KararTokens.Size.topBarHeight,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .widthIn(max = KararTokens.Size.topBarMaxWidth)
             .fillMaxWidth()
-            .height(KararTokens.Size.topBarHeight),
+            .height(height),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

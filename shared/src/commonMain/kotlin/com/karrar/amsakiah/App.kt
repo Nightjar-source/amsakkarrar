@@ -2,9 +2,16 @@ package com.karrar.amsakiah
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
@@ -27,6 +34,8 @@ import com.karrar.amsakiah.core.permissions.rememberPermissionController
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.core.weather.fetchWeather
+import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.components.SpringDialog
 import com.karrar.amsakiah.ui.navigation.AppShell
 import com.karrar.amsakiah.ui.splash.SplashScreen
 import com.karrar.amsakiah.ui.theme.KararTheme
@@ -117,29 +126,45 @@ fun App() {
                     SplashScreen()
                 }
 
-                // طلب إذن الإشعارات — نافذة فوق التطبيق (حوار النظام) لا صفحة
-                // إعدادات الهاتف: سلسلة واحدة سلسة، والصوت مرتبط بالكامل بالكتم/زر الصوت.
-                if (showNotificationAsk) {
-                    AlertDialog(
-                        onDismissRequest = { showNotificationAsk = false },
-                        title = { Text("إذن الإشعارات") },
-                        text = {
-                            Text(
-                                "لنصلك بطاقة الأذان عند دخول وقت الصلاة، والعدّاد التنازلي للصلاة القادمة " +
-                                    "في شريط الإشعارات. لا نُصدر أي صوت ما لم تُفعّل ذلك من الإعدادات، " +
-                                    "ونحترم كتم النظام وزر الصوت."
-                            )
-                        },
-                        confirmButton = {
+                // طلب إذن الإشعارات — نافذة تأكيد على Spring Motion (دواخل نفس النافذة،
+                // full-bleed بدون أشرطة فارغة) بدلًا من حوار النظام.
+                SpringDialog(
+                    visible = showNotificationAsk,
+                    onDismissRequest = { showNotificationAsk = false },
+                    dismissible = true
+                ) {
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        corner = 24.dp,
+                        contentPadding = PaddingValues(20.dp)
+                    ) {
+                        Text(
+                            text = "إذن الإشعارات",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = "لنصلك بطاقة الأذان عند دخول وقت الصلاة، والعدّاد التنازلي للصلاة القادمة " +
+                                "في شريط الإشعارات. لا نُصدر أي صوت ما لم تُفعّل ذلك من الإعدادات، " +
+                                "ونحترم كتم النظام وزر الصوت.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { showNotificationAsk = false }) {
+                                Text("ليس الآن")
+                            }
                             TextButton(onClick = {
                                 showNotificationAsk = false
                                 permissions.requestNotifications()
-                            }) { Text("تفعيل الإشعارات") }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showNotificationAsk = false }) { Text("ليس الآن") }
+                            }) {
+                                Text("تفعيل الإشعارات")
+                            }
                         }
-                    )
+                    }
                 }
             }
         }

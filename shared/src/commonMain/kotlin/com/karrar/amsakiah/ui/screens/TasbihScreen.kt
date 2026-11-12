@@ -64,7 +64,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.karrar.amsakiah.core.data.TasbihDhikr
 import com.karrar.amsakiah.core.data.TasbihPresets
 import com.karrar.amsakiah.core.feedback.playTasbihClick
@@ -73,6 +72,7 @@ import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.SectionTitle
+import com.karrar.amsakiah.ui.components.SpringDialog
 import com.karrar.amsakiah.ui.theme.KararColors
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -292,57 +292,54 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
         }
     }
 
-    if (showCompletion) {
-        CompletionDialog(
-            target = completedTarget,
-            nextDhikr = presets[
-                TasbihPresets.safeIndex(state.settings.tasbihDhikrIndex, presets.size)
-            ].text,
-            onContinue = { showCompletion = false },
-            onChange = {
-                showCompletion = false
-                tab = TAB_LIST
+    CompletionDialog(
+        visible = showCompletion,
+        target = completedTarget,
+        nextDhikr = presets[
+            TasbihPresets.safeIndex(state.settings.tasbihDhikrIndex, presets.size)
+        ].text,
+        onContinue = { showCompletion = false },
+        onChange = {
+            showCompletion = false
+            tab = TAB_LIST
+        }
+    )
+
+    TasbihConfirmDialog(
+        visible = showResetConfirm,
+        title = "إعادة العد",
+        message = "هل تريد إعادة العداد الحالي إلى الصفر؟",
+        confirmLabel = "تصفير",
+        onConfirm = {
+            state.update { it.copy(tasbihCount = 0) }
+            showResetConfirm = false
+        },
+        onDismiss = { showResetConfirm = false }
+    )
+
+    TasbihConfirmDialog(
+        visible = showResetAllConfirm,
+        title = "حذف كل الإحصاءات",
+        message = "سيتم تصفير اليوم والإجمالي والدورات نهائيًا. هل أنت متأكد؟",
+        confirmLabel = "حذف الكل",
+        onConfirm = {
+            state.update {
+                it.copy(
+                    tasbihCount = 0,
+                    tasbihRound = 0,
+                    tasbihTotal = 0,
+                    tasbihDayCount = 0,
+                    tasbihDayDate = todayKey
+                )
             }
-        )
-    }
+            showResetAllConfirm = false
+        },
+        onDismiss = { showResetAllConfirm = false }
+    )
 
-    if (showResetConfirm) {
-        TasbihConfirmDialog(
-            title = "إعادة العد",
-            message = "هل تريد إعادة العداد الحالي إلى الصفر؟",
-            confirmLabel = "تصفير",
-            onConfirm = {
-                state.update { it.copy(tasbihCount = 0) }
-                showResetConfirm = false
-            },
-            onDismiss = { showResetConfirm = false }
-        )
-    }
-
-    if (showResetAllConfirm) {
-        TasbihConfirmDialog(
-            title = "حذف كل الإحصاءات",
-            message = "سيتم تصفير اليوم والإجمالي والدورات نهائيًا. هل أنت متأكد؟",
-            confirmLabel = "حذف الكل",
-            onConfirm = {
-                state.update {
-                    it.copy(
-                        tasbihCount = 0,
-                        tasbihRound = 0,
-                        tasbihTotal = 0,
-                        tasbihDayCount = 0,
-                        tasbihDayDate = todayKey
-                    )
-                }
-                showResetAllConfirm = false
-            },
-            onDismiss = { showResetAllConfirm = false }
-        )
-    }
-
-    if (showAddDhikr) {
-        AddDhikrDialog(
-            onDismiss = { showAddDhikr = false },
+    AddDhikrDialog(
+        visible = showAddDhikr,
+        onDismiss = { showAddDhikr = false },
             onAdd = { text, target, group ->
                 val trimmed = text.trim()
                 if (trimmed.isNotEmpty()) {
@@ -365,8 +362,7 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
                 }
                 showAddDhikr = false
             }
-        )
-    }
+    )
 }
 
 // ============================================================================
@@ -875,6 +871,7 @@ private fun SmallPill(text: String, danger: Boolean = false, onClick: () -> Unit
 // ============================================================================
 @Composable
 private fun AddDhikrDialog(
+    visible: Boolean,
     onDismiss: () -> Unit,
     onAdd: (text: String, target: Int, group: String) -> Unit
 ) {
@@ -882,7 +879,7 @@ private fun AddDhikrDialog(
     var targetText by remember { mutableStateOf("33") }
     var group by remember { mutableStateOf("") }
 
-    Dialog(onDismissRequest = onDismiss) {
+    SpringDialog(visible = visible, onDismissRequest = onDismiss, imePadding = true) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             corner = 24.dp,
@@ -952,6 +949,7 @@ private fun AddDhikrDialog(
 
 @Composable
 private fun CompletionDialog(
+    visible: Boolean,
     target: Int,
     nextDhikr: String,
     onContinue: () -> Unit,
@@ -964,7 +962,7 @@ private fun CompletionDialog(
         animationSpec = infiniteRepeatable(tween(850), RepeatMode.Reverse),
         label = "completeScale"
     )
-    Dialog(onDismissRequest = onContinue) {
+    SpringDialog(visible = visible, onDismissRequest = onContinue) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             corner = 28.dp,
@@ -1034,13 +1032,14 @@ private fun CompletionDialog(
 
 @Composable
 private fun TasbihConfirmDialog(
+    visible: Boolean,
     title: String,
     message: String,
     confirmLabel: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    SpringDialog(visible = visible, onDismissRequest = onDismiss) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             corner = 24.dp,
