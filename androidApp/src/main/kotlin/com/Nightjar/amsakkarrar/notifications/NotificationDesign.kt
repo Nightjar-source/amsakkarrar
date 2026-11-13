@@ -10,6 +10,7 @@ import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.R
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * بناء الإشعارين بتصميم `widgetsnotifications.html`:
@@ -155,6 +156,7 @@ object NotificationDesign {
         val remaining = snapshot.remainingSeconds.coerceAtLeast(0)
 
         return RemoteViews(context.packageName, R.layout.notification_live).apply {
+            setInt(R.id.notif_root, "setBackgroundResource", skyPhaseRes(snapshot.nowSeconds))
             setTextViewText(R.id.live_label, "باقي على ${snapshot.nextLabel}")
             setTextViewText(R.id.live_target, snapshot.nextTime)
             // عدّاد تنازلي ينبض داخل النظام بلا أي تحديث من التطبيق.
@@ -249,14 +251,18 @@ object NotificationDesign {
         currentTime: String,
         nextLabel: String,
         nextTime: String
-    ): RemoteViews = RemoteViews(context.packageName, R.layout.notification_prayer).apply {
-        setTextViewText(R.id.prayer_name, prayerLabel)
-        setTextViewText(R.id.prayer_current, currentTime)
-        setTextViewText(
-            R.id.prayer_next_label,
-            if (nextLabel.isBlank()) "الصلاة القادمة" else "الصلاة القادمة ($nextLabel)"
-        )
-        setTextViewText(R.id.prayer_next_time, nextTime)
+    ): RemoteViews {
+        val seconds = currentDaySeconds(context)
+        return RemoteViews(context.packageName, R.layout.notification_prayer).apply {
+            setInt(R.id.notif_root, "setBackgroundResource", skyPhaseRes(seconds))
+            setTextViewText(R.id.prayer_name, prayerLabel)
+            setTextViewText(R.id.prayer_current, currentTime)
+            setTextViewText(
+                R.id.prayer_next_label,
+                if (nextLabel.isBlank()) "الصلاة القادمة" else "الصلاة القادمة ($nextLabel)"
+            )
+            setTextViewText(R.id.prayer_next_time, nextTime)
+        }
     }
 
     private fun stopIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
@@ -267,4 +273,27 @@ object NotificationDesign {
         },
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
+
+    /** ثواني اليوم بتوقيت **المدينة** (وليس جهاز الاتصال) — لاختيار خلفية الإشعار بحسب القوس. */
+    private fun currentDaySeconds(context: Context): Int {
+        val settings = SettingsLoader.load(context)
+        val zone = com.karrar.amsakiah.core.state.PrayerCalculator.zoneOf(settings)
+        val now = kotlinx.datetime.Clock.System.now().toLocalDateTime(zone)
+        return now.hour * 3600 + now.minute * 60 + now.second
+    }
+
+    /**
+     * مرحلة القوس الحالي (٠…٧) — تُطابق دقّةً حدود التدرجات القمرية في
+     * [com.karrar.amsakiah.ui.theme.SkyColors] وتُستخدم لاختيار الخلفية.
+     */
+    private fun skyPhaseRes(seconds: Int): Int = when {
+        seconds < 16200 -> R.drawable.notif_bg_phase_0   // ٠٠:٠٠–٠٤:٣٠ — منتصف الليل
+        seconds < 19800 -> R.drawable.notif_bg_phase_1   // ٠٤:٣٠–٠٥:٣٠ — الفجر المبكر
+        seconds < 23400 -> R.drawable.notif_bg_phase_2   // ٠٥:٣٠–٠٦:٣٠ — الشفق
+        seconds < 43200 -> R.drawable.notif_bg_phase_3   // ٠٦:٣٠–١٢:٠٠ — الصباح
+        seconds < 61200 -> R.drawable.notif_bg_phase_4   // ١٢:٠٠–١٧:٠٠ — النهار
+        seconds < 66600 -> R.drawable.notif_bg_phase_5   // ١٧:٠٠–١٨:٣٠ — العصر
+        seconds < 70200 -> R.drawable.notif_bg_phase_6   // ١٨:٣٠–١٩:٣٠ — المغرب
+        else -> R.drawable.notif_bg_phase_7              // ١٩:٣٠–٢٤:٠٠ — الليل
+    }
 }

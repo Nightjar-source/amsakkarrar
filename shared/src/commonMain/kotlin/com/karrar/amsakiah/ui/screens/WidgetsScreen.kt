@@ -122,11 +122,12 @@ private val widgetDefs = listOf(
 )
 
 private val styleDefs = listOf(
+    Triple(WidgetPinBridge.STYLE_ARC, "قوسُ السماء", Color(0xFF274070)),
+    Triple(WidgetPinBridge.STYLE_DEEP, "ليلي", Color(0xF2050A15)),
     Triple(WidgetPinBridge.STYLE_MATERIAL, "مادة", Color(0xFF0E1626)),
     Triple(WidgetPinBridge.STYLE_GLASS, "زجاجي", Color(0xCC1B2438)),
     Triple(WidgetPinBridge.STYLE_BLUR, "ضبابي", Color(0xD91B2438)),
-    Triple(WidgetPinBridge.STYLE_TRANSPARENT, "شفاف", Color(0x33000000)),
-    Triple(WidgetPinBridge.STYLE_DEEP, "ليلي", Color(0xF2050A15))
+    Triple(WidgetPinBridge.STYLE_TRANSPARENT, "شفاف", Color(0x33000000))
 )
 
 @Composable
@@ -469,6 +470,7 @@ private fun WidgetPreviewFrame(
         WidgetPinBridge.STYLE_GLASS -> Color(0xCC1B2438)
         WidgetPinBridge.STYLE_BLUR -> Color(0xD91B2438)
         WidgetPinBridge.STYLE_TRANSPARENT -> Color(0x33000000)
+        WidgetPinBridge.STYLE_ARC -> Color(0xFF1A2A44)
         else -> Color(0xF2050A15)
     }
     val borderColor = when (style) {

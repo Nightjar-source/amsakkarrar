@@ -22,21 +22,22 @@ object WidgetStyleStore {
     const val BLUR = WidgetPinBridge.STYLE_BLUR
     const val TRANSPARENT = WidgetPinBridge.STYLE_TRANSPARENT
     const val DEEP = WidgetPinBridge.STYLE_DEEP
+    const val ARC = WidgetPinBridge.STYLE_ARC
 
     private const val PREFS = "karar_widget_style"
     private const val KEY = "style"
     private const val KEY_PREFIX = "style_"
 
-    private val VALID = setOf(MATERIAL, GLASS, BLUR, TRANSPARENT, DEEP)
+    private val VALID = setOf(MATERIAL, GLASS, BLUR, TRANSPARENT, DEEP, ARC)
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private fun sanitize(value: String?): String =
-        value?.takeIf { it in VALID } ?: DEEP
+        value?.takeIf { it in VALID } ?: ARC
 
-    /** النمط العام (يُستخدم عندما لا يوجد نمط خاص بالودجت). */
-    fun current(context: Context): String = sanitize(prefs(context).getString(KEY, DEEP))
+    /** النمط العام الافتراضي (يُستخدم عندما لا يوجد نمط خاص بالودجت) — قوسُ السماء. */
+    fun current(context: Context): String = sanitize(prefs(context).getString(KEY, ARC))
 
     /** نمط ودجت محدّد، مع الرجوع إلى النمط العام. */
     fun current(context: Context, appWidgetId: Int): String {
@@ -60,13 +61,14 @@ object WidgetStyleStore {
         }
     }
 
-    /** لون ARGB للخلفية الرئيسية. */
+    /** لون ARGB للخلفية الرئيسية — لرتكاب ARC يُستبدل بالتدرج الحقيقي داخل الودجت. */
     fun backgroundArgb(context: Context, appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID): Long =
         when (current(context, appWidgetId)) {
             MATERIAL -> 0xFF0E1626
             GLASS -> 0xCC141C2E
             BLUR -> 0xD91B2438
             TRANSPARENT -> 0x33000000
+            ARC -> 0xFF0C1324
             else -> 0xF2050A15
         }
 
@@ -76,6 +78,7 @@ object WidgetStyleStore {
             GLASS -> 0x66FFFFFF
             BLUR -> 0x40FFFFFF
             TRANSPARENT -> 0x22FFFFFF
+            ARC -> 0x88FFD700
             else -> 0x1AFFD700
         }
 
@@ -86,6 +89,7 @@ object WidgetStyleStore {
             GLASS -> 0x33FFFFFF
             BLUR -> 0x99FFFFFF
             TRANSPARENT -> 0x1FFFFFFF
+            ARC -> 0x55FFFFFF
             else -> 0xE60F1524
         }
 

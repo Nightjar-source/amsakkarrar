@@ -3,6 +3,7 @@ package com.Nightjar.amsakkarrar.widget
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -129,34 +130,78 @@ private fun tierCorner(tier: WidgetTier): Dp = when (tier) {
 //  الإطار المتكيّف — خلفية + حدود + زر إعدادات + فتح التطبيق
 // ============================================================================
 
+/**
+ * إطار الودجت — يتكيّف هندسيًا حسب المصنع (حواف سامسونج/شاومي/أوبو/غوغل…)
+ * ويستخدم نفس خوارزمية «القوس» للون الخلفية عند اختيار النمط قوسُ السماء.
+ *
+ * الحواف حسب المصنع:
+ * - Samsung One UI: 46dp · Xiaomi/Redmi/Poco: 40dp · OPPO/realme/OnePlus/vivo: 34dp
+ * - Tecno/Infinix/itel: 30dp · Google: 28dp · الافتراضي: 34dp.
+ * COMPACT تنحدر بـ12dp، MEDIUM تنحدر بـ6dp.
+ */
 @Composable
 private fun WidgetFrame(
     context: Context,
     appWidgetId: Int,
     tier: WidgetTier,
     center: Boolean = true,
+    skyColors: Triple<Color, Color, Color>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val style = WidgetStyleStore.current(context, appWidgetId)
     val background = Color(WidgetStyleStore.backgroundArgb(context, appWidgetId))
-    val border = Color(WidgetStyleStore.borderArgb(context, appWidgetId))
-    val radius = tierCorner(tier)
+    val border = if (style == WidgetStyleStore.ARC && skyColors != null) {
+        skyColors.third // skyGlow — يتبع وقت اليوم
+    } else {
+        Color(WidgetStyleStore.borderArgb(context, appWidgetId))
+    }
+    val radius = when (tier) {
+        WidgetTier.COMPACT -> (oemCornerRadius() - 12).coerceAtLeast(10)
+        WidgetTier.MEDIUM -> (oemCornerRadius() - 6).coerceAtLeast(14)
+        WidgetTier.LARGE -> oemCornerRadius()
+    }
+    val outerRadius = radius.dp
+    val innerRadius = (radius - 2).dp
     val pad = tierPadding(tier)
 
-    // لا زر إعدادات داخل الودجت (كان ⚙ يزاحم المحتوى ويسرق مساحة).
-    // الخلفية تُضبط من شاشة «الودجتات» داخل التطبيق أو بالضغط المطوّل على
-    // الودجت ← «تعديل» (widgetFeatures=reconfigurable).
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(border)
-            .cornerRadius(radius)
+            .cornerRadius(outerRadius)
     ) {
+        // قوس السماء: خلفية مقسمة إلى طبقتين (العليا للسماء، السفلى للأفق)
+        // — تُحسب عند كل تحديث عبر WorkManager أو فتح التطبيق.
+        if (style == WidgetStyleStore.ARC && skyColors != null) {
+            val size = LocalSize.current
+            val topHeight = size.height * 0.62f
+            Column(GlanceModifier.fillMaxSize()) {
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .height(topHeight)
+                        .background(skyColors.first.copy(alpha = 0.92f))
+                ) {}
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .defaultWeight()
+                        .background(skyColors.second.copy(alpha = 0.95f))
+                ) {}
+            }
+        }
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .padding(1.dp)
-                .background(background)
-                .cornerRadius(radius - 1.dp)
+                .then(
+                    if (style == WidgetStyleStore.ARC) {
+                        GlanceModifier
+                    } else {
+                        GlanceModifier.background(background)
+                    }
+                )
+                .cornerRadius(innerRadius)
                 .padding(pad)
                 .clickable(actionStartActivity(launchIntent(context))),
             // المحتوى يُوزَّع على كامل ارتفاع الودجت بدل الالتصاق بالأعلى،
@@ -167,6 +212,26 @@ private fun WidgetFrame(
         )
     }
 }
+
+private fun oemCornerRadius(): Int =
+    when (Build.MANUFACTURER.lowercase(java.util.Locale.ROOT).take(6)) {
+        "samsung" -> 46
+        "xiaomi" -> 40
+        "redmi" -> 40
+        "poco" -> 40
+        "huawei" -> 40
+        "honor" -> 40
+        "magic" -> 40
+        "oppo" -> 34
+        "realme" -> 34
+        "oneplus" -> 34
+        "vivo" -> 34
+        "tecno" -> 30
+        "infinix" -> 30
+        "itel" -> 30
+        "google" -> 28
+        else -> 34
+    }
 
 /**
  * كشيدة الشهر: «رمضـ 16 ـان» — الحروف ذهبية والرقم أبيض.
@@ -300,6 +365,9 @@ private fun PrayerGridRow(entries: List<PrayerEntry>, activeLabel: String, compa
     }
 }
 
+private fun skyColors(snapshot: PrayerSnapshot) =
+    SkyTheme.getSkyColorsForSecond(snapshot.nowSeconds.toFloat())
+
 private fun appWidgetIdFor(context: Context, id: GlanceId): Int =
     runCatching { GlanceAppWidgetManager(context).getAppWidgetId(id) }
         .getOrDefault(AppWidgetManager.INVALID_APPWIDGET_ID)
@@ -336,7 +404,7 @@ class TodayWidget : GlanceAppWidget() {
 private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
     val tier = rememberWidgetTier()
     val gridEntries = snapshot.widgetEntries()
-    WidgetFrame(context, appWidgetId, tier) {
+    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
         WidgetKashida(
             snapshot,
             fontSize = when (tier) {
@@ -418,7 +486,7 @@ class TimesWidget : GlanceAppWidget() {
 private fun TimesWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
     val tier = rememberWidgetTier()
     val gridEntries = snapshot.widgetEntries()
-    WidgetFrame(context, appWidgetId, tier) {
+    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
         if (tier != WidgetTier.COMPACT) {
             WidgetKashida(snapshot, fontSize = if (tier == WidgetTier.MEDIUM) 18 else 22)
             Spacer(GlanceModifier.height(2.dp))
@@ -477,7 +545,7 @@ private fun CountdownWidgetContent(context: Context, snapshot: PrayerSnapshot, a
     val tier = rememberWidgetTier()
     // وضع «الجزيرة»: عريض وقصير — يُعرض أفقياً كشريط حالة
     val island = size.width > 230.dp && size.height < 135.dp
-    WidgetFrame(context, appWidgetId, tier, center = !island) {
+    WidgetFrame(context, appWidgetId, tier, center = !island, skyColors = skyColors(snapshot)) {
         if (island) {
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
@@ -674,7 +742,7 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
         WidgetTier.MEDIUM -> entries.take(5)
         WidgetTier.LARGE -> entries
     }
-    WidgetFrame(context, appWidgetId, tier) {
+    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -776,7 +844,7 @@ private fun DailyDeedsWidgetContent(
     val week = deeds.count { it.source == DailyDeedSource.WEEKDAY }
     val general = deeds.count { it.source == DailyDeedSource.MONTH_GENERAL }
 
-    WidgetFrame(context, appWidgetId, tier) {
+    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -805,13 +873,13 @@ private fun DailyDeedsWidgetContent(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally
         ) {
-            DeedStatCell("الليلة", night, Color(0xFFF59E0B))
+            DeedStatCell("الليلة", night, Color(0xFFF59E0B), GlanceModifier.defaultWeight())
             Spacer(GlanceModifier.width(4.dp))
-            DeedStatCell("اليوم", day, Gold)
+            DeedStatCell("اليوم", day, Gold, GlanceModifier.defaultWeight())
             Spacer(GlanceModifier.width(4.dp))
-            DeedStatCell("الأسبوع", week, Color(0xFF38BDF8))
+            DeedStatCell("الأسبوع", week, Color(0xFF38BDF8), GlanceModifier.defaultWeight())
             Spacer(GlanceModifier.width(4.dp))
-            DeedStatCell("الشهر", general, Color(0xFFA78BFA))
+            DeedStatCell("الشهر", general, Color(0xFFA78BFA), GlanceModifier.defaultWeight())
         }
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 2.dp else 4.dp))
 
@@ -840,8 +908,7 @@ private fun DailyDeedsWidgetContent(
                     modifier = GlanceModifier.defaultWeight(),
                     style = TextStyle(
                         color = color(TextPrimary),
-                        fontSize = if (tier == WidgetTier.COMPACT) 6.5.sp else 7.5.sp,
-                        lineHeight = if (tier == WidgetTier.COMPACT) 9.sp else 11.sp
+                        fontSize = if (tier == WidgetTier.COMPACT) 6.5.sp else 7.5.sp
                     )
                 )
             }
@@ -856,13 +923,14 @@ private fun DailyDeedsWidgetContent(
 }
 
 @Composable
-private fun DeedStatCell(label: String, count: Int, accent: Color) {
+private fun DeedStatCell(
+    label: String,
+    count: Int,
+    accent: Color,
+    modifier: GlanceModifier = GlanceModifier
+) {
     Column(
-        modifier = GlanceModifier
-            .defaultWeight()
-            .background(WidgetCard)
-            .cornerRadius(10.dp)
-            .padding(vertical = 4.dp, horizontal = 2.dp),
+        modifier = modifier.background(WidgetCard).cornerRadius(10.dp).padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.Horizontal.CenterHorizontally
     ) {
         Text(

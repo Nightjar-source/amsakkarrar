@@ -93,7 +93,8 @@ class WidgetRefreshWorker(
             HijriWidgetReceiver::class.java,
             TasbihWidgetReceiver::class.java,
             ClockWidgetReceiver::class.java,
-            JourneyWidgetReceiver::class.java
+            JourneyWidgetReceiver::class.java,
+            DailyDeedsWidgetReceiver::class.java,
         )
 
         /** تحديث فوري عند دخول وقت الصلاة القادمة (يُجدول من WidgetUpdater) */

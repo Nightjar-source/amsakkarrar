@@ -19,12 +19,14 @@ object WidgetPinBridge {
     const val JOURNEY = "journey"
     const val DAILYDEEDS = "dailydeeds"
 
-    /** أنماط خلفية الودجت: مادة / زجاجي / ضبابي / شفاف / ليلي متدرّج */
+    /** أنماط خلفية الودجت: مادة / زجاجي / ضبابي / شفاف / ليلي متدرّج / قوسُ السماء (ديناميكي) */
     const val STYLE_MATERIAL = "material"
     const val STYLE_GLASS = "glass"
     const val STYLE_BLUR = "blur"
     const val STYLE_TRANSPARENT = "transparent"
     const val STYLE_DEEP = "deep"
+    /** نمط القوس الديناميكي: خلفية الودجت تتبع تدرجات القوس القمري ساعةً ساعة (Like «اليوم»). */
+    const val STYLE_ARC = "arc"
 
     /** هل يدعم النظام الحالي طلب التثبيت التلقائي؟ */
     var supported: Boolean = false

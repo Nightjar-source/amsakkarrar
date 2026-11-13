@@ -63,7 +63,9 @@ data class PrayerSnapshot(
      * يتأخر العدّاد حتى 10 ثوانٍ عن الحقيقة؛ نطرح الفارق فيبقى مطابقًا للإشعار
      * الحي ولساعة الجهاز.
      */
-    val generatedAtElapsed: Long = 0L
+    val generatedAtElapsed: Long = 0L,
+    /** الثواني داخل اليوم المحلي (timezone المدينة) — لتلوين القوس الديناميكي. */
+    val nowSeconds: Int = 0
 )
 
 object PrayerSnapshotLoader {
@@ -174,7 +176,8 @@ object PrayerSnapshotLoader {
             maghribText = PrayerCalculator.formatHour(maghrib).first,
             afterLabel = PrayerMeta.label(afterId),
             afterTime = "$afterH $afterM",
-            generatedAtElapsed = android.os.SystemClock.elapsedRealtime()
+            generatedAtElapsed = android.os.SystemClock.elapsedRealtime(),
+            nowSeconds = nowSeconds
         )
     }
 
