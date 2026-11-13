@@ -159,7 +159,7 @@ fun KararTheme(
         ThemeMode.DARK -> true
         else -> isSystemInDarkTheme()
     }
-    val palette = if (dark) KararDarkPalette else KararLightPalette
+    val palette = animateKararPalette(if (dark) KararDarkPalette else KararLightPalette)
 
     // أيقونات شريط الحالة/التنقل تتبع الوضع الفعلي، لا وضع النظام فقط.
     ApplySystemBarAppearance(lightBackground = !dark)

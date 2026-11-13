@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- عدّاد الودجت الكبير — مطابق لـ widgetsnotifications.html:
+     يملأ الخلية كاملة ويتوسّط عموديًا (لا فراغ أسفل المحتوى)،
      حبة «باقي على…» + عدّاد ساعة/دقيقة/ثانية بوحدات + شريط تقدم سميك + طرفا الشريط -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:layoutDirection="rtl"
-    android:gravity="center_horizontal"
+    android:gravity="center_horizontal|center_vertical"
     android:orientation="vertical"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp">
 
     <TextView
         android:id="@+id/widget_chrono_label"
@@ -40,12 +41,13 @@
         android:textSize="32sp"
         android:textStyle="bold" />
 
-    <!-- وحدات العدّاد الثلاث تحت الأرقام -->
+    <!-- وحدات العدّاد الثلاث — بترتيب الأرقام نفسه (ساعات يسارًا ← ثوانٍ يمينًا) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="1dp"
         android:baselineAligned="false"
+        android:layoutDirection="ltr"
         android:orientation="horizontal">
 
         <TextView
