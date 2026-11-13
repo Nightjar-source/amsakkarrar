@@ -129,6 +129,7 @@ import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.player.DuaPlayerController
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.screens.CalendarScreen
+import com.karrar.amsakiah.ui.screens.ArcCalendarScreen
 import com.karrar.amsakiah.ui.screens.DuasScreen
 import com.karrar.amsakiah.ui.screens.FiqhScreen
 import com.karrar.amsakiah.ui.screens.KeysScreen
@@ -209,7 +210,8 @@ fun AppShell(
     val compactWidth = layout.widthSizeClass.isCompact
     val immersive =
         (compactWidth && currentRoute == AppRoute.Duas && duaDetailOpen) ||
-            (compactWidth && currentRoute is AppRoute.JinanReader)
+            (compactWidth && currentRoute is AppRoute.JinanReader) ||
+            (compactWidth && currentRoute == AppRoute.ArcCalendar)
     val showTopBar = !isToday && !immersive
 
     // ---------- التكيّف الرسمي (M3 Expressive + Compose Adaptive) ----------
@@ -399,13 +401,16 @@ fun AppShell(
                             TodayScreen(
                                 state = state,
                                 weather = weather,
-                                onOpenFullCalendar = { select(AppDestination.CALENDAR) },
+                                onOpenArcCalendar = { backStack.add(AppRoute.ArcCalendar) },
                                 onOpenSettings = ::openSettings,
                                 contentPadding = contentPadding
                             )
                         }
                         entry(AppRoute.Calendar) {
                             CalendarScreen(state = state, contentPadding = contentPadding)
+                        }
+                        entry(AppRoute.ArcCalendar) {
+                            ArcCalendarScreen(state = state, onBack = ::back)
                         }
                         entry(AppRoute.Keys) {
                             KeysScreen(
@@ -521,7 +526,7 @@ fun AppShell(
                         AppRoute.Tasks -> "المهام والملاحظات"
                         AppRoute.Jinan -> "مفاتيح الجنان"
                         // عنوان واحد ديناميكي للتاريخ — بلا تكرار داخل الشاشة.
-                        AppRoute.DailyDeeds -> "أعمال اليوم · " + dailyDeedsTitle(settings)
+                        AppRoute.DailyDeeds -> "أعمال اليوم " + dailyDeedsTitle(settings)
                         is AppRoute.JinanReader -> currentRoute.title
                         else -> null
                     }
@@ -535,7 +540,6 @@ fun AppShell(
                         val supportsSearch = currentRoute in setOf(AppRoute.Quran, AppRoute.Jinan, AppRoute.Duas)
                         UnifiedTopBar(
                             title = childTitle ?: if (widgetsOpen) "الودجتات" else currentTab.title,
-                            subtitle = "",
                             canGoBack = backStack.size > 1 || duaDetailOpen,
                             onBack = ::back,
                             actionIcon = if (currentTab == AppDestination.SETTINGS) Icons.Filled.Widgets else Icons.Filled.Tune,
@@ -609,16 +613,14 @@ fun AppShell(
 }
 
 /**
- * انتقالات المنصة لشاشات Nav3:
- * - أندرويد: M3 Expressive shared-axis خفيف (انزلاق 1/8 عرض + تلاشٍ نابض).
- * - iOS: انزلاق Cupertino كامل العرض للشاشات الفرعية، وتلاشٍ للتبويبات.
+ * انتقالات المنصة لشاشات Nav3 — انزلاقية بحتة، بلا أي تلاشي إلى الصفر:
+ * الشاشة الداخلة تنزلق فوق الخارجة كاملة العرض (iOS) أو بجزء محدود (أندرويد)،
+ * والخارجة تنزلق بدل أن تختفي من الشفافية. «تقليل الحركة» يبقي تلاشٍ قصير
+ * جدًا بلا أي حركة مكانية، لأن الانزلاق نفسه قد يزعج فئة من المستخدمين.
  *
  * الخفة: لا تكبير/تصغير (scale) في الانتقال — كل scale يفرض طبقة رسم
- * إضافية على كل شاشة أثناء الحركة. الانزلاق القصير + التلاشي يحققان الإحساس
- * نفسه بكتابة بكسل أقل، فيبقى التنقل ثابت الإطارات على الأجهزة المتوسطة.
- *
+ * إضافية على كل شاشة أثناء الحركة.
  * [direction] = 1 للأمام (دفع/تبويب أعلى)، -1 للخلف (سحب/تبويب أدنى).
- * [reduceMotion] = «تقليل الحركة» في النظام: تلاشٍ قصير بلا أي انزلاق مكاني.
  */
 private fun sceneTransition(direction: Int, reduceMotion: Boolean): ContentTransform {
     if (reduceMotion) {
@@ -628,18 +630,14 @@ private fun sceneTransition(direction: Int, reduceMotion: Boolean): ContentTrans
     val travel: (Int) -> Int = { full -> if (direction >= 0) full else -full }
     return when {
         isIosUi -> (
-            slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { travel(it) } +
-                fadeIn(animationSpec = KararTokens.Motion.effects())
-            ).togetherWith(
-            slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -travel(it) / 3 } +
-                fadeOut(animationSpec = KararTokens.Motion.effects())
+            slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { travel(it) }
+        ).togetherWith(
+            slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -travel(it) / 3 }
         )
         else -> (
-            slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { travel(it) / 8 } +
-                fadeIn(animationSpec = KararTokens.Motion.effects())
-            ).togetherWith(
-            slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -travel(it) / 12 } +
-                fadeOut(animationSpec = KararTokens.Motion.effects())
+            slideInHorizontally(animationSpec = KararTokens.Motion.spatial()) { travel(it) / 8 }
+        ).togetherWith(
+            slideOutHorizontally(animationSpec = KararTokens.Motion.spatial()) { -travel(it) / 12 }
         )
     }
 }
@@ -684,7 +682,6 @@ private fun AppBackdrop() {
 @Composable
 private fun UnifiedTopBar(
     title: String,
-    subtitle: String,
     canGoBack: Boolean,
     onBack: () -> Unit,
     actionIcon: ImageVector,
@@ -817,15 +814,6 @@ private fun UnifiedTopBar(
                             color = KararColors.TextPrimary,
                             fontSize = adaptiveSize,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    if (subtitle.isNotBlank()) {
-                        Text(
-                            text = subtitle,
-                            color = KararColors.TextSecondary,
-                            fontSize = 10.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )

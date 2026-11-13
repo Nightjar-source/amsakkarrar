@@ -18,71 +18,43 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.ui.navigation.AppDestination
-import com.karrar.amsakiah.ui.theme.KararColors
+import com.karrar.amsakiah.ui.theme.LocalKararPalette
 import com.karrar.amsakiah.ui.theme.KararTokens
 import com.karrar.amsakiah.ui.motion.motionSpatial
 
 /**
- * شريط التنقل العائم — تصميم «Liquid Glass Floating» مطابق لـشريط_تنقل_مائي_عائم_مع_دليل_المطور.html:
+ * شريط التنقل العائم — إعادة تصميم «كرار»: أسطح صلبة قرائية من اللوحة.
  *
- * - **كبسولة عائمة زجاجية**: خلفية متدرجة شبه شفافة + تمويه + حدود لامعة + ظل بنفسجي خفيف،
- *   وتتكئ على مسافة ثابتة عن الحافة (fullWidth مع أقصى عرض).
- * - **المؤشر المائي (Water-drop glass)**: كبسولة صغيرة تنجرف بحركة نابضية هيدروليكية
- *   (`spring(lowDamp; 0.6)` معّمَّمة) خلف العنصر النشط، وتحمل أيقونة مكبّرة وتسمية تتوسع.
- * - **العنصر النشط**: أيقونة Scale‑12 + الاسم جنبًا إلى جنب. غير النشط: أيقونة فوق تسمية صغيرة.
- * - **سحب بالإصبع** عبر [Modifier] على الشريط كله — أي مسافة أفقية (/عمودي للـRail).
+ * المشكلة السابقة: تدرّجات بيضاء نصف شفافة + نصوص رمادية باهتة فوق أي خلفية —
+ * بلا أي تباين يضمن القراءة. التصميم الحالي مبني على قواعد M3 Expressive:
  *
- * اللون المعتم (فوق الكبسولة على الخلفية البيضاء): داكن بنفسجي `#2E1A47`.
+ * - السطح: `palette.glassDeep` — معتم عمليًا (~91–95%) فوق أي خلفية سماوية/داكنة.
+ * - العنصر النشط: كبسولة `palette.gold` مع أيقونة ونص `palette.onGold` — تباين ≥ 4.5:1 في الوضعين.
+ * - غير النشط: أيقونة ونص `palette.textMuted` على السطح المعتم — تباين ≥ 4.5:1.
+ * - أهداف لمس ≥ 56×48dp، والأيقونات 22dp مع تسمية ≥10sp دائمًا ظاهرة.
+ * - مؤشر واحد ينزلق بحتف نابض خلف العنصر النشط (بلا «تمويه مائي» وسوائل بيضاء).
+ * - سحب بالإصبع لاختيار الوجهة في الاتجاهين + دعم RTL.
  */
-
-private val LiquidBarSurface = Brush.linearGradient(
-    colors = listOf(
-        Color(0x2EFFFFFF),   // 0%
-        Color(0x0AFFFFFF),   // 50%
-        Color(0x1FFFFFF)    // 100%
-    ),
-    start = Offset(0f, 0f),
-    end = Offset(1f, 1f)
-)
-
-private val LiquidIndicatorSurface = Brush.linearGradient(
-    colors = listOf(
-        Color(0x3DFFFFFF),   // top-left — مضيء
-        Color(0x14FFFFFF),   // المنتصف — مشبع قليلًا
-        Color(0x30FFFFFF)  // bottom-right — إعادة إضاءة
-    ),
-    start = Offset(0f, 0f),
-    end = Offset(1f, 1f)
-)
-
-private val LiquidBarBorder = BorderStroke(1.5.dp, Color(0x40FFFFFF))
-private val LiquidIndicatorBorder = BorderStroke(1.5.dp, Color(0x59FFFFFF))
-private val LiquidActiveText = Color(0xFF2E1A47)
-private val LiquidMutedText = Color(0xCC8C92A8)
-private val PurpleAmbient = Color(0xFF6E50A4)
 
 @Composable
 fun LiquidFloatingBottomBar(
@@ -90,22 +62,24 @@ fun LiquidFloatingBottomBar(
     onSelect: (AppDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val palette = LocalKararPalette.current
     val entries = AppDestination.entries
     val density = androidx.compose.ui.platform.LocalDensity.current.density
-    // اتجاه الواجهة: في RTL يكون أول عنصر من اليمين — نحسب مواضع المؤشر والسحب accordingly.
+    // اتجاه الواجهة: في RTL يكون أول عنصر من اليمين.
     val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current ==
         androidx.compose.ui.unit.LayoutDirection.Rtl
+    val shape = RoundedCornerShape(30.dp)
 
     Box(
         modifier = modifier
             .widthIn(max = KararTokens.Size.navBarMaxWidth)
             .fillMaxWidth()
-            .height(58.dp)
-            .shadow(24.dp, RoundedCornerShape(34.dp), ambientColor = PurpleAmbient, spotColor = PurpleAmbient)
-            .clip(RoundedCornerShape(34.dp))
-            .background(LiquidBarSurface)
-            .border(LiquidBarBorder, RoundedCornerShape(34.dp))
-            .padding(5.dp)
+            .height(62.dp)
+            .shadow(20.dp, shape, ambientColor = Color(0x59000000), spotColor = Color(0x59000000))
+            .clip(shape)
+            .background(palette.glassDeep)
+            .border(BorderStroke(1.dp, palette.borderStrong), shape)
+            .padding(6.dp)
             .pointerInput(entries) {
                 fun indexAt(x: Float): Int {
                     val ratio = (x / size.width).coerceIn(0f, 0.999f)
@@ -126,31 +100,32 @@ fun LiquidFloatingBottomBar(
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val slotWidth = maxWidth / entries.size
-            // في RTL يكون أول عنصر من اليمين — نحسب موضع المؤشر من اليسار accordingly.
             val indexFromLeft =
                 if (rtl) entries.size - 1 - current.ordinal else current.ordinal
-            val targetX = slotWidth * indexFromLeft
             val offsetX by animateFloatAsState(
-                targetValue = targetX.value,
-                animationSpec = spring(dampingRatio = 0.62f, stiffness = 380f),
-                label = "liquid-offset"
+                targetValue = (slotWidth * indexFromLeft).value,
+                animationSpec = motionSpatial(),
+                label = "bar-offset"
             )
+            // المؤشر النشط — كبسولة ذهبية صلبة (تباين مضمون فوق أي خلفية).
             Box(
                 modifier = Modifier
                     .graphicsLayer { translationX = offsetX * density }
                     .fillMaxHeight()
-                    .widthIn(max = slotWidth)
-                    .background(LiquidIndicatorSurface, CircleShape)
-                    .border(LiquidIndicatorBorder, CircleShape)
+                    .width(slotWidth)
+                    .padding(horizontal = 4.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(palette.gold)
             )
-            // العنصر نفسه — الظلال شفافة أي يمكن أن تظهر الكابسولة خلف الحدود
             Row(Modifier.fillMaxSize()) {
                 entries.forEach { destination ->
-                    LiquidItem(
+                    NavItem(
                         destination = destination,
                         selected = destination == current,
                         onClick = { onSelect(destination) },
-                        modifier = Modifier.widthIn(max = slotWidth)
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
                     )
                 }
             }
@@ -159,90 +134,61 @@ fun LiquidFloatingBottomBar(
 }
 
 @Composable
-private fun LiquidItem(
+private fun NavItem(
     destination: AppDestination,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.14f else 0.92f,
-        animationSpec = spring(dampingRatio = 0.58f, stiffness = 380f),
-        label = "liquid-icon-scale"
-    )
+    val palette = LocalKararPalette.current
     val iconTint by animateColorAsState(
-        targetValue = if (selected) LiquidActiveText else LiquidMutedText,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "liquid-icon-tint"
+        targetValue = if (selected) palette.onGold else palette.textMuted,
+        animationSpec = spring(dampingRatio = 0.9f, stiffness = 380f),
+        label = "nav-icon-tint"
     )
-    val labelAlpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.7f,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "liquid-label-alpha"
+    val labelTint by animateColorAsState(
+        targetValue = if (selected) palette.onGold else palette.textMuted,
+        animationSpec = spring(dampingRatio = 0.9f, stiffness = 380f),
+        label = "nav-label-tint"
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.12f else 1f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = 380f),
+        label = "nav-icon-scale"
     )
     Box(
         modifier = modifier
-            .fillMaxHeight()
-            .fillMaxWidth()
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        if (selected) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = destination.icon,
-                    contentDescription = destination.title,
-                    tint = iconTint,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .graphicsLayer {
-                            scaleX = iconScale
-                            scaleY = iconScale
-                        }
-                )
-                Text(
-                    text = destination.shortTitle,
-                    color = iconTint.copy(alpha = labelAlpha),
-                    fontSize = 11.5.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    maxLines = 1
-                )
-            }
-        } else {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = destination.icon,
-                    contentDescription = destination.title,
-                    tint = iconTint.copy(alpha = labelAlpha),
-                    modifier = Modifier
-                        .size(23.dp)
-                        .graphicsLayer {
-                            scaleX = iconScale
-                            scaleY = iconScale
-                        }
-                )
-                Text(
-                    text = destination.shortTitle,
-                    color = iconTint.copy(alpha = labelAlpha),
-                    fontSize = 8.5.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    maxLines = 1
-                )
-            }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = destination.icon,
+                contentDescription = destination.title,
+                tint = iconTint,
+                modifier = Modifier
+                    .size(21.dp)
+                    .graphicsLayer { scaleX = iconScale; scaleY = iconScale }
+            )
+            Text(
+                text = destination.shortTitle,
+                color = labelTint,
+                fontSize = 10.sp,
+                fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 1.dp)
+            )
         }
     }
 }
 
 /**
- * الشريط الجانبي المدني — نفس لغة «Liquid Floating Glass» لكن رأسيًا.
- * مؤشر مائي ينزلق رأسيًا بحتف 80px كما في المرجع، ولا حواف خارجية.
+ * الشريط الجانبي — اللغة نفسها رأسيًا: سطح `glassDeep` صلب + كبسولة `gold` للنشط.
+ * الارتفاع يُحسب من عدد العناصر الفعلي وبأهداف لمس ≥ 56dp لكل وجهة.
  */
 @Composable
 fun LiquidVerticalRail(
@@ -250,19 +196,20 @@ fun LiquidVerticalRail(
     onSelect: (AppDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val palette = LocalKararPalette.current
     val entries = AppDestination.entries
     val density = androidx.compose.ui.platform.LocalDensity.current.density
 
     Box(
         modifier = modifier
-            .height(KararTokens.Size.navItem * 8 + 16.dp + 60.dp)
-            .widthIn(max = 84.dp)
+            .height((entries.size * 64).dp + 16.dp)
+            .widthIn(max = 88.dp)
             .fillMaxWidth()
-            .shadow(22.dp, RoundedCornerShape(26.dp), ambientColor = PurpleAmbient, spotColor = PurpleAmbient)
+            .shadow(20.dp, RoundedCornerShape(26.dp), ambientColor = Color(0x59000000), spotColor = Color(0x59000000))
             .clip(RoundedCornerShape(26.dp))
-            .background(LiquidBarSurface)
-            .border(BorderStroke(1.5.dp, Color(0x40FFFFFF)), RoundedCornerShape(26.dp))
-            .padding(6.dp)
+            .background(palette.glassDeep)
+            .border(BorderStroke(1.dp, palette.borderStrong), RoundedCornerShape(26.dp))
+            .padding(8.dp)
             .pointerInput(entries) {
                 detectVerticalDragGestures(
                     onDragStart = { offset ->
@@ -283,51 +230,60 @@ fun LiquidVerticalRail(
             val targetY = slotHeight * current.ordinal
             val offsetY by animateFloatAsState(
                 targetValue = targetY.value,
-                animationSpec = spring(dampingRatio = 0.62f, stiffness = 380f),
-                label = "liquid-rail-offset"
+                animationSpec = motionSpatial(),
+                label = "rail-offset"
             )
             Box(
                 modifier = Modifier
                     .graphicsLayer { translationY = offsetY * density }
                     .fillMaxWidth()
                     .height(slotHeight)
-                    .background(LiquidIndicatorSurface, RoundedCornerShape(22.dp))
-                    .border(BorderStroke(1.5.dp, Color(0x59FFFFFF)), RoundedCornerShape(22.dp))
+                    .padding(horizontal = 2.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(palette.gold)
             )
             Column(Modifier.fillMaxSize()) {
                 entries.forEach { destination ->
-                    LiquidRailItem(
+                    RailItem(
                         destination = destination,
                         selected = destination == current,
                         onClick = { onSelect(destination) },
-                        modifier = Modifier.height(slotHeight)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(slotHeight)
                     )
                 }
             }
         }
     }
 }
+
 @Composable
-private fun LiquidRailItem(
+private fun RailItem(
     destination: AppDestination,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.14f else 0.92f,
-        animationSpec = spring(dampingRatio = 0.58f, stiffness = 380f),
-        label = "liquid-rail-icon-scale"
-    )
+    val palette = LocalKararPalette.current
     val iconTint by animateColorAsState(
-        targetValue = if (selected) LiquidActiveText else LiquidMutedText,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "liquid-rail-icon-tint"
+        targetValue = if (selected) palette.onGold else palette.textMuted,
+        animationSpec = spring(dampingRatio = 0.9f, stiffness = 380f),
+        label = "rail-icon-tint"
+    )
+    val labelTint by animateColorAsState(
+        targetValue = if (selected) palette.onGold else palette.textMuted,
+        animationSpec = spring(dampingRatio = 0.9f, stiffness = 380f),
+        label = "rail-label-tint"
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.12f else 1f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = 380f),
+        label = "rail-icon-scale"
     )
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -340,18 +296,16 @@ private fun LiquidRailItem(
                 contentDescription = destination.title,
                 tint = iconTint,
                 modifier = Modifier
-                    .size(23.dp)
-                    .graphicsLayer {
-                        scaleX = iconScale
-                        scaleY = iconScale
-                    }
+                    .size(21.dp)
+                    .graphicsLayer { scaleX = iconScale; scaleY = iconScale }
             )
             Text(
                 text = destination.shortTitle,
-                color = iconTint,
-                fontSize = 9.5.sp,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                maxLines = 1
+                color = labelTint,
+                fontSize = 10.sp,
+                fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }

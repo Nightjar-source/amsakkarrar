@@ -1,5 +1,10 @@
 package com.karrar.amsakiah.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -77,6 +82,7 @@ import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.components.SpringDialog
 import com.karrar.amsakiah.ui.motion.ambientMotionEnabled
 import com.karrar.amsakiah.ui.motion.motionSpatial
+import com.karrar.amsakiah.ui.motion.motionEffects
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlinx.datetime.Clock
@@ -243,19 +249,16 @@ fun TasbihScreen(state: AppState, contentPadding: PaddingValues) {
                 selectedIndex = dhikrIndex,
                 onSelect = ::selectDhikr,
                 onAdd = { showAddDhikr = true },
-                onDelete = { index ->
-                    val item = presets.getOrNull(index)
+                onDeleteById = { deletedId ->
+                    val item = presets.firstOrNull { it.id == deletedId }
                     if (item != null && item.id.isNotBlank()) {
                         state.update { s ->
                             val remaining = s.customDhikrs.filterNot { it.id == item.id }
                             val newList = TasbihPresets.combined(remaining)
+                            val safe = TasbihPresets.safeIndex(s.tasbihDhikrIndex, newList.size)
                             val currentId = presets.getOrNull(s.tasbihDhikrIndex)?.id.orEmpty()
                             val match = newList.indexOfFirst { it.id == currentId && currentId.isNotBlank() }
-                            val newIndex = if (match >= 0) {
-                                match
-                            } else {
-                                TasbihPresets.safeIndex(s.tasbihDhikrIndex, newList.size)
-                            }
+                            val newIndex = if (match >= 0) match else safe
                             s.copy(
                                 customDhikrs = remaining,
                                 tasbihDhikrIndex = newIndex,
@@ -581,8 +584,19 @@ private fun TasbihListTab(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     onAdd: () -> Unit,
-    onDelete: (Int) -> Unit
+    onDeleteById: (String) -> Unit
 ) {
+    // الحذف على مرحلتين: «انكماش نابض» أولًا ثم الالتزام بالحالة — فلا يختفي الصف فجأة.
+    var leavingIds by remember { mutableStateOf(emptySet<String>()) }
+    fun requestDelete(itemId: String) {
+        if (itemId.isNotBlank()) leavingIds = leavingIds + itemId
+    }
+    LaunchedEffect(leavingIds) {
+        val pending = leavingIds.firstOrNull() ?: return@LaunchedEffect
+        kotlinx.coroutines.delay(320)
+        leavingIds = leavingIds - pending
+        onDeleteById(pending)
+    }
     // تجميع ديناميكي حسب `group` مع الحفاظ على ترتيب أول ظهور للمجموعة.
     // الفائدة: أي ذكر جديد يظهر داخل مجموعته التي أُنشئ فيها (لا في «أذكاري»
     // دائمًا)، والأذكار الجاهزة تبقى في مجموعاتها كما هي.
@@ -611,14 +625,27 @@ private fun TasbihListTab(
             )
         ) {
             indices.forEach { index ->
-                DhikrRow(
-                    index = index,
-                    dhikr = items[index],
-                    selected = index == selectedIndex,
-                    onClick = { onSelect(index) },
-                    onDelete = if (index >= presetCount) ({ onDelete(index) }) else null
-                )
-                Spacer(Modifier.height(8.dp))
+                val item = items[index]
+                val isLeaving = item.id in leavingIds
+                AnimatedVisibility(
+                    visible = !isLeaving,
+                    enter = fadeIn(animationSpec = motionEffects()) +
+                        expandVertically(animationSpec = motionSpatial()),
+                    exit = shrinkVertically(animationSpec = motionSpatial()) +
+                        fadeOut(animationSpec = motionEffects()),
+                    label = "dhikr-exit-${item.id}"
+                ) {
+                    Column {
+                        DhikrRow(
+                            index = index,
+                            dhikr = item,
+                            selected = index == selectedIndex,
+                            onClick = { onSelect(index) },
+                            onDelete = if (index >= presetCount) ({ requestDelete(item.id) }) else null
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
             }
         }
         Spacer(Modifier.height(10.dp))
