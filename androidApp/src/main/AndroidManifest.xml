@@ -214,6 +214,18 @@
             </intent-filter>
         </activity>
 
+        <!-- تحديث لحظي: كل دقيقة (TIME_TICK) + تغيير التاريخ/الساعة من الجهاز -->
+        <receiver
+            android:name=".notifications.TickReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_TICK" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

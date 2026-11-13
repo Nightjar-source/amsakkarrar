@@ -609,11 +609,17 @@ private fun CountdownSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp)
         ) {
-            CountdownDigit(hours, compact)
-            CountdownColon(compact)
-            CountdownDigit(minutes, compact)
-            CountdownColon(compact)
-            CountdownDigit(seconds, compact)
+            // الترتيب الرسمي للعدّاد: الساعات يسارًا ← الدقائق وسطًا ← الثواني يمينًا.
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalLayoutDirection provides
+                    androidx.compose.ui.unit.LayoutDirection.Ltr
+            ) {
+                CountdownDigit(hours, compact)
+                CountdownColon(compact)
+                CountdownDigit(minutes, compact)
+                CountdownColon(compact)
+                CountdownDigit(seconds, compact)
+            }
         }
 
         Spacer(Modifier.height(12.dp))

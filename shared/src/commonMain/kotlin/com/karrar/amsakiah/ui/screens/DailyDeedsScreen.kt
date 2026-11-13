@@ -75,17 +75,15 @@ fun DailyDeedsScreen(
         }
     }
 
-    // المطابقة الذكية للحظة — من شهرك ومدينتك وهجرية اليوم، بلا أي تدخل من المستخدم.
+    // المطابقة الصارمة — تاريخ اليوم الهجري فقط (لا رمضان ولا أيام من أشهر أخرى).
     val deeds = remember(today, hijri) { dailyDeeds(today, hijri) }
     val night = deeds.filter { it.source == DailyDeedSource.MONTH_NIGHT }
     val day = deeds.filter { it.source == DailyDeedSource.MONTH_DAY }
     val week = deeds.filter { it.source == DailyDeedSource.WEEKDAY }
-    val general = deeds.filter { it.source == DailyDeedSource.MONTH_GENERAL }
     val groups = listOf(
         "أعمال هذه الليلة (${night.size})" to night,
         "أعمال اليوم (${day.size})" to day,
-        "أعمال يوم $weekdayName (${week.size})" to week,
-        "أعمال شهر ${hijri.monthName} العامة (${general.size})" to general
+        "أعمال يوم $weekdayName (${week.size})" to week
     ).filter { it.second.isNotEmpty() }
 
     LazyVerticalGrid(
@@ -100,50 +98,7 @@ fun DailyDeedsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ---------- مصغّر اليوم — ديناميكي لحظيًا ----------
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(50))
-                    .background(KararColors.CardSoft)
-                    .border(1.dp, KararColors.Border, RoundedCornerShape(50))
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = null,
-                    tint = KararColors.Gold.copy(alpha = 0.85f),
-                    modifier = Modifier.size(15.dp)
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    text = "أعمال اليوم · $weekdayName ${hijri.day} ${hijri.monthName} ${hijri.year} هـ",
-                    color = KararColors.Gold,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(KararColors.Gold.copy(alpha = 0.14f))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "${deeds.size} عمل",
-                        color = KararColors.Gold,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        // ---------- الكروت ----------
+        // ---------- الكروت (العنوان في الشريط العلوي فقط — بلا تكرار) ----------
         if (groups.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 GlassCard(
