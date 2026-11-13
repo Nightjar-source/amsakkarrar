@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.state.AppState
 import com.karrar.amsakiah.ui.components.GlassCard
+import com.karrar.amsakiah.ui.navigation.LocalSearchQuery
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararFonts
 import kotlinx.coroutines.Dispatchers
@@ -68,33 +69,44 @@ fun QuranScreen(state: AppState, contentPadding: PaddingValues) {
     }
 }
 
+/** تطبيع الأرقام العربية/الفارسية إلى لاتينية حتى يعمل البحث بالرقم من أي لوحة مفاتيح. */
+private fun normalizeDigits(input: String): String = buildString(input.length) {
+    input.forEach { ch ->
+        when (ch) {
+            in '٠'..'٩' -> append('0' + (ch - '٠'))
+            in '۰'..'۹' -> append('0' + (ch - '۰'))
+            else -> append(ch)
+        }
+    }
+}
+
 @Composable
 private fun QuranIndex(onOpen: (SurahInfo) -> Unit) {
+    val query = LocalSearchQuery.current.value
+    val filtered = remember(query) {
+        val q = normalizeDigits(query.trim())
+        if (q.isBlank()) SURAHS
+        else SURAHS.filter { surah ->
+            surah.name.contains(q, ignoreCase = true) ||
+                surah.number.toString() == q
+        }
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 2.dp)
-            ) {
+        if (filtered.isEmpty()) {
+            item {
                 Text(
-                    "القرآن الكريم",
-                    color = KararColors.TextPrimary,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    "١١٤ سورة · المصحف الشريف · اختر سورة لتقرأ آياتها",
+                    "لا توجد سورة بهذا الاسم — جرّب البحث بالاسم أو الرقم.",
                     color = KararColors.TextMuted,
-                    fontSize = 11.sp
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(vertical = 32.dp, horizontal = 8.dp)
                 )
             }
         }
-        itemsIndexed(SURAHS, key = { _, s -> s.number }) { _, surah ->
+        itemsIndexed(filtered, key = { _, s -> s.number }) { _, surah ->
             RowSurah(surah, onOpen)
         }
     }

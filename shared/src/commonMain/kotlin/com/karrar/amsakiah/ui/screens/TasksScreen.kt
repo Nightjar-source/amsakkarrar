@@ -27,7 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -85,30 +84,7 @@ fun TasksScreen(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp + imeBottom),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "المهام والملاحظات",
-                        color = KararColors.TextPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                    Text(
-                        "ملاحظاتك ومفضلاتك من «مفاتيح الجنان» — بلا شيء مسبق",
-                        color = KararColors.TextMuted,
-                        fontSize = 11.sp
-                    )
-                }
-                Icon(
-                    Icons.AutoMirrored.Filled.EventNote,
-                    contentDescription = null,
-                    tint = KararColors.Gold.copy(alpha = 0.9f),
-                    modifier = Modifier.size(30.dp)
-                )
-            }
-        }
-
+        // العنوان في الشريط العلوي الموحّد فقط — بلا تكرار داخل الشاشة.
         // ---------- المجموعة الأولى: محفوظاتي من «مفاتيح الجنان» ----------
         item { SectionTitle("⭐ محفوظاتي من «مفاتيح الجنان» (${favorites.size})") }
         if (favorites.isEmpty()) {

@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
+
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
@@ -140,34 +140,7 @@ fun KeysScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "المفاتيح",
-                            color = KararColors.TextPrimary,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                        Text(
-                            "اختر ما تريد — كل باب يُفتح بشاشة كاملة",
-                            color = KararColors.TextMuted,
-                            fontSize = 11.sp
-                        )
-                    }
-                    Icon(
-                        Icons.Filled.Mosque,
-                        contentDescription = null,
-                        tint = KararColors.Gold.copy(alpha = 0.9f),
-                        modifier = Modifier.size(30.dp)
-                    )
-                }
-            }
+            // العنوان في الشريط العلوي الموحّد فقط — بلا تكرار داخل الشاشة.
             items(tiles, key = { it.id }) { tile ->
                 KeyTileCard(tile)
             }

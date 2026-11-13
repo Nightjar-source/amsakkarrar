@@ -38,9 +38,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +60,7 @@ import com.karrar.amsakiah.core.data.ShiaDuaItem
 import com.karrar.amsakiah.core.data.ShiaDuasLibrary
 import com.karrar.amsakiah.ui.adaptive.contentEnd
 import com.karrar.amsakiah.ui.adaptive.contentStart
+import com.karrar.amsakiah.ui.navigation.LocalSearchQuery
 import com.karrar.amsakiah.ui.components.SectionTitle
 import com.karrar.amsakiah.ui.motion.effectsSpec
 import com.karrar.amsakiah.ui.motion.spatialSpec
@@ -184,7 +184,7 @@ private fun DuaList(
     player: DuaPlayerController
 ) {
     val all = remember { ShiaDuasLibrary.duasList }
-    var query by remember { mutableStateOf("") }
+    val query = LocalSearchQuery.current.value
     var category by remember { mutableStateOf<String?>(null) }
 
     val categories = remember { all.map { it.category }.distinct() }
@@ -214,18 +214,6 @@ private fun DuaList(
         horizontalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                placeholder = { Text("ابحث في الأدعية والزيارات...", fontSize = 13.sp) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = KararColors.Gold) },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp)
-            )
-        }
-
-        item(span = { GridItemSpan(maxLineSpan) }) {
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -243,6 +231,21 @@ private fun DuaList(
         item(span = { GridItemSpan(maxLineSpan) }) {
             Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
                 SectionTitle("الأدعية والمناجاة (${filtered.size})")
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    text = if (query.isNotBlank()) {
+                        "لا توجد نتائج لـ«${query.trim()}» — جرّب كلمة أخرى."
+                    } else {
+                        "لا توجد أدعية في هذا التصنيف بعد."
+                    },
+                    color = KararColors.TextMuted,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp)
+                )
             }
         }
 

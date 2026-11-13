@@ -52,11 +52,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import com.karrar.amsakiah.core.astronomy.HijriDate
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
@@ -187,6 +188,11 @@ fun AppShell(
     var duaDetailTitle by remember { mutableStateOf<String?>(null) }
     var duaBackSignal by remember { mutableIntStateOf(0) }
 
+    // حالة البحث الموحّد — يتحكم بها شريط العنوان ويقرأها شاشات (القرآن/الجنان/الأدعية).
+    // حالة البحث — text/mode يصمدان أمام تغيّر الإعدادات (تدوير الشاشة) فتبقى نتائج البحث.
+    val searchQuery = rememberSaveable { mutableStateOf("") }
+    val searchMode = remember { mutableStateOf(false) }
+
     // مشغّل واحد لكل التطبيق — يبقى يعمل عبر التنقل ويُحرَّر عند إغلاق الشل.
     val player = remember { DuaPlayerController() }
     DisposableEffect(player) {
@@ -239,9 +245,6 @@ fun AppShell(
     // ارتفاع الشريط العلوي — ديناميكي حسب فئة الارتفاع الرسمية (لا ثابت 56dp).
     val asTopBarHeight = layout.topBarHeight()
 
-    // ارتفاع المصغّر «أعمال اليوم» فوق الكبسولة (نحو 24dp + هاشية 6dp) — يُحجز للمحتوى والتنبيهات.
-    val dailyDeedsStripHeight = 28.dp
-
     // ارتفاع شريط التنقل السفلي + هوامشه — يُحجز للمحتوى والمشغّل.
     // يُلغى تمامًا على الشاشات الجانبية (Rail) أو في وضع القراءة، فتتمدد المنطقة بالكامل.
     val navBarReserve = if (bottomNavVisible) {
@@ -253,8 +256,7 @@ fun AppShell(
     val contentTop = when {
         isToday -> statusTop + 6.dp
         // ديناميكي حسب فئة الارتفاع الرسمية بدلًا من فراغ ثابت 74dp
-        // (+ ارتفاع المصغّر «أعمال اليوم» فوق الكبسولة)
-        else -> statusTop + 8.dp + dailyDeedsStripHeight + asTopBarHeight + 6.dp
+        else -> statusTop + 8.dp + asTopBarHeight + 10.dp
     }
     val contentPadding = PaddingValues(
         start = safeStart,
@@ -324,7 +326,16 @@ fun AppShell(
     // وتفاصيل الدعاء في الوقت نفسه (لا يُستدعى اثنان لنفس الضغطة).
     PlatformBackHandler(enabled = duaDetailOpen || backStack.size > 1) { back() }
 
+    // إعادة ضبط وضع البحث عند تغيير الشاشة — لا يبقى حقل البحث معلقًا على شاشة أخرى.
+    LaunchedEffect(currentRoute) {
+        searchMode.value = false
+        searchQuery.value = ""
+    }
+
     // ---------- الهيكل ----------
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalSearchQuery provides searchQuery
+    ) {
     Box(modifier = modifier.fillMaxSize()) {
         // خلفية واحدة فقط: سماوية في «اليوم» (ترسمها الشاشة full-bleed)،
         // وتدرج اللوحة الحالية في بقية الشاشات — فلا كتل لونية على الحواف.
@@ -509,14 +520,11 @@ fun AppShell(
                         AppRoute.Qibla -> "القبلة والمراقد"
                         AppRoute.Tasks -> "المهام والملاحظات"
                         AppRoute.Jinan -> "مفاتيح الجنان"
-                        AppRoute.DailyDeeds -> "أعمال اليوم"
-                        is AppRoute.JinanReader -> (currentRoute as AppRoute.JinanReader).title
+                        // عنوان واحد ديناميكي للتاريخ — بلا تكرار داخل الشاشة.
+                        AppRoute.DailyDeeds -> "أعمال اليوم · " + dailyDeedsTitle(settings)
+                        is AppRoute.JinanReader -> currentRoute.title
                         else -> null
                     }
-                    // مصغّر اليوم فوق الكبسولة — ديناميكي لحظيًا من يومك ومدينتك الهجرية.
-                    val todayStrip = remember(settings.hijriOffset) { PrayerCalculator.todayDate(settings) }
-                    val hijriStrip = remember(todayStrip, settings.hijriOffset) { PrayerCalculator.hijriFor(settings, todayStrip) }
-
                     Column(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
@@ -524,18 +532,10 @@ fun AppShell(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        DailyDeedsStrip(
-                            weekdayName = PrayerCalculator.weekDays.getOrNull(todayStrip.dayOfWeek.ordinal).orEmpty(),
-                            hijri = hijriStrip,
-                            onOpen = { openKeysChild(AppRoute.DailyDeeds) }
-                        )
+                        val supportsSearch = currentRoute in setOf(AppRoute.Quran, AppRoute.Jinan, AppRoute.Duas)
                         UnifiedTopBar(
                             title = childTitle ?: if (widgetsOpen) "الودجتات" else currentTab.title,
-                            subtitle = when {
-                                widgetsOpen -> "أشكال الودجت وخلفياتها"
-                                childTitle != null -> "المفاتيح"
-                                else -> ""
-                            },
+                            subtitle = "",
                             canGoBack = backStack.size > 1 || duaDetailOpen,
                             onBack = ::back,
                             actionIcon = if (currentTab == AppDestination.SETTINGS) Icons.Filled.Widgets else Icons.Filled.Tune,
@@ -544,7 +544,15 @@ fun AppShell(
                                 if (currentTab == AppDestination.SETTINGS) openWidgets() else openSettings()
                             },
                             height = asTopBarHeight,
-                            modifier = Modifier
+                            modifier = Modifier,
+                            supportsSearch = supportsSearch,
+                            searchMode = searchMode.value,
+                            searchQuery = searchQuery.value,
+                            onSearchChange = { searchQuery.value = it },
+                            onSearchToggle = {
+                                searchMode.value = !searchMode.value
+                                if (!searchMode.value) searchQuery.value = ""
+                            }
                         )
                     }
                 }
@@ -591,11 +599,12 @@ fun AppShell(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(
-                    top = statusTop + (if (showTopBar) dailyDeedsStripHeight + asTopBarHeight + 16.dp else 14.dp),
+                    top = statusTop + (if (showTopBar) asTopBarHeight + 16.dp else 14.dp),
                     start = 16.dp + safeStart,
                     end = 16.dp + safeEnd
                 )
         )
+    }
     }
 }
 
@@ -669,7 +678,8 @@ private fun AppBackdrop() {
 
 /**
  * شريط العنوان الموحّد: زر رجوع دائري + كبسولة عنوان واحدة + زر إجراء.
- * العنوان وحده يتبدّل داخل نفس الكبسولة بحركة انزلاق نابضة.
+ * العنوان وحده يتبدّل داخل نفس الكبسولة بحركة انزلاق نابضة؛
+ * وإذا كانت الشاشة تدعم البحث تظهر **دائرة بحث** بجانب الاسم تتحول الكبسولة معها لحقل بحث.
  */
 @Composable
 private fun UnifiedTopBar(
@@ -681,10 +691,20 @@ private fun UnifiedTopBar(
     actionLabel: String,
     onAction: () -> Unit,
     height: Dp = KararTokens.Size.topBarHeight,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    supportsSearch: Boolean = false,
+    searchMode: Boolean = false,
+    searchQuery: String = "",
+    onSearchChange: (String) -> Unit = {},
+    onSearchToggle: () -> Unit = {}
 ) {
     // «تقليل الحركة»: عنوان الشريط يظهر/يختفي بتلاشٍ بلا انزلاق.
     val reduceMotion = rememberReduceMotion()
+    // تركيز تلقائي على حقل البحث عند تفعيله — تظهر لوحة المفاتيح فورًا بلا نقرة إضافية.
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(searchMode) {
+        if (searchMode) focusRequester.requestFocus()
+    }
     Row(
         modifier = modifier
             .widthIn(max = KararTokens.Size.topBarMaxWidth)
@@ -693,7 +713,7 @@ private fun UnifiedTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (canGoBack) {
+        if (canGoBack && !searchMode) {
             CircleGlassButton(
                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                 label = "رجوع",
@@ -701,6 +721,60 @@ private fun UnifiedTopBar(
             )
         }
 
+        if (searchMode) {
+            // وضع البحث: الكبسولة كلها تتحول لحقل بحث أنيق بجانب الاسم.
+            GlassSurface(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                shape = CircleShape,
+                elevation = 14.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = null,
+                        tint = KararColors.Gold,
+                        modifier = Modifier.size(19.dp)
+                    )
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchChange,
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = KararColors.TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            textDirection = androidx.compose.ui.text.style.TextDirection.Rtl
+                        ),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(KararColors.Gold),
+                        modifier = Modifier.weight(1f).focusRequester(focusRequester),
+                        decorationBox = { inner ->
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    "ابحث…",
+                                    color = KararColors.TextMuted,
+                                    fontSize = 14.sp
+                                )
+                            }
+                            inner()
+                        }
+                    )
+                }
+            }
+            CircleGlassButton(
+                icon = Icons.Filled.Close,
+                label = "إغلاق البحث",
+                onClick = onSearchToggle
+            )
+            return
+        }
 
         GlassSurface(
             modifier = Modifier
@@ -731,10 +805,17 @@ private fun UnifiedTopBar(
                         label = "topbar-title",
                         contentAlignment = Alignment.CenterStart
                     ) { current ->
+                        // حجم الخط يتكيّف مع طول العنوان (سائل): طويل ← يصغُر بلا قصّ.
+                        val adaptiveSize = when {
+                            current.length <= 12 -> 15.sp
+                            current.length <= 20 -> 13.5.sp
+                            current.length <= 30 -> 11.5.sp
+                            else -> 10.sp
+                        }
                         Text(
                             text = current,
                             color = KararColors.TextPrimary,
-                            fontSize = 15.sp,
+                            fontSize = adaptiveSize,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -750,19 +831,22 @@ private fun UnifiedTopBar(
                         )
                     }
                 }
-                Text(
-                    text = "☾",
-                    color = KararColors.Gold.copy(alpha = 0.9f),
-                    fontSize = 22.sp
-                )
             }
         }
 
-        CircleGlassButton(
-            icon = actionIcon,
-            label = actionLabel,
-            onClick = onAction
-        )
+        if (supportsSearch) {
+            CircleGlassButton(
+                icon = Icons.Filled.Search,
+                label = "بحث",
+                onClick = onSearchToggle
+            )
+        } else {
+            CircleGlassButton(
+                icon = actionIcon,
+                label = actionLabel,
+                onClick = onAction
+            )
+        }
     }
 }
 
@@ -993,6 +1077,17 @@ private fun ToastPill(
 }
 
 /**
+ * عنوان «أعمال اليوم» الموحّد: اسم اليوم + التاريخ الهجري لمدينتك — يُعرض مرة واحدة
+ * في شريط العنوان (لا تكرار داخل الشاشة).
+ */
+private fun dailyDeedsTitle(settings: com.karrar.amsakiah.core.settings.AppSettings): String {
+    val today = PrayerCalculator.todayDate(settings)
+    val hijri = PrayerCalculator.hijriFor(settings, today)
+    val weekday = PrayerCalculator.weekDays.getOrNull(today.dayOfWeek.ordinal).orEmpty()
+    return "$weekday ${hijri.day} ${hijri.monthName} ${hijri.year} هـ"
+}
+
+/**
  * كبسولة «جارٍ تحديد الموقع» — حلقات رادار نابضة حول أيقونة الموقع.
  * الحركة دوّارية لانهائية خطية (دورية بطبيعتها)، وتتوقف فور انتهاء الحالة.
  */
@@ -1086,40 +1181,3 @@ private fun LocatingPill() {
     }
 }
 
-/**
- * كبسولة «أعمال اليوم» المصغّرة — فوق شريط العنوان مباشرة:
- * «أعمال اليوم · الخميس 12 جمادى الأولى 1447» — تُحدَّث تلقائيًا من التقويم الهجري
- * ليومك (حسب المدينة وإعداداتك)، والضغط عليها يفتح شاشة «أعمال اليوم».
- */
-@Composable
-private fun DailyDeedsStrip(
-    weekdayName: String,
-    hijri: HijriDate,
-    onOpen: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(KararColors.Gold.copy(alpha = 0.12f))
-            .border(1.dp, KararColors.Gold.copy(alpha = 0.5f), RoundedCornerShape(50))
-            .clickable(onClick = onOpen)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(
-            Icons.AutoMirrored.Filled.MenuBook,
-            contentDescription = null,
-            tint = KararColors.Gold,
-            modifier = Modifier.size(12.dp)
-        )
-        Text(
-            text = "أعمال اليوم · $weekdayName ${hijri.day} ${hijri.monthName} ${hijri.year} هـ",
-            color = KararColors.Gold,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
