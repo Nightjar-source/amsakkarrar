@@ -122,7 +122,7 @@ private val widgetDefs = listOf(
 )
 
 private val styleDefs = listOf(
-    Triple(WidgetPinBridge.STYLE_ARC, "قوسُ السماء", Color(0xFF274070)),
+    Triple(WidgetPinBridge.STYLE_ARC, "ألوان اليوم", Color(0xFF274070)),
     Triple(WidgetPinBridge.STYLE_DEEP, "ليلي", Color(0xF2050A15)),
     Triple(WidgetPinBridge.STYLE_MATERIAL, "مادة", Color(0xFF0E1626)),
     Triple(WidgetPinBridge.STYLE_GLASS, "زجاجي", Color(0xCC1B2438)),

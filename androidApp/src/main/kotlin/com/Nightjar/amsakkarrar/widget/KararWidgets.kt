@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,6 +48,7 @@ import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.notifications.PrayerEntry
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshot
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshotLoader
+import com.Nightjar.amsakkarrar.widget.ArcBackground
 import com.Nightjar.amsakkarrar.notifications.SettingsLoader
 import com.karrar.amsakiah.core.astronomy.HijriDate
 import com.karrar.amsakiah.core.jinan.DailyDeed
@@ -106,12 +108,10 @@ private fun launchIntent(context: Context): Intent =
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
 
-/** الصلوات الست الظاهرة في الودجت (نفس مربعات HTML). */
-private val WIDGET_PRAYERS = listOf("imsak", "fajr", "dhuhr", "asr", "maghrib", "isha")
-
+/** الصلاة الظاهرة في الودجت — من نوات الضبط مباشرة (نفس «القوس»). */
 private fun PrayerSnapshot.widgetEntries(): List<PrayerEntry> {
-    val byId = entries.associateBy { it.id }
-    return WIDGET_PRAYERS.mapNotNull { byId[it] }
+    // الإدخالات مفلترة بحسب visiblePrayers في الإعدادات أصلًا — لا نكررها هنا.
+    return entries
 }
 
 private fun tierPadding(tier: WidgetTier): Dp = when (tier) {
@@ -145,13 +145,17 @@ private fun WidgetFrame(
     appWidgetId: Int,
     tier: WidgetTier,
     center: Boolean = true,
-    skyColors: Triple<Color, Color, Color>? = null,
+    snapshot: PrayerSnapshot,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val style = WidgetStyleStore.current(context, appWidgetId)
     val background = Color(WidgetStyleStore.backgroundArgb(context, appWidgetId))
-    val border = if (style == WidgetStyleStore.ARC && skyColors != null) {
-        skyColors.third // skyGlow — يتبع وقت اليوم
+    val isArc = (style == WidgetStyleStore.ARC)
+    val skyColors = remember(snapshot.nowSeconds) {
+        SkyTheme.getSkyColorsForSecond(snapshot.nowSeconds.toFloat())
+    }
+    val border = if (isArc) {
+        skyColors.third.copy(alpha = 0.75f) // skyGlow — يتبع وقت اليوم
     } else {
         Color(WidgetStyleStore.borderArgb(context, appWidgetId))
     }
@@ -167,35 +171,23 @@ private fun WidgetFrame(
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(border)
+            .background(color(border))
             .cornerRadius(outerRadius)
     ) {
-        // قوس السماء: خلفية مقسمة إلى طبقتين (العليا للسماء، السفلى للأفق)
-        // — تُحسب عند كل تحديث عبر WorkManager أو فتح التطبيق.
-        if (style == WidgetStyleStore.ARC && skyColors != null) {
-            val size = LocalSize.current
-            val topHeight = size.height * 0.62f
-            Column(GlanceModifier.fillMaxSize()) {
-                Box(
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
-                        .height(topHeight)
-                        .background(skyColors.first.copy(alpha = 0.92f))
-                ) {}
-                Box(
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
-                        .defaultWeight()
-                        .background(skyColors.second.copy(alpha = 0.95f))
-                ) {}
-            }
+        // قوس السماء: خلفية مولّدة ديناميكيًا (Bitmap) حرفيًا مطابقة لتدرّج القوس الأصلي
+        // — يحدث عند كل تحديث عبر WorkManager أو فتح التطبيق (لحظي وليس كل 15 د فقط).
+        if (isArc) {
+            AndroidRemoteViews(
+                remoteViews = ArcBackground.backgroundRemoteViews(context, snapshot.nowSeconds),
+                modifier = GlanceModifier.fillMaxSize()
+            )
         }
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .padding(1.dp)
                 .then(
-                    if (style == WidgetStyleStore.ARC) {
+                    if (isArc) {
                         GlanceModifier
                     } else {
                         GlanceModifier.background(background)
@@ -365,9 +357,6 @@ private fun PrayerGridRow(entries: List<PrayerEntry>, activeLabel: String, compa
     }
 }
 
-private fun skyColors(snapshot: PrayerSnapshot) =
-    SkyTheme.getSkyColorsForSecond(snapshot.nowSeconds.toFloat())
-
 private fun appWidgetIdFor(context: Context, id: GlanceId): Int =
     runCatching { GlanceAppWidgetManager(context).getAppWidgetId(id) }
         .getOrDefault(AppWidgetManager.INVALID_APPWIDGET_ID)
@@ -404,7 +393,7 @@ class TodayWidget : GlanceAppWidget() {
 private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
     val tier = rememberWidgetTier()
     val gridEntries = snapshot.widgetEntries()
-    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
+    WidgetFrame(context, appWidgetId, tier, snapshot = snapshot) {
         WidgetKashida(
             snapshot,
             fontSize = when (tier) {
@@ -435,21 +424,24 @@ private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWi
         when (tier) {
             WidgetTier.LARGE -> {
                 Spacer(GlanceModifier.height(7.dp))
-                PrayerGridRow(gridEntries.take(3), snapshot.nextLabel)
-                Spacer(GlanceModifier.height(5.dp))
-                PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel)
+                gridEntries.chunked(3).forEachIndexed { index, row ->
+                    if (index > 0) Spacer(GlanceModifier.height(5.dp))
+                    PrayerGridRow(row, snapshot.nextLabel)
+                }
             }
             WidgetTier.MEDIUM -> {
                 Spacer(GlanceModifier.height(5.dp))
-                PrayerGridRow(gridEntries.take(3), snapshot.nextLabel, compact = true)
-                Spacer(GlanceModifier.height(3.dp))
-                PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel, compact = true)
+                gridEntries.chunked(3).forEachIndexed { index, row ->
+                    if (index > 0) Spacer(GlanceModifier.height(3.dp))
+                    PrayerGridRow(row, snapshot.nextLabel, compact = true)
+                }
             }
             WidgetTier.COMPACT -> {
                 Spacer(GlanceModifier.height(3.dp))
                 PillProgress(snapshot.periodProgress, snapshot.isDaytime, inset = 10.dp)
                 Spacer(GlanceModifier.height(6.dp))
-                PrayerGridRow(gridEntries.filter { it.id == "fajr" || it.id == "maghrib" || it.id == "isha" }, snapshot.nextLabel, compact = true)
+                // أول 3 من الصلوات المعروضة في الضبط فقط — لا شيء خارج النوات.
+                PrayerGridRow(gridEntries.take(3), snapshot.nextLabel, compact = true)
             }
         }
     }
@@ -486,7 +478,7 @@ class TimesWidget : GlanceAppWidget() {
 private fun TimesWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
     val tier = rememberWidgetTier()
     val gridEntries = snapshot.widgetEntries()
-    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
+    WidgetFrame(context, appWidgetId, tier, snapshot = snapshot) {
         if (tier != WidgetTier.COMPACT) {
             WidgetKashida(snapshot, fontSize = if (tier == WidgetTier.MEDIUM) 18 else 22)
             Spacer(GlanceModifier.height(2.dp))
@@ -501,9 +493,10 @@ private fun TimesWidgetContent(context: Context, snapshot: PrayerSnapshot, appWi
             )
         )
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 7.dp))
-        PrayerGridRow(gridEntries.take(3), snapshot.nextLabel, compact = tier == WidgetTier.COMPACT)
-        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
-        PrayerGridRow(gridEntries.drop(3).take(3), snapshot.nextLabel, compact = tier == WidgetTier.COMPACT)
+        gridEntries.chunked(3).forEachIndexed { index, row ->
+            if (index > 0) Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
+            PrayerGridRow(row, snapshot.nextLabel, compact = tier == WidgetTier.COMPACT)
+        }
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
         AndroidRemoteViews(
             remoteViews = countdownRemoteViews(context, snapshot, compact = tier != WidgetTier.LARGE),
@@ -545,7 +538,7 @@ private fun CountdownWidgetContent(context: Context, snapshot: PrayerSnapshot, a
     val tier = rememberWidgetTier()
     // وضع «الجزيرة»: عريض وقصير — يُعرض أفقياً كشريط حالة
     val island = size.width > 230.dp && size.height < 135.dp
-    WidgetFrame(context, appWidgetId, tier, center = !island, skyColors = skyColors(snapshot)) {
+    WidgetFrame(context, appWidgetId, tier, center = !island, snapshot = snapshot) {
         if (island) {
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
@@ -623,7 +616,7 @@ class HijriWidget : GlanceAppWidget() {
 @Composable
 private fun HijriWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
     val tier = rememberWidgetTier()
-    WidgetFrame(context, appWidgetId, tier, center = true) {
+    WidgetFrame(context, appWidgetId, tier, center = true, snapshot = snapshot) {
         WidgetKashida(snapshot, fontSize = if (tier == WidgetTier.COMPACT) 16 else 20)
         Spacer(GlanceModifier.height(2.dp))
         Text(
@@ -687,7 +680,7 @@ class ClockWidget : GlanceAppWidget() {
 @Composable
 private fun ClockWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
     val tier = rememberWidgetTier()
-    WidgetFrame(context, appWidgetId, tier, center = true) {
+    WidgetFrame(context, appWidgetId, tier, center = true, snapshot = snapshot) {
         AndroidRemoteViews(
             remoteViews = clockRemoteViews(context, snapshot, compact = tier == WidgetTier.COMPACT),
             modifier = GlanceModifier.fillMaxWidth()
@@ -742,7 +735,7 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
         WidgetTier.MEDIUM -> entries.take(5)
         WidgetTier.LARGE -> entries
     }
-    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
+    WidgetFrame(context, appWidgetId, tier, snapshot = snapshot) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -844,7 +837,7 @@ private fun DailyDeedsWidgetContent(
     val week = deeds.count { it.source == DailyDeedSource.WEEKDAY }
     val general = deeds.count { it.source == DailyDeedSource.MONTH_GENERAL }
 
-    WidgetFrame(context, appWidgetId, tier, skyColors = skyColors(snapshot)) {
+    WidgetFrame(context, appWidgetId, tier, snapshot = snapshot) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically

@@ -115,6 +115,8 @@ import com.karrar.amsakiah.ui.adaptive.rememberAppAdaptiveLayout
 import com.karrar.amsakiah.ui.adaptive.topBarHeight
 import com.karrar.amsakiah.ui.components.DuaPlayerOverlay
 import com.karrar.amsakiah.ui.components.GlassSurface
+import com.karrar.amsakiah.ui.components.LiquidFloatingBottomBar
+import com.karrar.amsakiah.ui.components.LiquidVerticalRail
 import com.karrar.amsakiah.ui.motion.ambientMotionEnabled
 import com.karrar.amsakiah.ui.motion.effectsSpec
 import com.karrar.amsakiah.ui.motion.motionEffects
@@ -794,18 +796,12 @@ private fun CircleGlassButton(
 }
 
 /**
- * الشريط السفلي — M3 Expressive «Flexible Navigation Bar» (v0_11_0)، بحدود
- * هوية التطبيق الداكنة:
+ * الشريط السفلي — «Liquid Floating Glass» (تصميم شريط_تنقل_مائي_عائم_مع_دليل_المطور.html):
  *
- * - الحاوية: `surfaceContainer` بنقطة عالية المحتوى، زوايا xxxl، حدّ رقيق
- *   (`outlineVariant`) — نغمة سطحية لا درجة تخصصية فيها، وجهات متساوية.
- * - العناصر عمودية (compact): أيقونة حيوي ٢٤dp فوق تسمية (١١sp).
- * - المؤشر النشط: كبسولة **٣٢×٥٦dp** (CornerFull) بتعبئة `secondaryContainer`،
- *   تتوسع من مركز الأيقونة على محور واحد وتنزلق بنابض مكاني — لا قفزات.
- * - الألوان تتبع MaterialTheme.colorScheme: الأيقونة والمؤشر = onSecondaryContainer،
- *   والتسمية النشطة = secondary (سميكة)، والتسمية غير النشطة = onSurfaceVariant.
- * - الانتقالات: الأيقونة تملأ/تفرغ، المؤشر ينزلق — الحركة كلها `graphicsLayer`،
- *   لا يعاد قياس أي شيء أثناء الانزلاق.
+ * - كبسولة عائمة زجاجية بتدرّج خفيف وحدود لامعة وظل بنفسجي.
+ * - مؤشر مائي ينزلق بنابض هيدروليكي (damping 0.62) خلف العنصر النشط.
+ * - العنصر النشط: أيقونة مكبّرة (1.14) + اسمها بجانبها؛ غير النشط: أيقونة + تسمية صغيرة.
+ * - سحب بالإصبع على الشريط ينتقل بين الوجهات (.PointerInput).
  */
 @Composable
 private fun FloatingBottomBar(
@@ -813,116 +809,14 @@ private fun FloatingBottomBar(
     onSelect: (AppDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val entries = AppDestination.entries
-    Surface(
+    LiquidFloatingBottomBar(
+        current = current,
+        onSelect = onSelect,
         modifier = modifier
-            .widthIn(max = KararTokens.Size.navBarMaxWidth)
-            .fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(KararTokens.Radius.xxxl),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        tonalElevation = 1.dp,
-        shadowElevation = 2.dp
-    ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(68.dp)) {
-            val slotWidth = maxWidth / entries.size
-            val indicatorWidth = 56.dp
-            val indicatorHeight = 32.dp
-            val targetOffset = slotWidth * current.ordinal + (slotWidth - indicatorWidth) / 2
-            val offsetX by animateFloatAsState(
-                targetValue = targetOffset.value,
-                animationSpec = motionSpatial(),
-                label = "nav-m3-offset"
-            )
-            val density = LocalDensity.current.density
-
-            // مؤشر M3 Expressive: كبسولة secondaryContainer تنزلق خلف الأيقونة فقط.
-            Box(
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 6.dp)
-                    .graphicsLayer { translationX = offsetX * density }
-                    .width(indicatorWidth)
-                    .height(indicatorHeight)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                entries.forEach { destination ->
-                    FlexibleNavItem(
-                        destination = destination,
-                        selected = destination == current,
-                        onClick = { onSelect(destination) },
-                        modifier = Modifier.width(slotWidth)
-                    )
-                }
-            }
-        }
-    }
+    )
 }
 
-/**
- * عنصر داخل الشريط السفلي — الأيقونة في خانة المؤشر (٣٢dp) ثم التسمية تحتها،
- * تمامًا كتخطيط «Vertical» في M3 Expressive.
- */
-@Composable
-private fun FlexibleNavItem(
-    destination: AppDestination,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scheme = MaterialTheme.colorScheme
-    val iconTint by animateColorAsState(
-        targetValue = if (selected) scheme.onSecondaryContainer else KararColors.TextMuted,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "nav-icon-tint"
-    )
-    val labelTint by animateColorAsState(
-        targetValue = if (selected) scheme.secondary else KararColors.TextMuted,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "nav-label-tint"
-    )
-
-    Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Spacer(Modifier.height(6.dp))
-        Box(
-            modifier = Modifier
-                .width(56.dp)
-                .height(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = destination.icon,
-                contentDescription = destination.title,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Text(
-            text = destination.shortTitle,
-            color = labelTint,
-            fontSize = 11.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-/** الشريط الجانبي — NavigationRail متوافق مع M3 Expressive (64/72dp حسب فئة النافذة). */
+/** الشريط الجانبي — «Liquid Floating Glass» رأسيًا (كبسولة عائمة + مؤشر مائي ينزلق). */
 @Composable
 private fun SideNavigation(
     current: AppDestination,
@@ -933,17 +827,10 @@ private fun SideNavigation(
     topInset: Dp,
     bottomInset: Dp
 ) {
-    // عرض نابض: يتكيف مع فئة النافذة الرسمية (64dp medium / 72dp expanded)
-    // ولا توجد قفزات بين الوضع الأفقي والعمودي والمطويات.
-    val width by animateDpAsState(
-        targetValue = targetWidth,
-        animationSpec = motionSpatial(),
-        label = "side-width"
-    )
     Box(
         modifier = Modifier
             .fillMaxHeight()
-            .width(width + 20.dp + safeStart + safeEnd)
+            .width(targetWidth + 24.dp + safeStart + safeEnd)
             .padding(
                 start = 10.dp + safeStart,
                 end = 10.dp + safeEnd,
@@ -952,70 +839,10 @@ private fun SideNavigation(
             ),
         contentAlignment = Alignment.Center
     ) {
-        GlassSurface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(KararTokens.Radius.xxxl),
-            elevation = 22.dp,
-            contentPadding = PaddingValues(6.dp)
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                items(AppDestination.entries, key = { it.name }) { destination ->
-                    SideNavItem(
-                        destination = destination,
-                        selected = destination == current,
-                        onClick = { onSelect(destination) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SideNavItem(
-    destination: AppDestination,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val background by animateColorAsState(
-        targetValue = if (selected) KararColors.Teal.copy(alpha = 0.22f) else Color.Transparent,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "rail-bg"
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (selected) KararColors.Teal else KararColors.TextSecondary,
-        animationSpec = KararTokens.Motion.effects(),
-        label = "rail-fg"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(KararTokens.Size.navItem)
-            .clip(RoundedCornerShape(KararTokens.Radius.md))
-            .background(background)
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = destination.icon,
-            contentDescription = destination.title,
-            tint = contentColor,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = destination.shortTitle,
-            color = contentColor,
-            fontSize = 10.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+        LiquidVerticalRail(
+            current = current,
+            onSelect = onSelect,
+            modifier = Modifier.width(targetWidth)
         )
     }
 }
