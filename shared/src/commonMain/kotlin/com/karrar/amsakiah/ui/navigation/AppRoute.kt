@@ -67,6 +67,10 @@ sealed interface AppRoute : NavKey {
     /** «أعمال اليوم» — أعمال الليلة/اليوم/يوم الأسبوع من مفاتيح الجنان. */
     @Serializable
     data object DailyDeeds : AppRoute
+
+    /** «تقويم القوس» — شاشة مستقلة بالبطاقات (تُفتح من زر التقويم في شاشة اليوم). */
+    @Serializable
+    data object ArcCalendar : AppRoute
 }
 
 /**
@@ -89,6 +93,7 @@ val appNavConfiguration: SavedStateConfiguration = SavedStateConfiguration {
             subclass(AppRoute.Jinan::class, AppRoute.Jinan.serializer())
             subclass(AppRoute.JinanReader::class, AppRoute.JinanReader.serializer())
             subclass(AppRoute.DailyDeeds::class, AppRoute.DailyDeeds.serializer())
+            subclass(AppRoute.ArcCalendar::class, AppRoute.ArcCalendar.serializer())
         }
     }
 }
@@ -117,5 +122,6 @@ fun AppRoute.toDestination(): AppDestination? = when (this) {
     AppRoute.Jinan,
     is AppRoute.JinanReader,
     AppRoute.DailyDeeds -> AppDestination.KEYS
+    AppRoute.ArcCalendar -> AppDestination.TODAY
     AppRoute.Widgets -> AppDestination.SETTINGS
 }

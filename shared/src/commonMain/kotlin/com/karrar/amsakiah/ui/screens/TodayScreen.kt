@@ -56,7 +56,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,6 +95,7 @@ import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararIcons
 import com.karrar.amsakiah.ui.theme.KararTokens
+import com.karrar.amsakiah.ui.theme.LocalKararPalette
 import com.karrar.amsakiah.ui.theme.SkyTheme
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -113,19 +113,17 @@ import kotlin.math.roundToInt
  * لا يوجد شريط عنوان ولا زر إعدادات أسفل القوس؛ فتح الضبط من شريحة المدينة،
  * وفتح التقويم من الزر الوحيد تحت القوس.
  *
- * زر التقويم يفتح **تقويم القوس** (نافذة شهرية قصيرة) كما في `amsak3d.tsx`،
- * لا تبويب التقويم الكامل؛ ومن داخل النافذة يمكن الانتقال إلى تقويم السنوات.
+ * زر التقويم يفتح **شاشة «تقويم القوس» المستقلة** كما في `amsak3d.tsx`
+ * (`arcShowCalendarModal`) — بطاقات الأيام بأوقاتها الحقيقية، لا نافذة سفلية.
  */
 @Composable
 fun TodayScreen(
     state: AppState,
     weather: WeatherInfo?,
-    onOpenFullCalendar: () -> Unit,
+    onOpenArcCalendar: () -> Unit,
     onOpenSettings: () -> Unit,
     contentPadding: PaddingValues
 ) {
-    // نافذة تقويم القوس — تُفتح من زر التقويم تحت القوس.
-    var showArcCalendar by rememberSaveable { mutableStateOf(false) }
     val settings = state.settings
     val zone = remember(settings.timeZoneId) { PrayerCalculator.zoneOf(settings) }
     val nowLdt: LocalDateTime = remember(state.now, zone) { state.now.toLocalDateTime(zone) }
@@ -322,7 +320,7 @@ fun TodayScreen(
                 targetIsTomorrow = targetIsTomorrow,
                 compact = compact,
                 use24Hour = state.settings.use24Hour,
-                onOpenCalendar = { showArcCalendar = true },
+                onOpenCalendar = onOpenArcCalendar,
                 onPrayerClick = { id ->
                     if (countdownIds.isNotEmpty()) {
                         val index = countdownIds.indexOf(id)
@@ -332,17 +330,6 @@ fun TodayScreen(
             )
         }
     }
-
-    // تقويم القوس (V7) — نافذة سفلية فوق شاشة اليوم مباشرة (SpringMotion).
-    ArcCalendarSheet(
-        visible = showArcCalendar,
-        state = state,
-        onDismiss = { showArcCalendar = false },
-        onOpenFullCalendar = {
-            showArcCalendar = false
-            onOpenFullCalendar()
-        }
-    )
 }
 
 // =====================================================================
@@ -357,6 +344,7 @@ private fun TodayHeader(
     date: LocalDate,
     onOpenSettings: () -> Unit
 ) {
+    val palette = LocalKararPalette.current
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val tiny = maxWidth < 360.dp
         // الكشيدة عنوان تصميمي ثابت: لا يتضخم مع حجم خط المستخدم حتى يبقى في سطر واحد.
@@ -388,8 +376,8 @@ private fun TodayHeader(
                 Row(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.05f))
-                        .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
+                        .background(palette.glassDeep)
+                        .border(1.dp, palette.borderStrong, CircleShape)
                         .clickable(onClick = onOpenSettings)
                         .padding(
                             horizontal = if (tiny) 8.dp else 12.dp,
@@ -406,7 +394,7 @@ private fun TodayHeader(
                     )
                     Text(
                         text = settings.cityName.substringBefore(" ("),
-                        color = Color.White,
+                        color = palette.textPrimary,
                         fontSize = chipTextSize,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -418,8 +406,8 @@ private fun TodayHeader(
                     Row(
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.05f))
-                            .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape)
+                            .background(palette.glassDeep)
+                            .border(1.dp, palette.borderStrong, CircleShape)
                             .padding(
                                 horizontal = if (tiny) 8.dp else 10.dp,
                                 vertical = if (tiny) 4.dp else 5.dp
@@ -437,7 +425,7 @@ private fun TodayHeader(
                             )
                             Text(
                                 text = "${weather.temperatureC}°C",
-                                color = Color.White,
+                                color = palette.textPrimary,
                                 fontSize = chipTextSize,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
@@ -446,7 +434,7 @@ private fun TodayHeader(
                             if (showWeatherCondition) {
                                 Text(
                                     text = "• ${weatherConditionLabel(weather.code)}",
-                                    color = Color.White.copy(alpha = 0.75f),
+                                    color = palette.textSecondary,
                                     fontSize = if (tiny) 8.5.sp else 9.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
@@ -456,7 +444,7 @@ private fun TodayHeader(
                         } else {
                             Text(
                                 text = seasonBadge(date, settings.latitude),
-                                color = Color.White.copy(alpha = 0.75f),
+                                color = palette.textSecondary,
                                 fontSize = if (tiny) 8.5.sp else 9.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
@@ -484,7 +472,7 @@ private fun TodayHeader(
                 ) {
                     Text(
                         text = PrayerCalculator.formattedGregorian(date),
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = palette.skyText,
                         fontSize = dateSize,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -492,7 +480,7 @@ private fun TodayHeader(
                     )
                     Text(
                         text = " (${hijri.year} هـ)",
-                        color = Color(0xFFFFFDE7).copy(alpha = 0.65f),
+                        color = palette.skyText.copy(alpha = 0.65f),
                         fontSize = dateSize,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -848,6 +836,7 @@ private fun PrayerCard(
     compact: Boolean,
     onClick: () -> Unit
 ) {
+    val palette = LocalKararPalette.current
     val shape = RoundedCornerShape(if (compact) 20.dp else 24.dp)
     val scale by animateFloatAsState(
         targetValue = if (active) 1.1f else 1f,
@@ -860,14 +849,19 @@ private fun PrayerCard(
         label = "prayer-card-lift"
     )
     val background by animateColorAsState(
-        targetValue = if (active) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f),
+        targetValue = palette.glassDeep,
         animationSpec = motionEffects(),
         label = "prayer-card-bg"
     )
     val borderColor by animateColorAsState(
-        targetValue = if (active) Color.White.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.05f),
+        targetValue = if (active) palette.gold else palette.borderStrong,
         animationSpec = motionEffects(),
         label = "prayer-card-border"
+    )
+    val captionColor by animateColorAsState(
+        targetValue = if (active) palette.gold else palette.textMuted,
+        animationSpec = motionEffects(),
+        label = "prayer-card-caption"
     )
 
     Column(
@@ -895,12 +889,12 @@ private fun PrayerCard(
             Icon(
                 imageVector = KararIcons.prayer(id),
                 contentDescription = null,
-                tint = if (active) KararColors.Gold else Color.White.copy(alpha = 0.50f),
+                tint = captionColor,
                 modifier = Modifier.size(11.dp)
             )
             Text(
                 text = label,
-                color = if (active) KararColors.Gold else Color.White.copy(alpha = 0.50f),
+                color = captionColor,
                 fontSize = if (compact) 10.sp else 11.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -914,7 +908,7 @@ private fun PrayerCard(
         ) {
             Text(
                 text = time12,
-                color = Color.White,
+                color = palette.textPrimary,
                 fontSize = if (compact) 12.sp else 14.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -923,7 +917,7 @@ private fun PrayerCard(
             )
             Text(
                 text = amPm,
-                color = Color.White.copy(alpha = 0.60f),
+                color = palette.textSecondary,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -933,7 +927,7 @@ private fun PrayerCard(
         if (tomorrow) {
             Text(
                 text = "(غداً)",
-                color = Color(0xFFFFD700),
+                color = palette.gold,
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 2.dp)

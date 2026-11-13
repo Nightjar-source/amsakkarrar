@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.ui.theme.KararFonts
+import com.karrar.amsakiah.ui.theme.LocalKararPalette
 import com.karrar.amsakiah.ui.theme.SkyTheme
 
 /**
@@ -30,6 +31,8 @@ fun KashidaHeader(
     fontSize: TextUnit = 44.sp
 ) {
     val reem = KararFonts.ReemKufi
+    val palette = LocalKararPalette.current
+    val ink = palette.skyText
     val (pre, post) = SkyTheme.getKashidaMonthParts(monthName)
     val unit = fontSize.value
     val daySize = (unit * (38.4f / 44.8f)).sp
@@ -41,7 +44,7 @@ fun KashidaHeader(
     ) {
         Text(
             text = pre,
-            color = Color.White,
+            color = ink,
             fontSize = fontSize,
             fontWeight = FontWeight.Bold,
             fontFamily = reem
@@ -53,7 +56,7 @@ fun KashidaHeader(
             // الكشيدة المتصلة في الخلفية (بيضاء)
             Text(
                 text = "ـــــ",
-                color = Color.White.copy(alpha = 0.92f),
+                color = ink.copy(alpha = 0.92f),
                 fontSize = fontSize,
                 fontWeight = FontWeight.Bold,
                 fontFamily = reem
@@ -61,7 +64,7 @@ fun KashidaHeader(
             // رقم اليوم فوقها بالذهبي مع ظل خفيف
             Text(
                 text = hijriDay.toString(),
-                color = Color(0xFFFFD700),
+                color = palette.gold,
                 fontSize = daySize,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = reem,
@@ -70,7 +73,7 @@ fun KashidaHeader(
         }
         Text(
             text = post,
-            color = Color.White,
+            color = ink,
             fontSize = fontSize,
             fontWeight = FontWeight.Bold,
             fontFamily = reem

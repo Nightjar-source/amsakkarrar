@@ -205,51 +205,7 @@ fun SettingsScreen(
             )
         }
 
-        // ==================== الموقع والمدينة ====================
-        item {
-            SettingsAccordion(
-                title = "الموقع والمدينة",
-                icon = Icons.Filled.LocationOn,
-                initiallyOpen = true
-            ) {
-                // بلا بطاقة داخلية: المحتوى جزء من النافذة نفسها (العنوان مدمج).
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "${settings.cityName}، ${settings.countryName}",
-                            color = KararColors.TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            when {
-                                settings.useGps -> CityDatabase.proximityLabel(state.nearby).ifBlank { "محدّد عبر GPS" }
-                                settings.locationSource == "ip" -> "استشعار تلقائي عبر IP — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
-                                else -> "اختيار يدوي — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
-                            },
-                            color = KararColors.TextMuted,
-                            fontSize = 10.sp
-                        )
-                        if (state.lastLocationError != null) {
-                            Text(state.lastLocationError ?: "", color = KararColors.Danger, fontSize = 10.sp)
-                        }
-                        if (state.locationServiceDisabled) {
-                            Spacer(Modifier.height(6.dp))
-                            SmallAction("تشغيل خدمة الموقع") { state.openSystemLocationSettings() }
-                        }
-                    }
-                    SmallAction("تغيير") { showCityPicker = true }
-                }
-                DstModeSelector(
-                    current = settings.dstMode,
-                    timeZoneId = settings.timeZoneId,
-                    onChange = { mode -> state.update { it.copy(dstMode = mode) } }
-                )
-            }
-        }
+        // (حُذف قسم «الموقع والمدينة» المكرر — كل محتواه صار داخل كارت «مرصد الكفيل».)
 
         // ==================== مواقيت اليوم ====================
         item {
@@ -262,40 +218,7 @@ fun SettingsScreen(
             }
         }
 
-        // ==================== الحساب ====================
-        item {
-            SettingsAccordion(title = "طريقة الحساب", icon = Icons.Filled.Calculate) {
-                GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(12.dp)) {
-                    Text("الطريقة الحالية", color = KararColors.TextMuted, fontSize = 10.sp)
-                    Text(
-                        OfflineCities.methodsMatrix.firstOrNull { it.code == settings.methodCode }?.name ?: "",
-                        color = KararColors.Gold,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    MethodSelector(
-                        selected = settings.methodCode,
-                        onSelect = { code ->
-                            state.update {
-                                it.copy(methodCode = code, highLatRule = PrayerCalculator.autoHighLatForMethod(code))
-                            }
-                        }
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "قاعدة خطوط العرض الحالية: ${PrayerCalculator.highLatFor(settings.highLatRule).titleAr}",
-                        color = KararColors.TextMuted,
-                        fontSize = 10.sp
-                    )
-                    Text(
-                        "للتفاصيل الفقهية والزوايا والقواعد مع المرجع راجع شاشة «فقه المواقيت» (يختصرها نفس التقسيم).",
-                        color = KararColors.TextMuted,
-                        fontSize = 10.sp
-                    )
-                }
-            }
-        }
+        // (انتقلت «طريقة الحساب» كاملة إلى كارت «مرصد الكفيل» — بلا تكرار.)
 
         // ==================== التاريخ الهجري ====================
         item {
@@ -552,16 +475,8 @@ fun SettingsScreen(
 }
 
 // =====================================================================
-// ترويسة الضبط (هيرو المدينة والمواقيت)
+// ترويسة الضبط — كارت «مرصد الكفيل» (المدينة + الساعة + طريقة الحساب + التوقيت الصيفي)
 // =====================================================================
-
-/** الطرق الأربع السريعة في الهيرو — البقية في قسم «طريقة الحساب». */
-private val HERO_METHODS = listOf(
-    "alkafeel" to "الكفيل",
-    "leufa" to "ليفا (قم)",
-    "tehran" to "طهران",
-    "ummalqura" to "أم القرى"
-)
 
 @Composable
 private fun SettingsHero(
@@ -575,14 +490,20 @@ private fun SettingsHero(
     val today = PrayerCalculator.todayDate(settings)
     val hijri = remember(settings, today) { PrayerCalculator.hijriFor(settings, today) }
 
-    // ساعة حيّة تتبع إزاحة المنطقة المختارة (بما فيها الوضع الصيفي/الشتوي الإجباري).
+    // ساعة حيّة تحترم ضبط 12/24 — تُعرض بجانب المدينة (لا «pill» مزدوج).
     val offsetHours = remember(settings) { PrayerCalculator.offsetHours(settings) }
-    val clockText = remember(state.now, offsetHours) {
+    val is24 = settings.use24Hour
+    val (clockText, apSuffix) = remember(state.now, offsetHours, is24) {
         val local = state.now
             .plus((offsetHours * 3600).toInt().seconds)
             .toLocalDateTime(TimeZone.UTC)
         fun two(v: Int) = v.toString().padStart(2, '0')
-        "${two(local.hour)}:${two(local.minute)}:${two(local.second)}"
+        if (is24) {
+            "${two(local.hour)}:${two(local.minute)}:${two(local.second)}" to ""
+        } else {
+            val h12 = (local.hour % 12).let { if (it == 0) 12 else it }
+            "$h12:${two(local.minute)}:${two(local.second)}" to if (local.hour < 12) " ص" else " م"
+        }
     }
     val whole = offsetHours.toInt()
     val utcLabel = if (offsetHours == whole.toDouble()) {
@@ -648,29 +569,69 @@ private fun SettingsHero(
 
         Spacer(Modifier.height(12.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Filled.LocationOn,
-                contentDescription = null,
-                tint = KararTokens.Accent.teal,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = settings.cityName,
-                color = KararColors.TextPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+        // سطر واحد — «التاريخ والوقت بجانب»: المدينة+المصدر يمينًا، والساعة الحية يسارًا.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Filled.LocationOn,
+                    contentDescription = null,
+                    tint = KararTokens.Accent.teal,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "${settings.cityName}، ${settings.countryName}",
+                        color = KararColors.TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        when {
+                            settings.useGps -> CityDatabase.proximityLabel(state.nearby).ifBlank { "محدّد عبر GPS" }
+                            settings.locationSource == "ip" -> "استشعار تلقائي عبر IP — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
+                            else -> "اختيار يدوي — ${settings.latitude.round1()} , ${settings.longitude.round1()}"
+                        },
+                        color = KararColors.TextMuted,
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = clockText + apSuffix,
+                    color = KararColors.Teal,
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp,
+                    style = TextStyle(textDirection = TextDirection.Ltr)
+                )
+                Text(
+                    utcLabel,
+                    color = KararColors.TextMuted,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
         }
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            HeroPill(clockText, KararColors.Teal, ltr = true)
-            HeroPill(utcLabel, KararColors.Violet, ltr = true)
-            if (state.locating) HeroPill("جارٍ التحديد…", KararColors.TextMuted)
+        if (state.lastLocationError != null) {
+            Spacer(Modifier.height(6.dp))
+            Text(state.lastLocationError ?: "", color = KararColors.Danger, fontSize = 10.sp)
+        }
+        if (state.locationServiceDisabled) {
+            Spacer(Modifier.height(6.dp))
+            SmallAction("تشغيل خدمة الموقع") { state.openSystemLocationSettings() }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -744,52 +705,51 @@ private fun SettingsHero(
 
         Spacer(Modifier.height(14.dp))
 
+        // ---------- طريقة الحساب — مدمجة داخل المرصد (لا قسم مستقل بعد اليوم) ----------
         Text(
-            text = "طريقة الحساب",
+            "طريقة الحساب",
             color = KararColors.TextMuted,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
-        Spacer(Modifier.height(6.dp))
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val columns = if (maxWidth >= 420.dp) 4 else 2
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                HERO_METHODS.chunked(columns).forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        row.forEach { (code, label) ->
-                            HeroMethodButton(
-                                label = label,
-                                selected = settings.methodCode == code,
-                                modifier = Modifier.weight(1f),
-                                onClick = { onSelectMethod(code) }
-                            )
-                        }
-                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HeroPill(text: String, color: Color, ltr: Boolean = false) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(color.copy(alpha = 0.14f))
-            .border(1.dp, color.copy(alpha = 0.30f), RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    ) {
+        Spacer(Modifier.height(4.dp))
         Text(
-            text = text,
-            color = color,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            style = if (ltr) TextStyle(textDirection = TextDirection.Ltr) else TextStyle.Default
+            OfflineCities.methodsMatrix.firstOrNull { it.code == settings.methodCode }?.name ?: settings.methodCode,
+            color = KararColors.Gold,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(6.dp))
+        MethodSelector(
+            selected = settings.methodCode,
+            onSelect = onSelectMethod
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "قاعدة خطوط العرض الحالية: ${PrayerCalculator.highLatFor(settings.highLatRule).titleAr}",
+            color = KararColors.TextMuted,
+            fontSize = 9.sp
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // ---------- التوقيت الصيفي — مدمج داخل المرصد (لا قسم مستقل) ----------
+        Text(
+            "التوقيت الصيفي",
+            color = KararColors.TextPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            "تلقائي يتبع قاعدة ${settings.timeZoneId} لكل تاريخ على حدة؛ «صيفي/شتوي» يثبّت الإزاحة طوال السنة.",
+            color = KararColors.TextMuted,
+            fontSize = 9.sp,
+            lineHeight = 14.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        DstSegmentedRow(
+            current = settings.dstMode,
+            onChange = { mode -> state.update { it.copy(dstMode = mode) } }
         )
     }
 }
@@ -819,44 +779,6 @@ private fun HeroAction(
         Text(
             text = text,
             color = color,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            softWrap = false
-        )
-    }
-}
-
-@Composable
-private fun HeroMethodButton(
-    label: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                brush = if (selected) {
-                    Brush.verticalGradient(listOf(Color(0xFF14B8A6), Color(0xFF0F766E)))
-                } else {
-                    SolidColor(Color(0x80000000))
-                },
-                shape = RoundedCornerShape(12.dp)
-            )
-            .border(
-                1.dp,
-                if (selected) Color(0x8014B8A6) else Color.Transparent,
-                RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp, horizontal = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = if (selected) KararColors.OnGold else KararColors.TextMuted,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -1145,7 +1067,7 @@ private fun ImsakModeSelector(current: String, onChange: (String) -> Unit) {
 }
 
 // =====================================================================
-// التوقيت الصيفي
+// التوقيت الصيفي — صف تجزيئي مدمج داخل كارت «مرصد الكفيل» (بلا بطاقة داخلية)
 // =====================================================================
 
 private val DST_MODES = listOf(
@@ -1155,49 +1077,34 @@ private val DST_MODES = listOf(
 )
 
 @Composable
-private fun DstModeSelector(current: String, timeZoneId: String, onChange: (String) -> Unit) {
-    GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(10.dp)) {
-        Text(
-            "التوقيت الصيفي",
-            color = KararColors.TextPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "تلقائي يتبع قاعدة $timeZoneId لكل تاريخ على حدة؛ «صيفي/شتوي» يثبّت الإزاحة طوال السنة.",
-            color = KararColors.TextMuted,
-            fontSize = 9.sp,
-            lineHeight = 14.sp
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0x1A000000))
-                .padding(3.dp),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            DST_MODES.forEach { (id, label) ->
-                val selected = current == id
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (selected) Color(0xFF7DD3FC) else Color.Transparent)
-                        .clickable { onChange(id) }
-                        .padding(vertical = 7.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        label,
-                        color = if (selected) Color(0xFF062033) else KararColors.TextSecondary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1
-                    )
-                }
+private fun DstSegmentedRow(current: String, onChange: (String) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0x1A000000))
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        DST_MODES.forEach { (id, label) ->
+            val selected = current == id
+            Box(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (selected) Color(0xFF7DD3FC) else Color.Transparent)
+                    .clickable { onChange(id) }
+                    .padding(vertical = 7.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    label,
+                    color = if (selected) Color(0xFF062033) else KararColors.TextSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
             }
         }
     }
