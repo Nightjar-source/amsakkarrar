@@ -55,6 +55,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import com.karrar.amsakiah.core.astronomy.HijriDate
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
@@ -122,6 +124,7 @@ import com.karrar.amsakiah.ui.platform.PlatformBackHandler
 import com.karrar.amsakiah.ui.platform.isIosUi
 import com.karrar.amsakiah.ui.platform.rememberReduceMotion
 import com.karrar.amsakiah.ui.player.DuaPlayerController
+import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.screens.CalendarScreen
 import com.karrar.amsakiah.ui.screens.DuasScreen
 import com.karrar.amsakiah.ui.screens.FiqhScreen
@@ -234,6 +237,9 @@ fun AppShell(
     // ارتفاع الشريط العلوي — ديناميكي حسب فئة الارتفاع الرسمية (لا ثابت 56dp).
     val asTopBarHeight = layout.topBarHeight()
 
+    // ارتفاع المصغّر «أعمال اليوم» فوق الكبسولة (نحو 24dp + هاشية 6dp) — يُحجز للمحتوى والتنبيهات.
+    val dailyDeedsStripHeight = 28.dp
+
     // ارتفاع شريط التنقل السفلي + هوامشه — يُحجز للمحتوى والمشغّل.
     // يُلغى تمامًا على الشاشات الجانبية (Rail) أو في وضع القراءة، فتتمدد المنطقة بالكامل.
     val navBarReserve = if (bottomNavVisible) {
@@ -245,7 +251,8 @@ fun AppShell(
     val contentTop = when {
         isToday -> statusTop + 6.dp
         // ديناميكي حسب فئة الارتفاع الرسمية بدلًا من فراغ ثابت 74dp
-        else -> statusTop + 8.dp + asTopBarHeight + 10.dp
+        // (+ ارتفاع المصغّر «أعمال اليوم» فوق الكبسولة)
+        else -> statusTop + 8.dp + dailyDeedsStripHeight + asTopBarHeight + 6.dp
     }
     val contentPadding = PaddingValues(
         start = safeStart,
@@ -504,26 +511,40 @@ fun AppShell(
                         is AppRoute.JinanReader -> (currentRoute as AppRoute.JinanReader).title
                         else -> null
                     }
-                    UnifiedTopBar(
-                        title = childTitle ?: if (widgetsOpen) "الودجتات" else currentTab.title,
-                        // «اليوم» والشاشات الرئيسية: عنوان فقط — التاريخ الهجري يظهر داخل «اليوم» نفسها.
-                        subtitle = when {
-                            widgetsOpen -> "أشكال الودجت وخلفياتها"
-                            childTitle != null -> "المفاتيح"
-                            else -> ""
-                        },
-                        canGoBack = backStack.size > 1 || duaDetailOpen,
-                        onBack = ::back,
-                        actionIcon = if (currentTab == AppDestination.SETTINGS) Icons.Filled.Widgets else Icons.Filled.Tune,
-                        actionLabel = if (currentTab == AppDestination.SETTINGS) "الودجتات" else "الضبط",
-                        onAction = {
-                            if (currentTab == AppDestination.SETTINGS) openWidgets() else openSettings()
-                        },
-                        height = asTopBarHeight,
+                    // مصغّر اليوم فوق الكبسولة — ديناميكي لحظيًا من يومك ومدينتك الهجرية.
+                    val todayStrip = remember(settings.hijriOffset) { PrayerCalculator.todayDate(settings) }
+                    val hijriStrip = remember(todayStrip, settings.hijriOffset) { PrayerCalculator.hijriFor(settings, todayStrip) }
+
+                    Column(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = statusTop + 8.dp, start = 12.dp + safeStart, end = 12.dp + safeEnd)
-                    )
+                            .padding(top = statusTop + 8.dp, start = 12.dp + safeStart, end = 12.dp + safeEnd),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        DailyDeedsStrip(
+                            weekdayName = PrayerCalculator.weekDays.getOrNull(todayStrip.dayOfWeek.ordinal).orEmpty(),
+                            hijri = hijriStrip,
+                            onOpen = { openKeysChild(AppRoute.DailyDeeds) }
+                        )
+                        UnifiedTopBar(
+                            title = childTitle ?: if (widgetsOpen) "الودجتات" else currentTab.title,
+                            subtitle = when {
+                                widgetsOpen -> "أشكال الودجت وخلفياتها"
+                                childTitle != null -> "المفاتيح"
+                                else -> ""
+                            },
+                            canGoBack = backStack.size > 1 || duaDetailOpen,
+                            onBack = ::back,
+                            actionIcon = if (currentTab == AppDestination.SETTINGS) Icons.Filled.Widgets else Icons.Filled.Tune,
+                            actionLabel = if (currentTab == AppDestination.SETTINGS) "الودجتات" else "الضبط",
+                            onAction = {
+                                if (currentTab == AppDestination.SETTINGS) openWidgets() else openSettings()
+                            },
+                            height = asTopBarHeight,
+                            modifier = Modifier
+                        )
+                    }
                 }
             }
         }
@@ -568,7 +589,7 @@ fun AppShell(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(
-                    top = statusTop + (if (showTopBar) asTopBarHeight + 16.dp else 14.dp),
+                    top = statusTop + (if (showTopBar) dailyDeedsStripHeight + asTopBarHeight + 16.dp else 14.dp),
                     start = 16.dp + safeStart,
                     end = 16.dp + safeEnd
                 )
@@ -1235,5 +1256,43 @@ private fun LocatingPill() {
                 )
             }
         }
+    }
+}
+
+/**
+ * كبسولة «أعمال اليوم» المصغّرة — فوق شريط العنوان مباشرة:
+ * «أعمال اليوم · الخميس 12 جمادى الأولى 1447» — تُحدَّث تلقائيًا من التقويم الهجري
+ * ليومك (حسب المدينة وإعداداتك)، والضغط عليها يفتح شاشة «أعمال اليوم».
+ */
+@Composable
+private fun DailyDeedsStrip(
+    weekdayName: String,
+    hijri: HijriDate,
+    onOpen: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(KararColors.Gold.copy(alpha = 0.12f))
+            .border(1.dp, KararColors.Gold.copy(alpha = 0.5f), RoundedCornerShape(50))
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            Icons.AutoMirrored.Filled.MenuBook,
+            contentDescription = null,
+            tint = KararColors.Gold,
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = "أعمال اليوم · $weekdayName ${hijri.day} ${hijri.monthName} ${hijri.year} هـ",
+            color = KararColors.Gold,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

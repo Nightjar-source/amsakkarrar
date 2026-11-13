@@ -23,6 +23,7 @@ object WidgetPinHelper {
         WidgetPinBridge.TASBIH -> TasbihWidgetReceiver::class.java
         WidgetPinBridge.CLOCK -> ClockWidgetReceiver::class.java
         WidgetPinBridge.JOURNEY -> JourneyWidgetReceiver::class.java
+        WidgetPinBridge.DAILYDEEDS -> DailyDeedsWidgetReceiver::class.java
         else -> null
     }
 

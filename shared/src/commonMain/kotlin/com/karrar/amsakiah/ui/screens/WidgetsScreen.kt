@@ -111,6 +111,13 @@ private val widgetDefs = listOf(
         "2×3 ← 4×3",
         "مسار الصلوات العمودي: نقطة مضيئة للصلاة القادمة وخط زمني لكل اليوم.",
         Color(0xFFF472B6)
+    ),
+    WidgetDef(
+        WidgetPinBridge.DAILYDEEDS,
+        "ودجت أعمال اليوم",
+        "2×2 ← 4×2",
+        "أعمال الليلة/اليوم/الأسبوع وأعمال الشهر العامة — تُحدَّث تلقائيًا من «مفاتيح الجنان».",
+        Color(0xFFA78BFA)
     )
 )
 
@@ -319,6 +326,10 @@ fun WidgetsScreen(state: AppState, contentPadding: PaddingValues) {
                         WidgetPinBridge.CLOCK -> ClockPreview(
                             clock = "${nowLdt.hour.toString().padStart(2, '0')}:${nowLdt.minute.toString().padStart(2, '0')}",
                             gregorian = PrayerCalculator.formattedGregorian(date)
+                        )
+                        WidgetPinBridge.DAILYDEEDS -> DailyDeedsPreview(
+                            hijriDay = hijri.day,
+                            hijriMonth = hijri.monthName
                         )
                         else -> JourneyPreview(
                             entries = entries,
@@ -604,6 +615,39 @@ private fun TasbihPreview(dhikr: String, count: Int, target: Int, rounds: Int, p
 private fun ClockPreview(clock: String, gregorian: String) {
     Text(clock, color = Color.White, fontSize = 48.sp, fontWeight = FontWeight.Bold)
     Text(gregorian, color = Color(0xFFB9C0D4), fontSize = 9.sp, textAlign = TextAlign.Center)
+}
+
+@Composable
+private fun DailyDeedsPreview(hijriDay: Int, hijriMonth: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text("أعمال اليوم", color = Color(0xFFA78BFA), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.weight(1f))
+        Text("$hijriDay $hijriMonth", color = Color(0xFF94A3B8), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+    }
+    Spacer(Modifier.height(5.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        listOf("الليلة", "اليوم", "الأسبوع", "الشهر").forEach { label ->
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0x33000000))
+                    .padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("4", color = KararColors.Gold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(label, color = Color(0xFF94A3B8), fontSize = 6.sp)
+            }
+        }
+    }
+    Spacer(Modifier.height(5.dp))
+    listOf("دُعاء يوم الثلاثاء", "أعمال نهار الجُمعة", "أعمال هذه الليلة").forEach { title ->
+        Row(Modifier.fillMaxWidth().padding(vertical = 1.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(4.dp).height(11.dp).clip(RoundedCornerShape(2.dp)).background(KararColors.Gold.copy(alpha = 0.85f)))
+            Spacer(Modifier.width(5.dp))
+            Text(title, color = Color(0xFFE2E8F0), fontSize = 7.sp, maxLines = 1)
+        }
+    }
 }
 
 @Composable

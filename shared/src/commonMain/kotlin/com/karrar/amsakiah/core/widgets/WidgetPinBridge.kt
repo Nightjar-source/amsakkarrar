@@ -17,6 +17,7 @@ object WidgetPinBridge {
     const val TASBIH = "tasbih"
     const val CLOCK = "clock"
     const val JOURNEY = "journey"
+    const val DAILYDEEDS = "dailydeeds"
 
     /** أنماط خلفية الودجت: مادة / زجاجي / ضبابي / شفاف / ليلي متدرّج */
     const val STYLE_MATERIAL = "material"

@@ -192,6 +192,18 @@
                 android:resource="@xml/karar_widget_journey" />
         </receiver>
 
+        <receiver
+            android:name=".widget.DailyDeedsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_dailydeeds">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_dailydeeds" />
+        </receiver>
+
         <!-- إعدادات خلفية الودجتات (Material / Blur / شفاف) — تُفتح من ⚙ أو الضغط المطوّل -->
         <activity
             android:name=".widget.WidgetConfigActivity"

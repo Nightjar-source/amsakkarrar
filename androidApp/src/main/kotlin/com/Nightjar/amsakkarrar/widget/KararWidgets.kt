@@ -46,6 +46,12 @@ import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.notifications.PrayerEntry
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshot
 import com.Nightjar.amsakkarrar.notifications.PrayerSnapshotLoader
+import com.Nightjar.amsakkarrar.notifications.SettingsLoader
+import com.karrar.amsakiah.core.astronomy.HijriDate
+import com.karrar.amsakiah.core.jinan.DailyDeed
+import com.karrar.amsakiah.core.jinan.DailyDeedSource
+import com.karrar.amsakiah.core.jinan.dailyDeeds
+import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.theme.SkyTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -728,6 +734,153 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
 }
 
 // ============================================================================
+//  8) ويدجت «أعمال اليوم» — أعمال الليلة/اليوم/يوم الأسبوع/الشهر العامة
+// ============================================================================
+class DailyDeedsWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = DailyDeedsWidget()
+}
+
+class DailyDeedsWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode get() = SizeMode.Exact
+
+    override fun onCompositionError(
+        context: Context,
+        glanceId: GlanceId,
+        appWidgetId: Int,
+        throwable: Throwable
+    ) = WidgetErrorViews.show(context, appWidgetId, throwable)
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val settings = SettingsLoader.load(context)
+        val today = PrayerSnapshotLoader.todayDate(settings)
+        val hijri = PrayerCalculator.hijriFor(settings, today)
+        val deeds = dailyDeeds(today, hijri)
+        val snapshot = PrayerSnapshotLoader.load(context)
+        val widgetId = appWidgetIdFor(context, id)
+        provideContent {
+            GlanceTheme { DailyDeedsWidgetContent(context, snapshot, widgetId, deeds) }
+        }
+    }
+}
+
+@Composable
+private fun DailyDeedsWidgetContent(
+    context: Context,
+    snapshot: PrayerSnapshot,
+    appWidgetId: Int,
+    deeds: List<DailyDeed>
+) {
+    val tier = rememberWidgetTier()
+    val night = deeds.count { it.source == DailyDeedSource.MONTH_NIGHT }
+    val day = deeds.count { it.source == DailyDeedSource.MONTH_DAY }
+    val week = deeds.count { it.source == DailyDeedSource.WEEKDAY }
+    val general = deeds.count { it.source == DailyDeedSource.MONTH_GENERAL }
+
+    WidgetFrame(context, appWidgetId, tier) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically
+        ) {
+            Text(
+                "أعمال اليوم",
+                style = TextStyle(
+                    color = color(Gold),
+                    fontSize = if (tier == WidgetTier.COMPACT) 9.sp else 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            Spacer(GlanceModifier.defaultWeight())
+            Text(
+                snapshot.hijriText,
+                style = TextStyle(
+                    color = color(TextMuted),
+                    fontSize = if (tier == WidgetTier.COMPACT) 6.sp else 8.sp
+                )
+            )
+        }
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 2.dp else 5.dp))
+
+        // عدّادات ليلة/يوم/أسبوع/عامة — أعمدة متساوية بعنوان صغير وقيمة كبيرة.
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Horizontal.CenterHorizontally
+        ) {
+            DeedStatCell("الليلة", night, Color(0xFFF59E0B))
+            Spacer(GlanceModifier.width(4.dp))
+            DeedStatCell("اليوم", day, Gold)
+            Spacer(GlanceModifier.width(4.dp))
+            DeedStatCell("الأسبوع", week, Color(0xFF38BDF8))
+            Spacer(GlanceModifier.width(4.dp))
+            DeedStatCell("الشهر", general, Color(0xFFA78BFA))
+        }
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 2.dp else 4.dp))
+
+        // أبرز الأعمال — بحد أقصى حسب الحجم
+        val shown = when (tier) {
+            WidgetTier.COMPACT -> deeds.take(1)
+            WidgetTier.MEDIUM -> deeds.take(3)
+            WidgetTier.LARGE -> deeds.take(5)
+        }
+        shown.forEach { deed ->
+            Row(
+                modifier = GlanceModifier.fillMaxWidth().padding(vertical = if (tier == WidgetTier.COMPACT) 0.dp else 2.dp),
+                verticalAlignment = Alignment.Vertical.CenterVertically
+            ) {
+                Box(
+                    modifier = GlanceModifier
+                        .width(4.dp)
+                        .height(if (tier == WidgetTier.COMPACT) 10.dp else 14.dp)
+                        .background(Gold.copy(alpha = 0.85f))
+                        .cornerRadius(2.dp)
+                ) {}
+                Spacer(GlanceModifier.width(5.dp))
+                Text(
+                    deed.item.title,
+                    maxLines = if (tier == WidgetTier.COMPACT) 1 else 2,
+                    modifier = GlanceModifier.defaultWeight(),
+                    style = TextStyle(
+                        color = color(TextPrimary),
+                        fontSize = if (tier == WidgetTier.COMPACT) 6.5.sp else 7.5.sp,
+                        lineHeight = if (tier == WidgetTier.COMPACT) 9.sp else 11.sp
+                    )
+                )
+            }
+        }
+        if (deeds.isEmpty()) {
+            Text(
+                "لا توجد أعمال موقوتة اليوم",
+                style = TextStyle(color = color(TextMuted), fontSize = 9.sp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeedStatCell(label: String, count: Int, accent: Color) {
+    Column(
+        modifier = GlanceModifier
+            .defaultWeight()
+            .background(WidgetCard)
+            .cornerRadius(10.dp)
+            .padding(vertical = 4.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
+    ) {
+        Text(
+            count.toString(),
+            style = TextStyle(
+                color = color(accent),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        )
+        Text(
+            label,
+            style = TextStyle(color = color(TextMuted), fontSize = 6.sp)
+        )
+    }
+}
+
+// ============================================================================
 //  محدّث كل الودجت
 // ============================================================================
 object WidgetUpdater {
@@ -739,7 +892,8 @@ object WidgetUpdater {
         HijriWidget(),
         TasbihWidget(),
         ClockWidget(),
-        JourneyWidget()
+        JourneyWidget(),
+        DailyDeedsWidget()
     )
 
     /**
