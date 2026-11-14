@@ -37,13 +37,22 @@ val jinanIndexed: List<JinanIndexedItem> by lazy {
 }
 
 private val tashkeel = Regex("[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]")
+private val digits = mapOf(
+    '٠' to '0', '١' to '1', '٢' to '2', '٣' to '3', '٤' to '4',
+    '٥' to '5', '٦' to '6', '٧' to '7', '٨' to '8', '٩' to '9',
+    '۰' to '0', '۱' to '1', '۲' to '2', '۳' to '3', '۴' to '4',
+    '۵' to '5', '۶' to '6', '۷' to '7', '۸' to '8', '۹' to '9'
+)
 
-/** يطبّع النص للمقارنة: إزالة التشكيل والهمزات والمدد وتوحيد الألف/الياء. */
-private fun norm(s: String): String =
-    s.replace(tashkeel, "")
+/** يطبّع النص للمقارنة: إزالة التشكيل والهمزات والمدد وتوحيد الألف/الياء والأرقام. */
+private fun norm(s: String): String {
+    val withLatinDigits = buildString(s.length) { s.forEach { append(digits[it] ?: it) } }
+    return withLatinDigits
+        .replace(tashkeel, "")
         .replace("آ", "ا").replace("أ", "ا").replace("إ", "ا")
         .replace("ى", "ي")
         .trim()
+}
 
 private fun containsAny(haystack: String, needles: List<String>): Boolean {
     val n = norm(haystack)
@@ -69,7 +78,7 @@ private fun monthNeedles(monthNum: Int): List<String> = when (monthNum) {
 
 /** صحائف الليلة/اليوم الهجري (الأولى…الثلاثون) — الصيغة المؤنثة والمذكرة. */
 private fun dayOrdinals(day: Int): List<String> = when (day) {
-    1 -> listOf("الاولى", "الأولى", "الأول", "الأوّل")
+    1 -> listOf("الاولى", "الأولى", "الأول", "الأوّل", "غرة", "غره", "مستهل")
     2 -> listOf("الثانية", "الثاني")
     3 -> listOf("الثالثة", "الثالث")
     4 -> listOf("الرابعة", "الرابع")
@@ -83,7 +92,7 @@ private fun dayOrdinals(day: Int): List<String> = when (day) {
     12 -> listOf("الثانية عشرة", "الثانية عشر", "الثاني عشر", "ثاني عشر")
     13 -> listOf("الثالثة عشرة", "الثالثة عشر", "الثالث عشر")
     14 -> listOf("الرابعة عشرة", "الرابعة عشر", "الرابع عشر")
-    15 -> listOf("الخامسة عشرة", "الخامسة عشر", "الخامس عشر", "النصف", "نصف")
+    15 -> listOf("الخامسة عشرة", "الخامسة عشر", "الخامس عشر", "النصف", "نصف", "النصفي")
     16 -> listOf("السادسة عشرة", "السادسة عشر", "السادس عشر")
     17 -> listOf("السابعة عشرة", "السابعة عشر", "السابع عشر")
     18 -> listOf("الثامنة عشرة", "الثامنة عشر", "الثامن عشر")
@@ -97,8 +106,8 @@ private fun dayOrdinals(day: Int): List<String> = when (day) {
     26 -> listOf("السادسة والعشرون", "السادسة والعشرين", "السادس والعشرون", "السادس والعشرين")
     27 -> listOf("السابعة والعشرون", "السابعة والعشرين", "السابع والعشرون", "السابع والعشرين")
     28 -> listOf("الثامنة والعشرون", "الثامنة والعشرين", "الثامن والعشرون", "الثامن والعشرين")
-    29 -> listOf("التاسعة والعشرون", "التاسعة والعشرين", "التاسع والعشرون", "التاسع والعشرين")
-    30 -> listOf("الثلاثون", "الثلاثين")
+    29 -> listOf("التاسعة والعشرون", "التاسعة والعشرين", "التاسع والعشرون", "التاسع والعشرين", "الاخير", "اخير")
+    30 -> listOf("الثلاثون", "الثلاثين", "الاخير", "اخير")
     else -> emptyList()
 }
 
@@ -119,27 +128,38 @@ private val specialEventDates: Map<String, Pair<Int, Int>> = mapOf(
     "الاضحى" to (12 to 10), "الأضحى" to (12 to 10),
     "الغدير" to (12 to 18),
     "المباهلة" to (12 to 24),
-    "دحو الارض" to (11 to 25), "دحو الأرض" to (11 to 25)
+    "دحو الارض" to (11 to 25), "دحو الأرض" to (11 to 25),
+    "الاسراء" to (7 to 27),
+    "المعراج" to (7 to 27),
+    "المولد" to (3 to 12)
 )
 
 /**
  * التواريخ الهجرية الضمنية للعنوان — المطابقة الصارمة لـ«أعمال اليوم»:
  *
- * - اسم شهر + رقم ⇒ ذلك الشهر/اليوم فقط («الليلة الأولى من رجب»).
- * - رقم بلا شهر ⇒ ذلك اليوم في كل الأشهر («الليلة الثالثة عشرة»).
- * - علم مسمّى (عرفة/عاشوراء/الفطر/الغدير/المبعث/دحو الأرض/المباهلة/الأربعين)
- *   ⇒ يومه الثابت فقط — لا يظهر في غيره.
+ * - اسم شهر + رقم (مكتوبـة أو هندية) ⇒ ذلك الشهر/اليوم فقط («الليلة الثالثة عشرة من رجب»).
+ * - رقم بلا شهر ⇒ ذلك اليوم في كل الأشهر («الليلة الخامسة عشرة»).
+ * - علم مسمّى (عرفة/عاشوراء/الفطر/الغدير/المبعث/الاسراء…) ⇒ يومه الثابت فقط.
+ * - شهر بلا أي رقم ⇒ ليس «عمل اليوم» الموقوت، فلا تُطابق شيئًا.
  */
+private val digitDay = Regex("\\d{1,2}")
+
 private fun impliedHijriDates(title: String): Set<Pair<Int, Int>> {
     val t = norm(title)
     val months = (1..12).filter { m -> monthNeedles(m).any { t.contains(norm(it)) } }
-    val days = (1..30).filter { d -> dayOrdinals(d).any { t.contains(norm(it)) } }
-    val events = specialEventDates.filterKeys { t.contains(norm(it)) }.values
+    val days = buildList {
+        (1..30).filter { d -> dayOrdinals(d).any { t.contains(norm(it)) } }.forEach { add(it) }
+        digitDay.findAll(t).map { it.value.toInt() }.filter { it in 1..30 }.forEach { add(it) }
+    }.distinct()
+    val events = specialEventDates.filterKeys { t.contains(norm(it)) }.values.toSet()
+
     return when {
-        months.isNotEmpty() -> months.flatMap { m ->
-            if (days.isEmpty()) (1..30).map { m to it } else days.map { m to it }
-        }.toSet()
-        events.isNotEmpty() -> events.toSet()
+        months.isNotEmpty() -> {
+            // «عمل عام من الشهر» بلا يوم محدّد ⇒ ليس «عمل اليوم»، فلا يطابق شيئًا.
+            if (days.isEmpty()) return emptySet()
+            months.flatMap { m -> days.map { m to it } }.toSet()
+        }
+        events.isNotEmpty() -> events + days.map { 0 to it }
         days.isNotEmpty() -> days.map { 0 to it }.toSet()
         else -> emptySet()
     }
@@ -167,9 +187,11 @@ fun weekdayDeeds(weekdayName: String): List<DailyDeed> {
 }
 
 /**
- * أعمال اليوم المطابقة لتاريخه الهجري **فقط** — لا أعمال رمضان ولا أيام من أشهر أخرى:
+ * أعمال اليوم المطابقة لتاريخه الهجري **فقط** — لا أعمال رمضان ولا أيام من أشهر أخرى،
+ * وكل أعمال الأشهر الموقوتة الموجودة في «مفاتيح الجنان» تُلتقط تلقائيًا:
  *
- * 1) **الليلة/اليوم** — العنوان يتضمن «ليلة/الليلة» أو «اليوم/يوم» وتطابق تاريخه الهجري.
+ * 1) **الليلة/اليوم** — أي عنوان في مفاتيح الجنان يُضمر تاريخًا هجريًا محددًا
+ *    (مكتوبـة أو هندية) ويطابق تاريخ اليوم الهجري.
  * 2) **يوم الأسبوع** — اسم اليوم (الجمعة/السبت…).
  *
  * @param today التاريخ المدني الحالي (المنطقة الزمنية للتطبيق).
@@ -180,12 +202,12 @@ fun dailyDeeds(today: LocalDate, hijri: HijriDate): List<DailyDeed> {
     val out = linkedMapOf<Int, DailyDeed>()
 
     for (indexed in jinanIndexed) {
-        val t = norm(indexed.item.title)
-        val mentionsNight = t.contains(norm("ليلة")) || t.contains(norm("الليلة"))
-        val mentionsDay = t.contains(norm("اليوم")) || t.contains(norm("يوم"))
-        if (!mentionsNight && !mentionsDay) continue
+        // لا نفترض أن العنوان يحمل «ليلة/يوم» — أي عنوان يُضمر تاريخًا هجريًا يطابقه يُعرض.
+        val imply = impliedHijriDates(indexed.item.title)
+        if (imply.isEmpty()) continue
         if (!matchesHijriDate(indexed.item.title, hijri.monthNum, hijri.day)) continue
-        val src = if (mentionsNight) DailyDeedSource.MONTH_NIGHT else DailyDeedSource.MONTH_DAY
+        val t = norm(indexed.item.title)
+        val src = if (t.contains(norm("ليلة"))) DailyDeedSource.MONTH_NIGHT else DailyDeedSource.MONTH_DAY
         out.getOrPut(indexed.item.id) {
             DailyDeed(indexed.item, indexed.chapterTitle, indexed.sectionTitle, src)
         }

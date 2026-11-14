@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.ui.motion.motionEffects
 import com.karrar.amsakiah.ui.theme.KararTokens
+import com.karrar.amsakiah.ui.theme.LocalKararPalette
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
@@ -111,6 +112,8 @@ fun SkyArc(
     bottomLabel: String = "الوقت الحالي"
 ) {
     val measurer = rememberTextMeasurer()
+    val palette = LocalKararPalette.current
+    val skyText = palette.skyText
 
     // انتقال سلس لحركة الشمس/القمر والمسار (نابض بطيء بلا ارتداد: يتبع التغيّر
     // في أي لحظة بدل إعادة تشغيل مدة ثابتة، فلا «قفزة» عند تقادم الوقت).
@@ -210,7 +213,7 @@ fun SkyArc(
             )
             drawPath(
                 path = fullPath,
-                color = Color.White.copy(alpha = 0.14f),
+                color = skyText.copy(alpha = 0.18f),
                 style = Stroke(
                     width = 2f * s,
                     cap = StrokeCap.Round,
@@ -430,7 +433,7 @@ fun SkyArc(
                 xUnits = 200f,
                 baselineUnits = 198f,
                 fontUnits = 45f,
-                color = Color.White,
+                color = skyText,
                 weight = FontWeight.Bold,
                 ltr = true,
                 shadowUnits = 3f
@@ -441,7 +444,7 @@ fun SkyArc(
                     xUnits = 122f,
                     baselineUnits = 211f,
                     fontUnits = 13f,
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = skyText.copy(alpha = 0.8f),
                     weight = FontWeight.Bold,
                     centered = false
                 )
@@ -451,7 +454,7 @@ fun SkyArc(
                 xUnits = 200f,
                 baselineUnits = 234f,
                 fontUnits = 11f,
-                color = Color.White.copy(alpha = 0.4f),
+                color = skyText.copy(alpha = 0.4f),
                 weight = FontWeight.Bold,
                 letterSpacingUnits = 4f
             )
@@ -471,15 +474,15 @@ fun SkyArc(
             val right = Offset(px(370f), py(260f))
             drawCircle(Color.Black.copy(alpha = 0.55f), radius = 6f * s, center = left)
             drawCircle(Color.Black.copy(alpha = 0.55f), radius = 6f * s, center = right)
-            drawCircle(Color.White, radius = 4.5f * s, center = left)
-            drawCircle(Color.White, radius = 4.5f * s, center = right)
+            drawCircle(skyText, radius = 4.5f * s, center = left)
+            drawCircle(skyText, radius = 4.5f * s, center = right)
 
             paint(
                 text = leftLabel,
                 xUnits = 30f,
                 baselineUnits = 281f,
                 fontUnits = 11f,
-                color = Color.White.copy(alpha = 0.92f),
+                color = skyText.copy(alpha = 0.92f),
                 weight = FontWeight.Bold,
                 shadowUnits = 1.5f
             )
@@ -497,7 +500,7 @@ fun SkyArc(
                 xUnits = 370f,
                 baselineUnits = 281f,
                 fontUnits = 11f,
-                color = Color.White.copy(alpha = 0.92f),
+                color = skyText.copy(alpha = 0.92f),
                 weight = FontWeight.Bold,
                 shadowUnits = 1.5f
             )

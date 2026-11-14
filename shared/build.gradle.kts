@@ -17,6 +17,8 @@ kotlin {
         androidResources {
             enable = true
         }
+        // تفعيل اختبارات المضيف (المنطق البرمجي في commonTest يُختبر بدون جهاز).
+        withHostTest {}
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
@@ -62,6 +64,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }

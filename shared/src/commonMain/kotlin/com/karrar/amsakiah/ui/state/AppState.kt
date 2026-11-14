@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.core.state
+﻿package com.karrar.amsakiah.ui.state
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,6 +11,7 @@ import com.karrar.amsakiah.core.location.fetchIpLocation
 import com.karrar.amsakiah.core.settings.AppSettings
 import com.karrar.amsakiah.core.settings.SettingsStorage
 import com.karrar.amsakiah.core.settings.ThemeMode
+import com.karrar.amsakiah.core.state.SettingsChangeBus
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json

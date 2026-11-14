@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.ui.screens
+﻿package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -72,7 +72,7 @@ import com.karrar.amsakiah.core.data.TasbihDhikr
 import com.karrar.amsakiah.core.data.TasbihPresets
 import com.karrar.amsakiah.core.feedback.playTasbihClick
 import com.karrar.amsakiah.core.feedback.playTasbihComplete
-import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.state.AppState
 import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
 import com.karrar.amsakiah.ui.adaptive.contentEnd
 import com.karrar.amsakiah.ui.adaptive.contentStart

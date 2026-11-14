@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.ui.screens
+﻿package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -79,9 +79,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.settings.AppSettings
-import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.state.PrayerMeta
+import com.karrar.amsakiah.core.arc.computeArcPhase
+import com.karrar.amsakiah.core.arc.secondsOf
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.components.KashidaHeader
 import com.karrar.amsakiah.ui.components.SKY_ARC_STAGE_ASPECT
@@ -949,104 +951,3 @@ private suspend fun LazyListState.centerItem(index: Int) {
     animateScrollBy(itemCenter - viewportCenter)
 }
 
-// =====================================================================
-// حساب مرحلة القوس (مطابق لكتلة الحساب في المرجع)
-// =====================================================================
-
-private data class ArcPhase(
-    val progress: Float,
-    val leftLabel: String,
-    val leftHour: Double,
-    val rightLabel: String,
-    val rightHour: Double,
-    val badge: String?
-)
-
-private fun secondsOf(hour: Double): Int = (hour * 3600.0).roundToInt()
-
-private fun computeArcPhase(
-    nowSeconds: Int,
-    times: Map<String, Double>,
-    tomorrowTimes: Map<String, Double>,
-    isShia: Boolean,
-    use24Hour: Boolean = false
-): ArcPhase {
-    val fajr = times["fajr"] ?: 5.0
-    val sunrise = times["sunrise"] ?: 6.5
-    val sunset = times["sunset"] ?: 18.0
-    val maghrib = times["maghrib"] ?: 18.25
-    val fajrSec = secondsOf(fajr)
-    val sunriseSec = secondsOf(sunrise)
-    val sunsetSec = secondsOf(sunset)
-    val maghribSec = secondsOf(maghrib)
-    fun timeText(hour: Double): String = PrayerCalculator.formatHour(hour, use24Hour).first
-
-    return when {
-        // 1) الليل: من المغرب إلى الفجر
-        nowSeconds >= maghribSec || nowSeconds < fajrSec -> {
-            val rightHour = if (nowSeconds >= maghribSec) {
-                tomorrowTimes["fajr"] ?: fajr
-            } else {
-                fajr
-            }
-            val span = ((86400 - maghribSec) + fajrSec).coerceAtLeast(1)
-            val elapsed = if (nowSeconds >= maghribSec) {
-                nowSeconds - maghribSec
-            } else {
-                nowSeconds + (86400 - maghribSec)
-            }
-            ArcPhase(
-                progress = (elapsed.toFloat() / span).coerceIn(0f, 1f),
-                leftLabel = "المغرب",
-                leftHour = maghrib,
-                rightLabel = "الفجر",
-                rightHour = rightHour,
-                badge = null
-            )
-        }
-
-        // 2) بين الفجر والشروق
-        nowSeconds < sunriseSec -> {
-            val span = ((86400 - maghribSec) + sunriseSec).coerceAtLeast(1)
-            val elapsed = nowSeconds + (86400 - maghribSec)
-            ArcPhase(
-                progress = (elapsed.toFloat() / span).coerceIn(0f, 1f),
-                leftLabel = "المغرب",
-                leftHour = maghrib,
-                rightLabel = "الشروق",
-                rightHour = sunrise,
-                badge = "حلّ الفجر (${timeText(fajr)}) • بانتظار الشروق"
-            )
-        }
-
-        // 3) النهار: من الشروق إلى الغروب (الشيعي) أو المغرب (السني)
-        nowSeconds < sunsetSec -> {
-            val endHour = if (isShia) sunset else maghrib
-            val endSec = if (isShia) sunsetSec else maghribSec
-            val span = (endSec - sunriseSec).coerceAtLeast(1)
-            val elapsed = nowSeconds - sunriseSec
-            ArcPhase(
-                progress = (elapsed.toFloat() / span).coerceIn(0f, 1f),
-                leftLabel = "الشروق",
-                leftHour = sunrise,
-                rightLabel = if (isShia) "الغروب" else "المغرب",
-                rightHour = endHour,
-                badge = null
-            )
-        }
-
-        // 4) بين الغروب الفلكي والمغرب الشرعي (ذهاب الحمرة المشرقية)
-        else -> {
-            val span = (maghribSec - sunriseSec).coerceAtLeast(1)
-            val elapsed = nowSeconds - sunriseSec
-            ArcPhase(
-                progress = (elapsed.toFloat() / span).coerceIn(0f, 1f),
-                leftLabel = "الشروق",
-                leftHour = sunrise,
-                rightLabel = "المغرب",
-                rightHour = maghrib,
-                badge = "تم الغروب (${timeText(sunset)}) • ذهاب الحمرة المشرقية للمغرب"
-            )
-        }
-    }
-}

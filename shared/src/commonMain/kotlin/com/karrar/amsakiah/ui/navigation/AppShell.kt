@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.ui.navigation
+﻿package com.karrar.amsakiah.ui.navigation
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -105,9 +105,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import com.karrar.amsakiah.core.state.AppState
-import com.karrar.amsakiah.core.state.ToastKind
-import com.karrar.amsakiah.core.state.ToastMessage
+import com.karrar.amsakiah.ui.state.AppState
+import com.karrar.amsakiah.ui.state.ToastKind
+import com.karrar.amsakiah.ui.state.ToastMessage
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.ui.adaptive.AppWidthSizeClass
 import com.karrar.amsakiah.ui.adaptive.NavigationLayout

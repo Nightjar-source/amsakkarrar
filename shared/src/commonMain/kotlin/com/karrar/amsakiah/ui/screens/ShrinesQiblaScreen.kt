@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.ui.screens
+﻿package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -50,9 +50,9 @@ import com.karrar.amsakiah.core.astronomy.moonDetailsByHijriDay
 import com.karrar.amsakiah.core.data.HolySite
 import com.karrar.amsakiah.core.data.HolySites
 import com.karrar.amsakiah.core.data.SiteKind
-import com.karrar.amsakiah.core.permissions.rememberPermissionController
+import com.karrar.amsakiah.ui.permissions.rememberPermissionController
 import com.karrar.amsakiah.core.sensors.createCompassProvider
-import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
 import com.karrar.amsakiah.ui.adaptive.contentEnd

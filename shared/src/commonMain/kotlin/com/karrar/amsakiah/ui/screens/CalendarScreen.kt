@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.ui.screens
+﻿package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karrar.amsakiah.core.astronomy.HijriDate
 import com.karrar.amsakiah.core.settings.AppSettings
-import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin
 import com.karrar.amsakiah.ui.adaptive.contentEnd

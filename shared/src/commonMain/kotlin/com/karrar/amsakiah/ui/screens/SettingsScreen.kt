@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.ui.screens
+﻿package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
@@ -78,10 +78,10 @@ import com.karrar.amsakiah.core.astronomy.CityDatabase
 import com.karrar.amsakiah.core.astronomy.OfflineCities
 import com.karrar.amsakiah.core.astronomy.OfflineCity
 import com.karrar.amsakiah.core.audio.SoundTestBridge
-import com.karrar.amsakiah.core.permissions.rememberPermissionController
+import com.karrar.amsakiah.ui.permissions.rememberPermissionController
 import com.karrar.amsakiah.core.settings.AppSettings
 import com.karrar.amsakiah.core.settings.ThemeMode
-import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.state.AppState
 import com.karrar.amsakiah.core.state.PrayerCalculator
 import com.karrar.amsakiah.core.state.PrayerMeta
 import com.karrar.amsakiah.ui.adaptive.ScreenHorizontalMargin

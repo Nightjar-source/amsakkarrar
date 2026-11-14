@@ -1,4 +1,4 @@
-package com.karrar.amsakiah.core.permissions
+﻿package com.karrar.amsakiah.ui.permissions
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

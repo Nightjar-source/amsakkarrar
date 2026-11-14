@@ -36,7 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.state.AppState
 import com.karrar.amsakiah.ui.components.GlassCard
 import com.karrar.amsakiah.ui.navigation.LocalSearchQuery
 import com.karrar.amsakiah.ui.theme.KararColors

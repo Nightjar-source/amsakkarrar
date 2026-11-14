@@ -1,4 +1,4 @@
-package com.karrar.amsakiah
+﻿package com.karrar.amsakiah
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
@@ -31,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import com.karrar.amsakiah.core.permissions.rememberPermissionController
-import com.karrar.amsakiah.core.state.AppState
+import com.karrar.amsakiah.ui.permissions.rememberPermissionController
+import com.karrar.amsakiah.ui.state.AppState
 import com.karrar.amsakiah.core.weather.WeatherInfo
 import com.karrar.amsakiah.core.weather.fetchWeather
 import com.karrar.amsakiah.ui.components.GlassCard
