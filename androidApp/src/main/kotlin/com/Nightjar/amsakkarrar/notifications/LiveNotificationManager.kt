@@ -41,13 +41,26 @@ object LiveNotificationManager {
         val settings = SettingsLoader.load(appContext)
         val prefs = prefs(appContext)
 
-        if (!settings.liveNotification) {
+        if (!settings.liveNotification && !force) {
             lastSignature = null
             prefs.edit()
                 .putBoolean(KEY_WAS_ENABLED, false)
                 .putLong(KEY_DISMISSED_UNTIL, 0L)
                 .apply()
             cancelInternal(appContext)
+            return
+        }
+
+        if (!settings.liveNotification && force) {
+            // معاينة من الإعدادات: انشر فورًا بغض النظر عن المفتاح (حتى ولو كان مطفأ)،
+            // ولا تُسجّل «سحبًا» أو تغيّر حالة «مطفأ» — هي تجربة بصرية لا بث دائم.
+            val snapshot = PrayerSnapshotLoader.load(appContext)
+            runCatching {
+                manager.notify(
+                    NotificationDesign.LIVE_ID,
+                    NotificationDesign.buildLive(appContext, snapshot)
+                )
+            }
             return
         }
 

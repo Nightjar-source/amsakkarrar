@@ -1,30 +1,28 @@
-package com.Nightjar.amsakkarrar.notifications
+﻿package com.Nightjar.amsakkarrar.notifications
 
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.SystemClock
-import android.view.View
-import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.Nightjar.amsakkarrar.MainActivity
 import com.Nightjar.amsakkarrar.R
-import com.Nightjar.amsakkarrar.widget.ArcBackground
-import kotlinx.datetime.toLocalDateTime
 
 /**
  * بناء الإشعارين بتصميم `widgetsnotifications.html`:
  *
- * 1) الإشعار الحي «العدّاد المباشر» — مساران حسب الإصدار:
+ * 1) الإشعار الحي «العدّاد المباشر» — مساران، وكلاهما **شكل النظام نفسه**:
  *    - أندرويد 16+ / سامسونج One UI 8+: **Live Update** رسمي
  *      (`ProgressStyle` + `setOngoing(true)` + `setRequestPromotedOngoing(true)`)
  *      ⇒ شريحة في شريط الحالة (Now Bar) وقفل الشاشة، دون بطاقتين.
- *    - أندرويد 7–15: بطاقة `RemoteViews` مصمّمة (`notification_live.xml`).
- *    في المسارين: إذن `POST_PROMOTED_NOTIFICATIONS` مصرّح من المانيفست، والسحب
- *    مسجّل عبر `LiveDismissReceiver` حتى لا تُعاد نشر إشعار رفضه المستخدم.
- * 2) إشعار الصلاة: «حان الآن موعد …» + «تقبل الله طاعتكم»، وفيه زر
- *    «إيقاف الأذان» وسحبُ البطاقة يوقف الصوت عبر `AdhanStopReceiver`.
+ *    - أندرويد 7–15: قالب أندرويد الأصلي (`BigTextStyle` + `usesChronometer`
+ *      مع `setChronometerCountDown`) — يملأ النافذة الحقيقية للإشعار دون أي
+ *      RemoteViews خارجي: لا خلفية قوس ولا حواف داخلية، واللون والتباين
+ *      يتبعان النظام تلقائيًا (فاتح/داكن).
+ *    في المسارين: إذن `POST_PROMOTED_NOTIFICATIONS` مصرّح من المانيفست.
+ * 2) إشعار الصلاة: قالب أندرويد الأصلي — نص «حان الآن موعد …» + «تقبل الله
+ *    طاعتكم» + أسطر الوقت الحالي/القادم، وزر «إيقاف الأذان» وسحب البطاقة
+ *    يوقفان الصوت عبر `AdhanStopReceiver`.
  */
 object NotificationDesign {
 
@@ -73,9 +71,10 @@ object NotificationDesign {
      * 2) أندرويد 7–15 (والسامسونج الأقدم): بطاقة `RemoteViews` المصمّمة
      *    نفسها (`notification_live.xml`) — الحرفية من widgetsnotifications.html.
      */
-    fun buildLive(context: Context, snapshot: PrayerSnapshot, forceDaytime: Boolean? = null): Notification {
+    fun buildLive(context: Context, snapshot: PrayerSnapshot): Notification {
         val percent = (snapshot.periodProgress * 100f).toInt().coerceIn(0, 100)
         val remaining = snapshot.remainingSeconds.coerceAtLeast(0)
+        val isDay = snapshot.isDaytime
 
         if (android.os.Build.VERSION.SDK_INT >= 36) {
             // الإشعار الحي الرسمي: ProgressStyle + الترقية إلى Live Update.
@@ -118,25 +117,31 @@ object NotificationDesign {
             }
         }
 
-        // شكلان: مكثّف (قبل التوسيع) وموسّع (بعد السحب) — كما في أندرويد الرسمي.
-        val compactViews = liveViews(context, snapshot, percent, forceDaytime, compact = true)
-        val fullViews = liveViews(context, snapshot, percent, forceDaytime, compact = false)
-
+        // أندرويد 7–15: قالب أندرويد الأصلي 100% — عدّاد Chronometer يتصل تلقائيًا
+        // بمحتوى الإشعار كما تصفه المطوّرات الرسمية، ويملأ نافذة الإشعار الحقيقية
+        // دون RemoteViews ولا خلفية ولا حواف داخلية من طرفنا.
+        val accent = if (isDay) 0xFFFF9F1C.toInt() else 0xFF80A1D4.toInt()
         return NotificationCompat.Builder(context, NotificationChannels.LIVE)
             .setSmallIcon(R.drawable.ic_notif_small)
-            .setContentTitle("العدّاد المباشر")
-            .setContentText("باقٍ على ${snapshot.nextLabel} • ${snapshot.nextTime} · العدّ التنازلي")
-            .setSubText("${snapshot.city} — إمساكيات كرار")
-            .setCustomContentView(compactViews)
-            .setCustomBigContentView(fullViews)
-            .setStyle(NotificationCompat.BigTextStyle().bigText("باقٍ على ${snapshot.nextLabel} • ${snapshot.nextTime}"))
+            .setContentTitle("باقي على ${snapshot.nextLabel}")
+            .setContentText(snapshot.nextTime)
+            .setSubText(snapshot.city)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .setBigContentTitle("العدّاد المباشر")
+                    .bigText("باقي على ${snapshot.nextLabel} — ${snapshot.nextTime}\n${snapshot.city}")
+                    .setSummaryText(snapshot.city)
+            )
+            .setUsesChronometer(true)
+            .setChronometerCountDown(true)
+            .setWhen(System.currentTimeMillis() + remaining * 1000L)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .setOngoing(false)
             .setOnlyAlertOnce(true)
             .setSilent(true)
+            .setOngoing(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setColorized(false)
+            .setColor(accent)
             .setContentIntent(contentIntent(context))
             .setDeleteIntent(liveDismissIntent(context))
             .build()
@@ -150,43 +155,8 @@ object NotificationDesign {
         return if (hours > 0L) "$hours:${minutes.toString().padStart(2, '0')}" else "${minutes} د"
     }
 
-    private fun liveViews(
-        context: Context,
-        snapshot: PrayerSnapshot,
-        percent: Int,
-        forceDaytime: Boolean?,
-        compact: Boolean
-    ): RemoteViews {
-        val isDay = forceDaytime ?: snapshot.isDaytime
-        val remaining = snapshot.remainingSeconds.coerceAtLeast(0)
-        val layout = if (compact) R.layout.notification_live_compact else R.layout.notification_live
-
-        return RemoteViews(context.packageName, layout).apply {
-            // خلفية القوس الديناميكية (Bitmap مولّد) — تطابق شاشة «اليوم» حرفيًا لحظة الإشعار.
-            setImageViewBitmap(R.id.notif_bg_image, ArcBackground.renderFor(snapshot.nowSeconds))
-            setTextViewText(R.id.live_label, "باقي على ${snapshot.nextLabel}")
-            if (!compact) {
-                setTextViewText(R.id.live_target, snapshot.nextTime)
-            }
-            // عدّاد تنازلي ينبض داخل النظام بلا أي تحديث من التطبيق.
-            setChronometerCountDown(R.id.live_chrono, true)
-            setChronometer(
-                R.id.live_chrono,
-                SystemClock.elapsedRealtime() + remaining * 1000L,
-                null,
-                true
-            )
-            if (!compact) {
-                setViewVisibility(R.id.live_progress_day, if (isDay) View.VISIBLE else View.GONE)
-                setViewVisibility(R.id.live_progress_night, if (isDay) View.GONE else View.VISIBLE)
-                setProgressBar(R.id.live_progress_day, 100, percent, false)
-                setProgressBar(R.id.live_progress_night, 100, percent, false)
-            }
-        }
-    }
-
     // ---------------------------------------------------------------
-    //  إشعار الصلاة
+    //  إشعار الصلاة — قالب أندرويد الأصلي (يملأ نافذة الإشعار بلا RemoteViews)
     // ---------------------------------------------------------------
     fun buildPrayer(
         context: Context,
@@ -197,34 +167,34 @@ object NotificationDesign {
         channel: String = NotificationChannels.ADHAN,
         timeoutAfterMs: Long = 2 * 60 * 60 * 1000L
     ): Notification {
-        val compactViews = prayerViews(context, prayerLabel, currentTime, nextLabel, nextTime, compact = true)
-        val fullViews = prayerViews(context, prayerLabel, currentTime, nextLabel, nextTime, compact = false)
-
+        val bigText = buildString {
+            append("تقبل الله طاعتكم\n")
+            append("الوقت الحالي: ").append(currentTime).append('\n')
+            append("القادمة (").append(nextLabel.ifBlank { "غير محددة" }).append("): ").append(nextTime)
+        }
         return NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notif_small)
             .setContentTitle("حان الآن موعد $prayerLabel")
             .setContentText("تقبل الله طاعتكم")
-            .setCustomContentView(compactViews)
-            .setCustomBigContentView(fullViews)
-            .setStyle(NotificationCompat.BigTextStyle().bigText("حان الآن موعد $prayerLabel · تقبل الله طاعتكم"))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .setBigContentTitle("حان الآن موعد $prayerLabel")
+                    .bigText(bigText)
+            )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
             .setTimeoutAfter(timeoutAfterMs)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setColor(0xFFFFD700.toInt())
-            // شكل أندرويد الأصلي (بلا تلوين كامل للإشعار) — التصميم داخل الـRemoteViews.
-            .setColorized(false)
             .setContentIntent(contentIntent(context))
             .build()
     }
 
     /**
-     * بطاقة **التشغيل** أثناء الأذان — نفس تصميم بطاقة الوصول بالحرف، لكن على
-     * قناة صامتة (الصوت يعزفه `AdhanService` نفسه) ومعها زر «إيقاف الأذان».
-     *
-     * تستخدم [PRAYER_ID] نفسها، فتحل محل بطاقة الوصول بدل أن تتكدّس معها:
-     * **بطاقة واحدة لكل حدث** كما هو مطلوب.
+     * بطاقة **التشغيل** أثناء الأذان — نفس قالب الصلاة، لكن على قناة صامتة
+     * (الصوت يعزفه `AdhanService` نفسه) ومعها زر «إيقاف الأذان».
+     * تستخدم [PRAYER_ID] نفسها، فتكافئ بطاقة الوصول بدل أن تتكدّس معها.
      */
     fun buildPlaying(
         context: Context,
@@ -234,17 +204,22 @@ object NotificationDesign {
         nextTime: String,
         preview: Boolean = false
     ): Notification {
-        val compactViews = prayerViews(context, prayerLabel, currentTime, nextLabel, nextTime, compact = true)
-        val fullViews = prayerViews(context, prayerLabel, currentTime, nextLabel, nextTime, compact = false)
         val stopIntent = stopIntent(context)
+        val bigText = buildString {
+            append("تقبل الله طاعتكم\n")
+            append("الوقت الحالي: ").append(currentTime).append('\n')
+            append("القادمة (").append(nextLabel.ifBlank { "غير محددة" }).append("): ").append(nextTime)
+        }
 
         return NotificationCompat.Builder(context, NotificationChannels.ADHAN)
             .setSmallIcon(R.drawable.ic_notif_small)
             .setContentTitle(if (preview) "تجربة صوت الأذان" else "الأذان — $prayerLabel")
             .setContentText(if (preview) "عرض تجريبي للصوت المخصص" else "حان الآن موعد $prayerLabel · تقبل الله طاعتكم")
-            .setCustomContentView(compactViews)
-            .setCustomBigContentView(fullViews)
-            .setStyle(NotificationCompat.BigTextStyle().bigText("حان الآن موعد $prayerLabel · تقبل الله طاعتكم"))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .setBigContentTitle(if (preview) "تجربة صوت الأذان" else "الأذان — $prayerLabel")
+                    .bigText(bigText)
+            )
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setOngoing(false)
@@ -252,42 +227,11 @@ object NotificationDesign {
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setColor(0xFFFFD700.toInt())
-            // بلا colorized: الشكل يبقى شكل أندرويد الأصلي في الظل، والتصميم
-            // (الخلفية والتدرجات) مرسوم داخل RemoteViews نفسها.
-            .setColorized(false)
             .setContentIntent(contentIntent(context))
             // سحب البطاقة يوقف الصوت والخدمة معًا — لا يبقى إشعار عالق.
             .setDeleteIntent(stopIntent)
             .addAction(R.drawable.ic_notif_small, "إيقاف الأذان", stopIntent)
             .build()
-    }
-
-    private fun prayerViews(
-        context: Context,
-        prayerLabel: String,
-        currentTime: String,
-        nextLabel: String,
-        nextTime: String,
-        compact: Boolean
-    ): RemoteViews {
-        val seconds = currentDaySeconds(context)
-        val layout = if (compact) R.layout.notification_prayer_compact else R.layout.notification_prayer
-        return RemoteViews(context.packageName, layout).apply {
-            // خلفية القوس الديناميكية (Bitmap مولّد) — تطابق شاشة «اليوم» حرفيًا لحظة الإشعار.
-            setImageViewBitmap(R.id.notif_bg_image, ArcBackground.renderFor(seconds))
-            if (compact) {
-                setTextViewText(R.id.prayer_compact_title, "حان الآن موعد $prayerLabel")
-                setTextViewText(R.id.prayer_compact_time, currentTime)
-                return@apply
-            }
-            setTextViewText(R.id.prayer_name, prayerLabel)
-            setTextViewText(R.id.prayer_current, currentTime)
-            setTextViewText(
-                R.id.prayer_next_label,
-                if (nextLabel.isBlank()) "الصلاة القادمة" else "الصلاة القادمة ($nextLabel)"
-            )
-            setTextViewText(R.id.prayer_next_time, nextTime)
-        }
     }
 
     private fun stopIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
@@ -298,13 +242,4 @@ object NotificationDesign {
         },
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
-
-    /** ثواني اليوم بتوقيت **المدينة** (وليس جهاز الاتصال) — لاختيار خلفية الإشعار بحسب القوس. */
-    private fun currentDaySeconds(context: Context): Int {
-        val settings = SettingsLoader.load(context)
-        val zone = com.karrar.amsakiah.core.state.PrayerCalculator.zoneOf(settings)
-        val now = kotlinx.datetime.Clock.System.now().toLocalDateTime(zone)
-        return now.hour * 3600 + now.minute * 60 + now.second
-    }
-
 }

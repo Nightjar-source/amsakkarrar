@@ -819,7 +819,8 @@ class DailyDeedsWidget : GlanceAppWidget() {
         val snapshot = PrayerSnapshotLoader.load(context)
         val widgetId = appWidgetIdFor(context, id)
         provideContent {
-            GlanceTheme { DailyDeedsWidgetContent(context, snapshot, widgetId, deeds) }
+            val weekdayName = PrayerCalculator.weekDays.getOrNull(today.dayOfWeek.ordinal).orEmpty()
+            GlanceTheme { DailyDeedsWidgetContent(context, snapshot, widgetId, deeds, weekdayName) }
         }
     }
 }
@@ -829,13 +830,13 @@ private fun DailyDeedsWidgetContent(
     context: Context,
     snapshot: PrayerSnapshot,
     appWidgetId: Int,
-    deeds: List<DailyDeed>
+    deeds: List<DailyDeed>,
+    weekdayName: String
 ) {
     val tier = rememberWidgetTier()
     val night = deeds.count { it.source == DailyDeedSource.MONTH_NIGHT }
     val day = deeds.count { it.source == DailyDeedSource.MONTH_DAY }
     val week = deeds.count { it.source == DailyDeedSource.WEEKDAY }
-    val general = deeds.count { it.source == DailyDeedSource.MONTH_GENERAL }
 
     WidgetFrame(context, appWidgetId, tier, snapshot = snapshot) {
         Row(
@@ -861,18 +862,16 @@ private fun DailyDeedsWidgetContent(
         }
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 2.dp else 5.dp))
 
-        // عدّادات ليلة/يوم/أسبوع/عامة — أعمدة متساوية بعنوان صغير وقيمة كبيرة.
+        // عدّادات ليلة/يوم/يوم الأسبوع — أعمدة متساوية بعنوان صغير وقيمة كبيرة.
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally
         ) {
             DeedStatCell("الليلة", night, Color(0xFFF59E0B), GlanceModifier.defaultWeight())
-            Spacer(GlanceModifier.width(4.dp))
+            Spacer(GlanceModifier.width(6.dp))
             DeedStatCell("اليوم", day, Gold, GlanceModifier.defaultWeight())
-            Spacer(GlanceModifier.width(4.dp))
-            DeedStatCell("الأسبوع", week, Color(0xFF38BDF8), GlanceModifier.defaultWeight())
-            Spacer(GlanceModifier.width(4.dp))
-            DeedStatCell("الشهر", general, Color(0xFFA78BFA), GlanceModifier.defaultWeight())
+            Spacer(GlanceModifier.width(6.dp))
+            DeedStatCell(weekdayName, week, Color(0xFF38BDF8), GlanceModifier.defaultWeight())
         }
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 2.dp else 4.dp))
 
