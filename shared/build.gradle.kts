@@ -1,0 +1,79 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
+}
+
+kotlin {
+    androidLibrary {
+        namespace = "com.Nightjar.amsakkarrar.shared"
+        compileSdk = libs.versions.compileSdk.get().toInt()
+        compileSdkExtension = 1
+        minSdk = libs.versions.minSdk.get().toInt()
+        // تفعيل موارد أندرويد في الوحدة المشتركة (الأصوات في res/raw تُدمج في التطبيق)
+        androidResources {
+            enable = true
+        }
+        // تفعيل اختبارات المضيف (المنطق البرمجي في commonTest يُختبر بدون جهاز).
+        withHostTest {}
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
+        }
+    }
+
+    // iosX64 غير مدعوم من Compose 1.12 / Navigation3 / Adaptive — أُزيل لتفادي فشل حل الاعتماديات.
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "SharedApp"
+            isStatic = true
+        }
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
+            implementation(compose.ui)
+            implementation(compose.components.resources)
+            implementation(compose.components.uiToolingPreview)
+            implementation(libs.androidx.lifecycle.viewmodel)
+            implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.jetbrains.navigation3.ui)
+            implementation(libs.jetbrains.lifecycle.viewmodel.navigation3)
+            implementation(libs.jetbrains.compose.material3.adaptive)
+            implementation(libs.jetbrains.compose.material3.adaptive.layout)
+            implementation(libs.jetbrains.compose.material3.adaptive.navigation)
+            implementation(libs.jetbrains.compose.material3.adaptive.navigation3)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.navigation3.runtime)
+            implementation(libs.androidx.navigation3.ui)
+            implementation(compose.preview)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.kotlinx.coroutines.android)
+            implementation(libs.androidx.datastore.preferences)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.karrar.amsakiah.resources"
+    generateResClass = always
+}

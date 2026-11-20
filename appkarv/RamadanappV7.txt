@@ -1,0 +1,895 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Moon, Sun, MapPin, Settings, X, Calendar, Check, Plus, Minus, Smartphone, Zap, Bell, Cloud, CloudRain, CloudSun, CloudLightning, CloudSnow, LocateFixed, Sunrise, Sunset, ChevronDown } from 'lucide-react';
+
+/**
+ * تطبيق التقويم والصلوات الشامل - النسخة العراقية الخالصة (Ultra Pro Max Final)
+ * تطوير: كرار (تحياتي للسيد وليو الثلجي 🐈❄️)
+ * (مطابق للتقويم العراقي زاوية 18 للفجر، كشيدة متصلة، مربعات، أنيميشن سلس)
+ */
+
+// ==========================================
+// 1. الثوابت والأدوات المساعدة
+// ==========================================
+const PRAYERS_BASE = [
+  { id: 'imsak', label: 'الإمساك', fixed: true, icon: Moon },
+  { id: 'fajr', label: 'الفجر', fixed: true, icon: Sunrise },
+  { id: 'sunrise', label: 'الشروق', fixed: true, icon: Sunrise },
+  { id: 'dhuhr', label: 'الظهر', fixed: true, icon: Sun },
+  { id: 'asr', label: 'العصر', optional: true, icon: Sun },
+  { id: 'sunset', label: 'الغروب', fixed: true, icon: Sunset },
+  { id: 'maghrib', label: 'المغرب', fixed: true, icon: Sunset },
+  { id: 'isha', label: 'العشاء', optional: true, icon: Moon },
+  { id: 'midnight', label: 'منتصف الليل', fixed: true, icon: Moon }
+];
+
+const skyGradients = [
+  { t: 0,           bgTop: [8, 10, 25],   bgBot: [15, 15, 40],  glowColor: 'rgba(70, 100, 255, 0.3)' }, 
+  { t: 4.5 * 3600,  bgTop: [15, 12, 35],  bgBot: [40, 25, 60],  glowColor: 'rgba(100, 80, 200, 0.4)' }, 
+  { t: 5.5 * 3600,  bgTop: [50, 25, 70],  bgBot: [240, 90, 40], glowColor: 'rgba(255, 120, 40, 0.7)' }, 
+  { t: 6.5 * 3600,  bgTop: [60, 120, 180],bgBot: [250, 190, 120],glowColor: 'rgba(255, 220, 120, 0.6)' },
+  { t: 12 * 3600,   bgTop: [25, 130, 220],bgBot: [110, 200, 255],glowColor: 'rgba(255, 255, 255, 0.4)' }, 
+  { t: 17 * 3600,   bgTop: [45, 90, 160], bgBot: [220, 150, 110],glowColor: 'rgba(255, 190, 90, 0.5)' },  
+  { t: 18.5 * 3600, bgTop: [40, 25, 70],  bgBot: [220, 50, 30], glowColor: 'rgba(255, 70, 20, 0.8)' },  
+  { t: 19.5 * 3600, bgTop: [18, 15, 40],  bgBot: [35, 20, 55],  glowColor: 'rgba(90, 50, 150, 0.5)' },  
+  { t: 24 * 3600,   bgTop: [8, 10, 25],   bgBot: [15, 15, 40],  glowColor: 'rgba(70, 100, 255, 0.3)' }  
+];
+
+const toEn = (n) => String(n).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+const padNum = (num) => String(num).padStart(2, '0');
+const t2s = (ts) => { if(!ts) return 0; const [h,m] = ts.split(':').map(Number); return h*3600 + m*60; };
+const s2t = (s) => { let h = Math.floor(s/3600); let m = Math.floor((s%3600)/60); if(h>=24) h-=24; if(h<0) h+=24; return `${padNum(h)}:${padNum(m)}`; };
+const interpolateColor = (c1, c2, f) => c1.map((c, i) => Math.round(c + f * (c2[i] - c)));
+const getDayNameAR = (dateObj) => dateObj.toLocaleDateString('ar-IQ', { weekday: 'long' });
+
+function format12Hour(timeStr) {
+    if(!timeStr) return { t: '00:00', ap: 'صباحاً' };
+    let [h, m] = timeStr.split(':').map(Number);
+    const ampm = h >= 12 ? 'مساءً' : 'صباحاً';
+    h = h % 12 || 12;
+    return { t: `${toEn(h)}:${toEn(padNum(m))}`, ap: ampm };
+}
+
+// دالة تقسيم الشهر للكشيدة المطابقة للصورة 100%
+const getMonthParts = (monthName) => {
+    const clean = (monthName || "رمضان").replace(/[\u064B-\u065F\u0651\u0654]/g, '');
+    if (clean.includes("محرم")) return { pre: "محـ", post: "ـرم" };
+    if (clean.includes("صفر")) return { pre: "صـ", post: "ـفر" };
+    if (clean.includes("ربيع الأول")) return { pre: "ربيـ", post: "ـع الأول" };
+    if (clean.includes("ربيع الآخر") || clean.includes("ربيع الثاني")) return { pre: "ربيـ", post: "ـع الآخر" };
+    if (clean.includes("جمادى الأولى")) return { pre: "جمـ", post: "ـادى الأولى" };
+    if (clean.includes("جمادى الآخرة") || clean.includes("جمادى الثانية")) return { pre: "جمـ", post: "ـادى الآخرة" };
+    if (clean.includes("رجب")) return { pre: "رجـ", post: "ـب" };
+    if (clean.includes("شعبان")) return { pre: "شعبـ", post: "ـان" };
+    if (clean.includes("رمضان")) return { pre: "رمضـ", post: "ـان" };
+    if (clean.includes("شوال")) return { pre: "شـ", post: "ـوال" };
+    if (clean.includes("القعدة")) return { pre: clean.replace("القعدة", "القعـ"), post: "ـدة" };
+    if (clean.includes("الحجة")) return { pre: clean.replace("الحجة", "الحجـ"), post: "ـة" };
+    return { pre: clean.slice(0, -1) + "ـ", post: "ـ" + clean.slice(-1) };
+};
+
+// ==========================================
+// 2. قاعدة بيانات كربلاء (رمضان 1447هـ)
+// ==========================================
+const PDF_DATA = [
+  { d: 19, m: 2, imsak: '05:11', fajr: '05:21', sunrise: '06:44', dhuhr: '12:18', maghrib: '18:09', midnight: '23:36' },
+  { d: 20, m: 2, imsak: '05:10', fajr: '05:20', sunrise: '06:43', dhuhr: '12:17', maghrib: '18:09', midnight: '23:36' },
+  { d: 21, m: 2, imsak: '05:09', fajr: '05:19', sunrise: '06:42', dhuhr: '12:17', maghrib: '18:10', midnight: '23:36' },
+  { d: 22, m: 2, imsak: '05:08', fajr: '05:18', sunrise: '06:41', dhuhr: '12:17', maghrib: '18:11', midnight: '23:36' },
+  { d: 23, m: 2, imsak: '05:07', fajr: '05:17', sunrise: '06:40', dhuhr: '12:17', maghrib: '18:12', midnight: '23:36' },
+  { d: 24, m: 2, imsak: '05:06', fajr: '05:16', sunrise: '06:39', dhuhr: '12:17', maghrib: '18:13', midnight: '23:36' },
+  { d: 25, m: 2, imsak: '05:05', fajr: '05:15', sunrise: '06:38', dhuhr: '12:17', maghrib: '18:13', midnight: '23:36' },
+  { d: 26, m: 2, imsak: '05:04', fajr: '05:14', sunrise: '06:37', dhuhr: '12:16', maghrib: '18:14', midnight: '23:36' },
+  { d: 27, m: 2, imsak: '05:03', fajr: '05:13', sunrise: '06:36', dhuhr: '12:16', maghrib: '18:15', midnight: '23:36' },
+  { d: 28, m: 2, imsak: '05:02', fajr: '05:12', sunrise: '06:34', dhuhr: '12:16', maghrib: '18:16', midnight: '23:36' },
+  { d: 1,  m: 3, imsak: '05:00', fajr: '05:10', sunrise: '06:32', dhuhr: '12:16', maghrib: '18:16', midnight: '23:35' },
+  { d: 2,  m: 3, imsak: '04:59', fajr: '05:09', sunrise: '06:31', dhuhr: '12:16', maghrib: '18:17', midnight: '23:35' },
+  { d: 3,  m: 3, imsak: '04:58', fajr: '05:08', sunrise: '06:30', dhuhr: '12:16', maghrib: '18:18', midnight: '23:35' },
+  { d: 4,  m: 3, imsak: '04:56', fajr: '05:06', sunrise: '06:29', dhuhr: '12:15', maghrib: '18:19', midnight: '23:35' },
+  { d: 5,  m: 3, imsak: '04:55', fajr: '05:05', sunrise: '06:27', dhuhr: '12:15', maghrib: '18:19', midnight: '23:34' },
+  { d: 6,  m: 3, imsak: '04:54', fajr: '05:04', sunrise: '06:26', dhuhr: '12:15', maghrib: '18:20', midnight: '23:34' },
+  { d: 7,  m: 3, imsak: '04:53', fajr: '05:03', sunrise: '06:25', dhuhr: '12:15', maghrib: '18:21', midnight: '23:34' },
+  { d: 8,  m: 3, imsak: '04:52', fajr: '05:02', sunrise: '06:24', dhuhr: '12:14', maghrib: '18:22', midnight: '23:34' },
+  { d: 9,  m: 3, imsak: '04:50', fajr: '05:00', sunrise: '06:23', dhuhr: '12:14', maghrib: '18:22', midnight: '23:33' },
+  { d: 10, m: 3, imsak: '04:49', fajr: '04:59', sunrise: '06:21', dhuhr: '12:14', maghrib: '18:23', midnight: '23:33' },
+  { d: 11, m: 3, imsak: '04:48', fajr: '04:58', sunrise: '06:20', dhuhr: '12:14', maghrib: '18:24', midnight: '23:33' },
+  { d: 12, m: 3, imsak: '04:47', fajr: '04:57', sunrise: '06:19', dhuhr: '12:13', maghrib: '18:24', midnight: '23:33' },
+  { d: 13, m: 3, imsak: '04:45', fajr: '04:55', sunrise: '06:18', dhuhr: '12:13', maghrib: '18:25', midnight: '23:32' },
+  { d: 14, m: 3, imsak: '04:44', fajr: '04:54', sunrise: '06:16', dhuhr: '12:13', maghrib: '18:26', midnight: '23:32' },
+  { d: 15, m: 3, imsak: '04:43', fajr: '04:53', sunrise: '06:15', dhuhr: '12:13', maghrib: '18:27', midnight: '23:32' },
+  { d: 16, m: 3, imsak: '04:41', fajr: '04:51', sunrise: '06:14', dhuhr: '12:12', maghrib: '18:27', midnight: '23:31' },
+  { d: 17, m: 3, imsak: '04:40', fajr: '04:50', sunrise: '06:13', dhuhr: '12:12', maghrib: '18:28', midnight: '23:31' },
+  { d: 18, m: 3, imsak: '04:39', fajr: '04:49', sunrise: '06:11', dhuhr: '12:12', maghrib: '18:29', midnight: '23:31' },
+  { d: 19, m: 3, imsak: '04:37', fajr: '04:47', sunrise: '06:10', dhuhr: '12:11', maghrib: '18:29', midnight: '23:30' },
+  { d: 20, m: 3, imsak: '04:36', fajr: '04:46', sunrise: '06:09', dhuhr: '12:11', maghrib: '18:30', midnight: '23:30' }
+];
+
+const WeatherEffects = ({ code }) => {
+    if (!code) return null;
+    if (code >= 51 && code <= 67) {
+        return <div className="absolute inset-0 pointer-events-none z-[1] opacity-30 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjIwIj48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=')] animate-[rain_0.3s_linear_infinite]" style={{backgroundSize: '20px 40px'}}></div>;
+    }
+    if (code >= 71 && code <= 77) {
+        return <div className="absolute inset-0 pointer-events-none z-[1] opacity-40 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxjaXJjbGUgY3g9IjMiIGN5PSIzIiByPSIxLjUiIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9IjAuOCIvPjwvc3ZnPg==')] animate-[snow_3s_linear_infinite]" style={{backgroundSize: '50px 50px'}}></div>;
+    }
+    if (code >= 1 && code <= 3) {
+        return <div className="absolute inset-0 pointer-events-none z-[1] opacity-10 bg-[radial-gradient(circle_at_50%_0%,_rgba(255,255,255,0.8)_0%,_transparent_50%)] animate-pulse"></div>;
+    }
+    return null;
+}
+
+export default function App() {
+  const [now, setNow] = useState(new Date()); 
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [weather, setWeather] = useState(null);
+  const [slideIndex, setSlideIndex] = useState(-1);
+  const [isClient, setIsClient] = useState(false);
+  
+  const [openSettingsSections, setOpenSettingsSections] = useState({
+      offset: false, timeAdjust: false, uiPrayers: false, liveNotification: false, alarms: false
+  });
+
+  const toggleSection = (section) => {
+      setOpenSettingsSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const [settings, setSettings] = useState({
+    city: 'كربلاء المقدسة',
+    lat: 32.616,
+    lon: 44.025,
+    autoLocation: true,
+    hijriOffset: 0,
+    showExtraPrayers: false,
+    uiPrayers: { imsak: true, fajr: true, sunrise: true, dhuhr: true, asr: false, sunset: true, maghrib: true, isha: false, midnight: true },
+    liveEnabled: true,
+    reminderMinutes: 15,
+    livePrayers: { imsak: true, fajr: true, dhuhr: true, maghrib: true },
+    alarmEnabled: true,
+    alarmPrayers: { imsak: false, fajr: true, dhuhr: true, maghrib: true },
+    timeOffsets: { imsak: 0, fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, sunset: 0, maghrib: 0, isha: 0, midnight: 0 }
+  });
+
+  const [tempCity, setTempCity] = useState('');
+  const [apiData, setApiData] = useState([]);
+  const [totalMonthDays, setTotalMonthDays] = useState(30);
+  const [currentHijriInfo, setCurrentHijriInfo] = useState({ month: 9, year: 1447, name: "رمضان" });
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const prayerNavRef = useRef(null);
+  const prayerRefs = useRef({});
+  const calendarDayRefs = useRef({});
+
+  useEffect(() => {
+    setIsClient(true);
+    const savedSettings = localStorage.getItem('ramadan_pro_v_final');
+    if (savedSettings) {
+      try { 
+          const parsed = JSON.parse(savedSettings);
+          setSettings(parsed); 
+          setTempCity(parsed.city);
+      } catch(e) {}
+    } else {
+        setTempCity('كربلاء المقدسة');
+    }
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const updateLocationAndWeather = useCallback(async (targetCity = settings.city, forceGPS = false) => {
+    let lat = settings.lat; 
+    let lon = settings.lon;
+    let currentCity = targetCity;
+
+    try {
+        if (forceGPS && navigator.geolocation) {
+            const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject));
+            lat = pos.coords.latitude; 
+            lon = pos.coords.longitude;
+            const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ar`);
+            const geoData = await geoRes.json();
+            currentCity = geoData.city || geoData.locality || "موقع مخصص";
+        } else if (targetCity !== 'كربلاء المقدسة' && targetCity !== 'Karbala') {
+            const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(targetCity)}&count=1&language=ar`);
+            const geoData = await geoRes.json();
+            if (geoData.results && geoData.results.length > 0) {
+                lat = geoData.results[0].latitude; 
+                lon = geoData.results[0].longitude;
+                currentCity = geoData.results[0].name;
+            } else {
+                const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(targetCity)}&format=json&limit=1`);
+                const nomData = await nomRes.json();
+                if (nomData && nomData.length > 0) {
+                    lat = parseFloat(nomData[0].lat);
+                    lon = parseFloat(nomData[0].lon);
+                }
+            }
+        } else {
+            lat = 32.616; lon = 44.025;
+        }
+
+        setTempCity(currentCity);
+        setSettings(s => {
+            const newS = {...s, city: currentCity, lat, lon, autoLocation: false};
+            localStorage.setItem('ramadan_pro_v_final', JSON.stringify(newS));
+            return newS;
+        });
+
+        const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+        const wData = await wRes.json();
+        setWeather({ temp: Math.round(wData.current.temperature_2m), code: wData.current.weather_code });
+    } catch(e) { console.error("Error fetching location:", e); }
+  }, [settings.lat, settings.lon]);
+
+  const fetchApiData = useCallback(async () => {
+    const isKarbala = (settings.city === 'كربلاء المقدسة' || settings.city === 'Karbala');
+    const isRamadan2026 = now.getFullYear() === 2026 && (now.getMonth() === 1 || now.getMonth() === 2);
+    
+    if (isKarbala && isRamadan2026) {
+        setTotalMonthDays(30);
+        setCurrentHijriInfo({ month: 9, year: 1447, name: "رمضان" });
+        return; 
+    }
+
+    try {
+        // تم إضافة Custom Method (99) وتحديد زاوية الفجر 18 (مطابق للعراق والكفيل) وزاوية المغرب 4 والعشاء 14
+        const customMethodParams = "method=99&methodSettings=18,4,14";
+        
+        const todayRes = await fetch(`https://api.aladhan.com/v1/timings/${Math.floor(now.getTime()/1000)}?latitude=${settings.lat}&longitude=${settings.lon}&${customMethodParams}`);
+        const todayJson = await todayRes.json();
+        const currentHMonth = todayJson.data.date.hijri.month.number;
+        const currentHYear = todayJson.data.date.hijri.year;
+        const currentHName = todayJson.data.date.hijri.month.ar;
+
+        setCurrentHijriInfo({ month: currentHMonth, year: currentHYear, name: currentHName });
+
+        const res = await fetch(`https://api.aladhan.com/v1/hijriCalendar/${currentHYear}/${currentHMonth}?latitude=${settings.lat}&longitude=${settings.lon}&${customMethodParams}`);
+        const json = await res.json();
+        if (json.code === 200) {
+            const formatted = json.data.map((d) => ({
+                hijriDayStr: d.date.hijri.day,
+                dateObj: new Date(d.date.readable),
+                imsak: d.timings.Imsak ? d.timings.Imsak.split(' ')[0] : null,
+                fajr: d.timings.Fajr.split(' ')[0], // الآن الفجر سيأتي مبكراً ومطابقاً للتقويم العراقي بفضل الزاوية 18
+                sunrise: d.timings.Sunrise.split(' ')[0], 
+                dhuhr: d.timings.Dhuhr.split(' ')[0],
+                asr: d.timings.Asr.split(' ')[0], 
+                sunset: d.timings.Sunset.split(' ')[0],
+                maghrib: d.timings.Maghrib.split(' ')[0], 
+                isha: d.timings.Isha.split(' ')[0],
+                midnight: d.timings.Midnight.split(' ')[0],
+                hijriMonthName: d.date.hijri.month.ar,
+                hijriYear: d.date.hijri.year
+            }));
+            
+            setTotalMonthDays(formatted.length);
+            setApiData(formatted);
+        }
+    } catch (e) { console.error(e); }
+  }, [settings.city, settings.lat, settings.lon, now]);
+
+  useEffect(() => { 
+      if (settings.autoLocation && !localStorage.getItem('ramadan_pro_v_final')) {
+          updateLocationAndWeather('كربلاء المقدسة', false); 
+      } else {
+          updateLocationAndWeather(settings.city, false);
+      }
+  }, []); 
+
+  useEffect(() => { fetchApiData(); }, [fetchApiData, settings.lat]);
+
+  const getTimesForDate = useCallback((date) => {
+    const d = date.getDate(); const m = date.getMonth() + 1;
+    let entry;
+    
+    const isKarbala = (settings.city === 'كربلاء المقدسة' || settings.city === 'Karbala');
+    const isRamadan2026 = date.getFullYear() === 2026 && (m === 2 || m === 3);
+
+    if (isKarbala && isRamadan2026) {
+        entry = PDF_DATA.find(item => item.d === d && item.m === m) || PDF_DATA[0];
+        entry.hijriMonthName = "رمضان";
+        entry.hijriYear = "1447";
+        entry.calculatedHijriDay = PDF_DATA.indexOf(entry) + 1;
+    } else {
+        const targetStr = date.toDateString();
+        entry = apiData.find(dt => dt.dateObj && dt.dateObj.toDateString() === targetStr) || (apiData[0] || PDF_DATA[0]);
+        entry.calculatedHijriDay = entry.hijriDayStr ? parseInt(entry.hijriDayStr) : 1;
+    }
+
+    let calculatedMaghrib = entry.maghrib;
+    let calculatedSunset = entry.sunset || s2t(t2s(calculatedMaghrib) - 15*60); 
+    // الإمساك يعتمد على الـ API، وإذا لم يتوفر نحسبه من الفجر المرجوع من الـ API (الذي تم تصحيحه أصلاً)
+    let calculatedImsak = entry.imsak ? entry.imsak : s2t(t2s(entry.fajr) - 10*60); 
+    let calculatedAsr = entry.asr || s2t(t2s(entry.dhuhr) + 3*3600); 
+    let calculatedIsha = entry.isha || s2t(t2s(entry.maghrib) + 50*60); 
+
+    const applyOff = (ts, off) => {
+        let s = t2s(ts) + (off * 60);
+        let h = Math.floor(s/3600); let min = Math.floor((s%3600)/60);
+        if(h >= 24) h -= 24; if(h < 0) h += 24;
+        return `${padNum(h)}:${padNum(min)}`;
+    };
+
+    let finalHijriDay = Math.max(1, Math.min(30, entry.calculatedHijriDay + settings.hijriOffset));
+
+    return {
+        ...entry,
+        hijriDay: finalHijriDay,
+        monthName: entry.hijriMonthName || currentHijriInfo.name,
+        hijriYear: entry.hijriYear || currentHijriInfo.year,
+        dayName: getDayNameAR(date),
+        dateStr: `${toEn(d)} - ${toEn(m)} - ${toEn(date.getFullYear())} م`,
+        imsak: applyOff(calculatedImsak, settings.timeOffsets.imsak),
+        fajr: applyOff(entry.fajr, settings.timeOffsets.fajr),
+        sunrise: applyOff(entry.sunrise, settings.timeOffsets.sunrise),
+        dhuhr: applyOff(entry.dhuhr, settings.timeOffsets.dhuhr),
+        asr: applyOff(calculatedAsr, settings.timeOffsets.asr),
+        sunset: applyOff(calculatedSunset, settings.timeOffsets.sunset),
+        maghrib: applyOff(calculatedMaghrib, settings.timeOffsets.maghrib),
+        isha: applyOff(calculatedIsha, settings.timeOffsets.isha),
+        midnight: applyOff(entry.midnight, settings.timeOffsets.midnight),
+    };
+  }, [settings, apiData, currentHijriInfo]);
+
+  const today = getTimesForDate(now);
+  const tomorrowDate = new Date(now); tomorrowDate.setDate(now.getDate() + 1);
+  const tomorrow = getTimesForDate(tomorrowDate);
+
+  const currS = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  
+  const visiblePrayersBase = PRAYERS_BASE.filter(p => p.fixed || settings.showExtraPrayers);
+  
+  const tTodayS = {}; const tTmrwS = {};
+  visiblePrayersBase.forEach(p => {
+      tTodayS[p.id] = t2s(today[p.id]);
+      tTmrwS[p.id] = t2s(tomorrow[p.id]);
+  });
+
+  const uiPrayersList = visiblePrayersBase.filter(p => settings.uiPrayers[p.id]);
+  const getAutoIdx = () => {
+    if(uiPrayersList.length === 0) return 0;
+    for (let i = 0; i < uiPrayersList.length; i++) {
+        if (currS < tTodayS[uiPrayersList[i].id]) return i;
+    }
+    return 0;
+  };
+  
+  const activeIdx = slideIndex === -1 ? getAutoIdx() : slideIndex;
+  const safeIdx = activeIdx >= uiPrayersList.length ? 0 : activeIdx;
+  const targetP = uiPrayersList[safeIdx] || visiblePrayersBase[0];
+
+  let isTmrw = currS >= tTodayS[targetP.id];
+  let targetS = isTmrw ? tTmrwS[targetP.id] : tTodayS[targetP.id];
+  let diffS = targetS - currS;
+  if(isTmrw && currS > targetS) diffS = (86400 - currS) + targetS;
+
+  const hLeft = Math.floor(diffS/3600); const mLeft = Math.floor((diffS%3600)/60); const sLeft = diffS%60;
+
+  let labelText = `باقي على ${targetP.label}`;
+  if (isTmrw) labelText += ` غداً ${tomorrow.dayName} ${toEn(tomorrow.hijriDay)} ${tomorrow.monthName}`;
+
+  let isNight = (currS < tTodayS.fajr || currS >= tTodayS.maghrib);
+  let arcPct = 0;
+  if(!isNight) arcPct = (currS - tTodayS.fajr) / (tTodayS.maghrib - tTodayS.fajr);
+  else {
+      let elap = currS >= tTodayS.maghrib ? (currS - tTodayS.maghrib) : (currS + (86400 - tTodayS.maghrib));
+      arcPct = elap / ((86400 - tTodayS.maghrib) + tTodayS.fajr);
+  }
+  arcPct = Math.max(0, Math.min(1, arcPct));
+
+  const arcAngle = Math.PI - (arcPct * Math.PI);
+  const ox = 200 + 170 * Math.cos(arcAngle);
+  const oy = 260 - 240 * Math.sin(arcAngle);
+
+  let topC = [4,6,15], botC = [10,10,25], glowC = 'rgba(50,80,200,0.2)';
+  for (let i = 0; i < skyGradients.length - 1; i++) {
+      if (currS >= skyGradients[i].t && currS <= skyGradients[i+1].t) {
+          const f = (currS - skyGradients[i].t) / (skyGradients[i+1].t - skyGradients[i].t);
+          topC = interpolateColor(skyGradients[i].bgTop, skyGradients[i+1].bgTop, f);
+          botC = interpolateColor(skyGradients[i].bgBot, skyGradients[i+1].bgBot, f);
+          glowC = f < 0.5 ? skyGradients[i].glowColor : skyGradients[i+1].glowColor;
+          break;
+      }
+  }
+
+  const getMoonPhasePath = () => {
+      const hDay = today.hijriDay;
+      const phase = (hDay / totalMonthDays); 
+      let shadowX = 0;
+      let rx = 14;
+
+      if (phase <= 0.5) {
+          shadowX = 14 - (phase * 2 * 28);
+      } else {
+          shadowX = -14 + ((phase - 0.5) * 2 * 28);
+      }
+      return { x: shadowX, rx: Math.abs(shadowX) };
+  };
+  const moonPhase = getMoonPhasePath();
+
+  useEffect(() => {
+    if(prayerRefs.current[targetP.id] && prayerNavRef.current) {
+        prayerRefs.current[targetP.id].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+    }
+  }, [safeIdx, targetP.id]);
+
+  useEffect(() => {
+      if (showCalendar && calendarDayRefs.current[today.hijriDay]) {
+          setTimeout(() => { 
+              if (calendarDayRefs.current[today.hijriDay]) {
+                  calendarDayRefs.current[today.hijriDay].scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+              }
+          }, 100);
+      }
+  }, [showCalendar, today.hijriDay]);
+
+  const onTouchStartHandler = (e) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX); };
+  const onTouchMoveHandler = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const swipeEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const dist = touchStart - touchEnd;
+    if (uiPrayersList.length <= 1) return;
+    if (dist > 40) setSlideIndex((safeIdx + 1) % uiPrayersList.length);
+    if (dist < -40) setSlideIndex((safeIdx - 1 + uiPrayersList.length) % uiPrayersList.length);
+  };
+
+  const saveSettingsAndFetch = async () => {
+      await updateLocationAndWeather(tempCity, false);
+      setShowSettings(false);
+      setSlideIndex(-1);
+  };
+
+  const updateTimeOffset = (pid, val) => {
+      setSettings(s => ({ ...s, timeOffsets: { ...s.timeOffsets, [pid]: s.timeOffsets[pid] + val } }));
+  };
+
+  const cTime = format12Hour(`${now.getHours()}:${now.getMinutes()}`);
+  const kParts = getMonthParts(today.monthName);
+
+  const getWeatherIcon = (code) => {
+    if (code === undefined || code <= 1) return <Sun size={14} className="text-yellow-400"/>;
+    if (code <= 3) return <CloudSun size={14} className="text-white"/>;
+    if (code <= 48) return <Cloud size={14} className="text-gray-300"/>;
+    if (code <= 67) return <CloudRain size={14} className="text-blue-300"/>;
+    if (code <= 79) return <CloudSnow size={14} className="text-white"/>;
+    return <CloudLightning size={14} className="text-yellow-300"/>;
+  };
+
+  if (!isClient) return null;
+
+  return (
+    <div dir="rtl" className="relative w-full h-screen overflow-hidden flex flex-col font-sans select-none text-white" 
+         style={{ background: `linear-gradient(180deg, rgb(${topC.join(',')}), rgb(${botC.join(',')}))`, transition: 'background 1s ease' }}>
+        
+        <style dangerouslySetInnerHTML={{__html: `
+            @import url('https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;500;600;700&display=swap');
+            .font-reem { font-family: 'Reem Kufi', sans-serif; }
+            .animate-slideUpFade { animation: slideUpFade 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+            @keyframes slideUpFade { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
+            @keyframes rain { 0% { background-position: 0 0; } 100% { background-position: -20px 40px; } }
+            @keyframes snow { 0% { background-position: 0 0; } 100% { background-position: 50px 50px; } }
+            .accordion-content { overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; max-height: 0; opacity: 0; }
+            .accordion-content.open { max-height: 400px; opacity: 1; }
+        `}} />
+
+        <div className="absolute inset-0 z-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 35%, ${glowC} 0%, transparent 80%)`, opacity: 0.9 }}></div>
+        <WeatherEffects code={weather?.code} />
+
+        {/* الهيدر */}
+        <div className="w-full px-6 pt-12 flex justify-between items-start z-10">
+            <div className="flex flex-col gap-2 mt-2">
+                <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 shadow-sm w-fit cursor-pointer backdrop-blur-md" onClick={()=>setShowSettings(true)}>
+                    <MapPin size={12} className="text-yellow-400" />
+                    <span className="text-[11px] font-bold font-sans" style={{fontFamily: 'Arial, sans-serif'}}>{settings.city}</span>
+                </div>
+                <div className="bg-white/5 px-3 py-1.5 rounded-full border border-white/5 flex items-center gap-2 w-fit backdrop-blur-md">
+                    {weather ? <>{getWeatherIcon(weather.code)}<span className="text-[11px] font-bold" style={{fontFamily: 'Arial, sans-serif'}} dir="ltr">{toEn(weather.temp)}°C</span></> : <span className="text-[9px] opacity-50">...</span>}
+                </div>
+            </div>
+
+            <div className="flex flex-col items-end">
+                {/* نظام الكشيدة المتصل المطابق للصورة 100% */}
+                <div className="flex items-center text-[2.8rem] font-bold font-reem leading-none mt-2 text-white" dir="rtl" style={{letterSpacing: '0px'}}>
+                    <span>{kParts.pre}</span>
+                    <div className="relative flex items-center justify-center min-w-[45px] mx-[-4px]">
+                        <span className="text-white relative z-0">ـــــ</span>
+                        <span className="absolute text-[#FFD700] text-[2.4rem] font-reem font-extrabold z-10 -translate-y-[6px]" 
+                              style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.8))', WebkitTextStroke: '1px rgba(0,0,0,0.5)' }}>
+                            {toEn(today.hijriDay)}
+                        </span>
+                    </div>
+                    <span>{kParts.post}</span>
+                </div>
+                <p className="text-[10px] opacity-90 font-bold mt-2 tracking-wide" style={{fontFamily: 'Arial, sans-serif'}}>
+                    {today.dayName} {today.dateStr} <span className="opacity-60 text-yellow-100">({toEn(today.hijriYear)} هجرية)</span>
+                </p>
+            </div>
+        </div>
+
+        {/* القوس 3D */}
+        <div className="flex-1 flex flex-col items-center justify-center z-10 relative mt-4">
+            <div className="relative w-full max-w-[400px] h-[300px] px-2">
+                <svg viewBox="0 0 400 320" className="w-full h-full overflow-visible">
+                    <defs>
+                        <linearGradient id="day-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#FFE066" />
+                            <stop offset="50%" stopColor="#FF9F1C" />
+                            <stop offset="100%" stopColor="#E71D36" />
+                        </linearGradient>
+
+                        <linearGradient id="night-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#80A1D4" />
+                            <stop offset="50%" stopColor="#C0D6DF" />
+                            <stop offset="100%" stopColor="#F2F5EA" />
+                        </linearGradient>
+
+                        <filter id="glow-sun" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="6" result="blur1" />
+                            <feGaussianBlur stdDeviation="18" result="blur2" />
+                            <feMerge><feMergeNode in="blur2" /><feMergeNode in="blur1" /><feMergeNode in="SourceGraphic" /></feMerge>
+                        </filter>
+
+                        <filter id="glow-moon" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="5" result="blur1" />
+                            <feGaussianBlur stdDeviation="12" result="blur2" />
+                            <feMerge><feMergeNode in="blur2" /><feMergeNode in="blur1" /><feMergeNode in="SourceGraphic" /></feMerge>
+                        </filter>
+
+                        <radialGradient id="sun-3d" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stopColor="#FFFFFF" />
+                            <stop offset="30%" stopColor="#FFF4CC" />
+                            <stop offset="80%" stopColor="#FFB703" />
+                            <stop offset="100%" stopColor="#FF8C00" />
+                        </radialGradient>
+
+                        <radialGradient id="moon-3d" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stopColor="#FFFFFF" />
+                            <stop offset="40%" stopColor="#E2E8F0" />
+                            <stop offset="80%" stopColor="#94A3B8" />
+                            <stop offset="100%" stopColor="#475569" />
+                        </radialGradient>
+
+                        <clipPath id="moon-clip">
+                            <circle cx="0" cy="0" r="14" />
+                        </clipPath>
+                    </defs>
+
+                    <path d="M 30 260 A 170 240 0 0 1 370 260" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="8" strokeLinecap="round"/>
+                    <path d="M 30 260 A 170 240 0 0 1 370 260" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeDasharray="4 8" strokeLinecap="round"/>
+                    
+                    <path d="M 30 260 A 170 240 0 0 1 370 260" fill="none" 
+                          stroke={!isNight ? "url(#day-gradient)" : "url(#night-gradient)"} 
+                          strokeWidth="4.5" strokeLinecap="round" 
+                          pathLength="100" strokeDasharray="100" strokeDashoffset={100 - (arcPct * 100)}
+                          style={{ filter: `drop-shadow(0 0 12px ${!isNight?'rgba(255,159,28,0.4)':'rgba(128,161,212,0.4)'})`, transition: 'stroke-dashoffset 0.5s ease' }}/>
+
+                    <g transform={`translate(${ox}, ${oy})`} style={{ transition: 'transform 0.5s linear' }}>
+                        {!isNight ? (
+                            <g filter="url(#glow-sun)">
+                                <circle cx="0" cy="0" r="32" fill="rgba(255, 159, 28, 0.15)"/>
+                                <circle cx="0" cy="0" r="18" fill="rgba(255, 183, 3, 0.4)"/>
+                                <circle cx="0" cy="0" r="12" fill="url(#sun-3d)"/>
+                            </g>
+                        ) : (
+                            <g filter="url(#glow-moon)">
+                                <circle cx="0" cy="0" r="30" fill="rgba(148, 163, 184, 0.15)"/>
+                                <circle cx="0" cy="0" r="16" fill="rgba(226, 232, 240, 0.2)"/>
+                                <g clipPath="url(#moon-clip)">
+                                    <circle cx="0" cy="0" r="14" fill="url(#moon-3d)"/>
+                                    <ellipse cx={moonPhase.x} cy="0" rx={moonPhase.rx} ry="14" fill="#0d1117" opacity="0.9"/>
+                                </g>
+                                <circle cx="-3" cy="-3" r="2.5" fill="#FFFFFF" opacity="0.6" style={{filter: 'blur(1px)'}}/>
+                            </g>
+                        )}
+                    </g>
+
+                    <g transform="translate(200, 200)">
+                        <text y="0" textAnchor="middle" fill="white" fontSize="46" fontWeight="bold" style={{ fontFamily: 'Arial, sans-serif', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.8))' }}>
+                            {cTime.t}
+                        </text>
+                        <text x="-75" y="14" textAnchor="start" fill="rgba(255,255,255,0.8)" fontSize="13" fontWeight="bold">
+                            {cTime.ap}
+                        </text>
+                        <text y="40" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11" fontWeight="bold" letterSpacing="4">الوقت الحالي</text>
+                    </g>
+
+                    <g>
+                        <circle cx="30" cy="260" r="4" fill="#FFF" style={{filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'}}/>
+                        <text x="30" y="285" fill="rgba(255,255,255,0.8)" fontSize="11" fontWeight="600" textAnchor="middle" style={{textShadow: '0 2px 4px rgba(0,0,0,0.8)'}}>الفجر</text>
+                    </g>
+                    <g>
+                        <circle cx="370" cy="260" r="4" fill="#FFF" style={{filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'}}/>
+                        <text x="370" y="285" fill="rgba(255,255,255,0.8)" fontSize="11" fontWeight="600" textAnchor="middle" style={{textShadow: '0 2px 4px rgba(0,0,0,0.8)'}}>المغرب</text>
+                    </g>
+                </svg>
+            </div>
+
+            {/* العداد التنازلي التفاعلي */}
+            <div className="w-full flex flex-col items-center z-20 mt-[-20px]" onTouchStart={onTouchStartHandler} onTouchMove={onTouchMoveHandler} onTouchEnd={swipeEnd}>
+                <div className="bg-white/5 border border-white/10 rounded-full px-6 py-1.5 mb-4 shadow-xl backdrop-blur-md transition-all duration-500">
+                    <span className="text-yellow-400 text-[12px] font-bold tracking-widest">{labelText}</span>
+                </div>
+                
+                <div className="flex items-center justify-center gap-1.5 text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]" dir="ltr" style={{fontFamily: 'Arial, sans-serif'}}>
+                    <div className="text-center w-[70px] relative h-[60px] overflow-hidden flex items-center justify-center">
+                        <span key={hLeft} className="text-[3.6rem] font-light leading-none animate-slideUpFade absolute">{toEn(padNum(hLeft))}</span>
+                    </div>
+                    <span className="text-3xl text-white/30 mt-1">:</span>
+                    <div className="text-center w-[70px] relative h-[60px] overflow-hidden flex items-center justify-center">
+                        <span key={mLeft} className="text-[3.6rem] font-light leading-none animate-slideUpFade absolute">{toEn(padNum(mLeft))}</span>
+                    </div>
+                    <span className="text-3xl text-white/30 mt-1">:</span>
+                    <div className="text-center w-[70px] relative h-[60px] overflow-hidden flex items-center justify-center">
+                        <span key={sLeft} className="text-[3.6rem] font-light leading-none animate-slideUpFade absolute">{toEn(padNum(sLeft))}</span>
+                    </div>
+                </div>
+
+                <div className="flex gap-2.5 mt-8">
+                    {uiPrayersList.map((_, i) => <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${safeIdx===i ? 'w-8 bg-yellow-400 shadow-lg':'w-2 bg-white/20'}`}></div>)}
+                </div>
+            </div>
+        </div>
+
+        {/* المربعات السفلية */}
+        <div className="w-full z-20 pb-12 pt-2 mt-auto relative">
+            <div className="flex gap-4 px-6 mb-5">
+                <button onClick={()=>setShowSettings(true)} className="p-3.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[20px] shadow-lg active:scale-95 transition-transform"><Settings size={18}/></button>
+                <button onClick={()=>setShowCalendar(true)} className="p-3.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[20px] shadow-lg active:scale-95 transition-transform"><Calendar size={18}/></button>
+            </div>
+            
+            <div className="relative w-full overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
+                <div ref={prayerNavRef} className="flex gap-3 overflow-x-auto pb-6 pt-6 px-[10%] hide-scrollbar snap-x scroll-smooth dir-rtl">
+                    {visiblePrayersBase.map((p, i) => {
+                        const active = p.id === targetP.id;
+                        const tmrw = active && isTmrw; 
+                        const tStr = tmrw ? tomorrow[p.id] : today[p.id];
+                        const formatted = format12Hour(tStr);
+                        const Icon = p.icon;
+                        
+                        return (
+                            <div key={i} ref={el => prayerRefs.current[p.id] = el} className={`min-w-[95px] p-4 rounded-[26px] flex flex-col items-center justify-center snap-center transition-all duration-500 ${active ? 'bg-white/15 border border-white/30 scale-110 -translate-y-4 shadow-2xl backdrop-blur-xl':'bg-white/5 border border-white/5 backdrop-blur-md'}`}>
+                                <div className={`flex items-center gap-1.5 mb-2 ${active ? 'text-yellow-400':'text-white/50'}`}>
+                                    <Icon size={12} className={active ? 'animate-pulse' : ''} />
+                                    <span className="text-[12px] font-bold">{p.label}</span>
+                                </div>
+                                <div className="text-sm font-bold flex items-baseline gap-1" style={{fontFamily: 'Arial, sans-serif'}}>
+                                    {formatted.t} <span className="text-[8px] opacity-60 font-sans">{formatted.ap}</span>
+                                </div>
+                                <div className={`text-[9px] font-bold mt-1 transition-all duration-300 ${tmrw ? 'text-yellow-400 opacity-100 h-3' : 'opacity-0 h-0 overflow-hidden'}`}>(غداً)</div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+
+        {/* الإعدادات */}
+        {showSettings && (
+            <div className="fixed inset-0 z-50 bg-[#050a15]/95 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+                <div className="bg-[#1a2030] border border-white/10 rounded-[45px] p-8 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh] hide-scrollbar">
+                    <div className="flex justify-center mb-6"><h2 className="text-xl font-bold flex items-center gap-2 font-reem"><Settings size={20} className="text-yellow-400" /> الإعدادات</h2></div>
+                    
+                    <div className="space-y-4">
+                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5">
+                            <h3 className="text-xs font-bold mb-3">المدينة (للطقس وأوقات الصلاة)</h3>
+                            <div className="flex gap-2">
+                                <input type="text" value={tempCity} onChange={e=>setTempCity(e.target.value)} className="flex-1 bg-black/20 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-yellow-400 border border-transparent" placeholder="اكتب مدينتك..." style={{fontFamily: 'Arial, sans-serif'}}/>
+                                <button onClick={()=>updateLocationAndWeather(tempCity, true)} className="bg-blue-500/20 p-2 rounded-xl text-blue-400 active:scale-95"><LocateFixed size={18}/></button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/5 rounded-3xl border border-white/5 overflow-hidden">
+                            <div className="p-4 flex justify-between items-center cursor-pointer" onClick={() => toggleSection('offset')}>
+                                <span className="text-xs font-bold">تقديم وتأخير اليوم للشهر الهجري</span>
+                                <ChevronDown size={16} className={`transition-transform ${openSettingsSections.offset ? 'rotate-180 text-yellow-400' : 'text-white/50'}`} />
+                            </div>
+                            <div className={`accordion-content ${openSettingsSections.offset ? 'open' : ''}`}>
+                                <div className="px-4 pb-4">
+                                    <div className="flex items-center justify-center gap-6 bg-black/20 py-3 rounded-xl mt-1">
+                                        <button onClick={()=>setSettings(s=>({...s, hijriOffset: s.hijriOffset-1}))} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-yellow-400 active:scale-90"><Minus size={16}/></button>
+                                        <span className="text-2xl font-bold" style={{fontFamily: 'Arial, sans-serif'}}>{toEn(settings.hijriOffset > 0 ? `+${settings.hijriOffset}` : settings.hijriOffset)}</span>
+                                        <button onClick={()=>setSettings(s=>({...s, hijriOffset: s.hijriOffset+1}))} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-yellow-400 active:scale-90"><Plus size={16}/></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex justify-between items-center">
+                            <span className="text-xs font-bold">إظهار العصر والعشاء</span>
+                            <div onClick={()=>setSettings(s=>({...s, showExtraPrayers: !s.showExtraPrayers}))} className={`w-10 h-5 rounded-full p-1 transition-colors cursor-pointer ${settings.showExtraPrayers?'bg-yellow-400':'bg-white/10'}`}>
+                                <div className={`w-3 h-3 rounded-full bg-white transition-transform ${settings.showExtraPrayers?'translate-x-0':'-translate-x-5'}`}></div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/5 rounded-3xl border border-white/5 overflow-hidden">
+                            <div className="p-4 flex justify-between items-center cursor-pointer" onClick={() => toggleSection('timeAdjust')}>
+                                <span className="text-xs font-bold border-r-2 border-yellow-400 pr-2">تعديل أوقات الصلاة (دقيقة)</span>
+                                <ChevronDown size={16} className={`transition-transform ${openSettingsSections.timeAdjust ? 'rotate-180 text-yellow-400' : 'text-white/50'}`} />
+                            </div>
+                            <div className={`accordion-content ${openSettingsSections.timeAdjust ? 'open' : ''}`}>
+                                <div className="px-4 pb-4 grid grid-cols-2 gap-2 mt-1">
+                                    {visiblePrayersBase.map(p => (
+                                        <div key={p.id} className="flex justify-between items-center bg-black/20 p-2 rounded-xl">
+                                            <span className="text-[10px]">{p.label}</span>
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={()=>updateTimeOffset(p.id, -1)} className="text-yellow-400 p-1"><Minus size={12}/></button>
+                                                <span className="text-[10px] font-bold w-4 text-center" style={{fontFamily: 'Arial, sans-serif'}}>{toEn(settings.timeOffsets[p.id])}</span>
+                                                <button onClick={()=>updateTimeOffset(p.id, 1)} className="text-yellow-400 p-1"><Plus size={12}/></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/5 rounded-3xl border border-white/5 overflow-hidden">
+                            <div className="p-4 flex justify-between items-center cursor-pointer" onClick={() => toggleSection('uiPrayers')}>
+                                <span className="text-xs font-bold border-r-2 border-yellow-400 pr-2">صلوات العداد في الشاشة</span>
+                                <ChevronDown size={16} className={`transition-transform ${openSettingsSections.uiPrayers ? 'rotate-180 text-yellow-400' : 'text-white/50'}`} />
+                            </div>
+                            <div className={`accordion-content ${openSettingsSections.uiPrayers ? 'open' : ''}`}>
+                                <div className="px-4 pb-4 grid grid-cols-2 gap-2 mt-1">
+                                    {visiblePrayersBase.map(p => (
+                                        <div key={p.id} onClick={()=>setSettings(s=>({...s, uiPrayers: {...s.uiPrayers, [p.id]: !s.uiPrayers[p.id]}}))} className="flex justify-between items-center bg-black/20 p-2.5 rounded-xl cursor-pointer">
+                                            <span className="text-[10px]">{p.label}</span>
+                                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${settings.uiPrayers[p.id] ? 'bg-yellow-400 border-yellow-400':'border-white/20'}`}>{settings.uiPrayers[p.id] && <Check size={10} color="black" />}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/5 rounded-3xl border border-white/5 overflow-hidden">
+                            <div className="p-4 flex justify-between items-center">
+                                <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleSection('liveNotification')}>
+                                    <Zap size={16} className="text-yellow-400"/>
+                                    <h3 className="text-sm font-bold">الإشعار الحي</h3>
+                                    <ChevronDown size={16} className={`transition-transform mr-2 ${openSettingsSections.liveNotification ? 'rotate-180 text-yellow-400' : 'text-white/50'}`} />
+                                </div>
+                                <div onClick={()=>{
+                                    setSettings(s=>({...s, liveEnabled: !s.liveEnabled}));
+                                    if(!settings.liveEnabled) setOpenSettingsSections(p=>({...p, liveNotification: true})); 
+                                }} className={`w-10 h-5 rounded-full p-1 transition-colors cursor-pointer ${settings.liveEnabled?'bg-yellow-400':'bg-white/10'}`}>
+                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${settings.liveEnabled?'translate-x-0':'-translate-x-5'}`}></div>
+                                </div>
+                            </div>
+                            <div className={`accordion-content ${openSettingsSections.liveNotification ? 'open' : ''}`}>
+                                <div className="px-4 pb-4 pt-2 border-t border-white/10">
+                                    <div className="flex items-center justify-between mb-3 bg-black/20 p-2 rounded-xl">
+                                        <span className="text-[10px] opacity-80">تذكير قبل (د):</span>
+                                        <div className="flex items-center gap-2">
+                                            <input type="text" inputMode="numeric" dir="ltr" value={settings.reminderMinutes} 
+                                                onChange={e => { const val = e.target.value.replace(/[^0-9]/g, ''); setSettings(s => ({...s, reminderMinutes: val ? parseInt(val) : ''})); }} 
+                                                className="w-16 bg-transparent text-center font-bold border-b border-yellow-400 outline-none text-sm text-white" style={{fontFamily: 'Arial, sans-serif'}}/>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {visiblePrayersBase.map(p => (
+                                            <div key={p.id} onClick={()=>setSettings(s=>({...s, livePrayers: {...s.livePrayers, [p.id]: !s.livePrayers[p.id]}}))} className="flex justify-between items-center bg-black/20 p-2 rounded-xl cursor-pointer">
+                                                <span className="text-[10px]">{p.label}</span>
+                                                <div className={`w-3 h-3 rounded border flex items-center justify-center ${settings.livePrayers[p.id] ? 'bg-blue-400 border-blue-400':'border-white/20'}`}>{settings.livePrayers[p.id] && <Check size={8} color="black"/>}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/5 rounded-3xl border border-white/5 overflow-hidden">
+                            <div className="p-4 flex justify-between items-center">
+                                <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleSection('alarms')}>
+                                    <Bell size={16} className="text-red-400"/>
+                                    <h3 className="text-sm font-bold">تنبيه موعد الأذان</h3>
+                                    <ChevronDown size={16} className={`transition-transform mr-2 ${openSettingsSections.alarms ? 'rotate-180 text-yellow-400' : 'text-white/50'}`} />
+                                </div>
+                                <div onClick={()=>{
+                                    setSettings(s=>({...s, alarmEnabled: !s.alarmEnabled}));
+                                    if(!settings.alarmEnabled) setOpenSettingsSections(p=>({...p, alarms: true}));
+                                }} className={`w-10 h-5 rounded-full p-1 transition-colors cursor-pointer ${settings.alarmEnabled?'bg-red-500':'bg-white/10'}`}>
+                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${settings.alarmEnabled?'translate-x-0':'-translate-x-5'}`}></div>
+                                </div>
+                            </div>
+                            <div className={`accordion-content ${openSettingsSections.alarms ? 'open' : ''}`}>
+                                <div className="px-4 pb-4 pt-2 border-t border-white/10">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {visiblePrayersBase.map(p => (
+                                            <div key={p.id} onClick={()=>setSettings(s=>({...s, alarmPrayers: {...s.alarmPrayers, [p.id]: !s.alarmPrayers[p.id]}}))} className="flex justify-between items-center bg-black/20 p-2 rounded-xl cursor-pointer">
+                                                <span className="text-[10px]">{p.label}</span>
+                                                <div className={`w-3 h-3 rounded border flex items-center justify-center ${settings.alarmPrayers[p.id] ? 'bg-red-400 border-red-400':'border-white/20'}`}>{settings.alarmPrayers[p.id] && <Check size={8} color="black"/>}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div className="flex gap-4 mt-6">
+                        <button onClick={saveSettingsAndFetch} className="flex-1 py-3 bg-yellow-400 text-black font-extrabold rounded-xl active:scale-95 transition-transform">حفظ التعديلات</button>
+                        <button onClick={()=>setShowSettings(false)} className="flex-1 py-3 bg-white/5 text-white/50 font-bold rounded-xl border border-white/10 active:scale-95 transition-transform">إلغاء</button>
+                    </div>
+                    <button className="w-full mt-4 py-3.5 bg-blue-500/20 text-blue-300 font-bold rounded-xl flex items-center justify-center gap-2 border border-blue-500/20 active:scale-95 transition-transform"><Smartphone size={18}/> إضافة ودجت للشاشة</button>
+                </div>
+            </div>
+        )}
+
+        {/* التقويم والإمساكية */}
+        {showCalendar && (
+            <div className="absolute inset-0 z-50 bg-[#0a0f1d]/95 backdrop-blur-2xl flex flex-col p-4 pt-12 animate-in fade-in slide-in-from-bottom-6 duration-300">
+                <div className="flex justify-between items-start mb-6 px-2">
+                    <div className="flex-1">
+                        <h2 className="text-[1.3rem] font-bold text-white font-reem drop-shadow-md leading-tight mb-1">
+                            تقويم شهر <span className="text-yellow-400">{today.monthName}</span> لعام {toEn(today.hijriYear)} هـ
+                        </h2>
+                        
+                        {/* المربعات تظهر دائماً */}
+                        <div className="flex gap-3 mt-3">
+                            <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-sm">
+                                <span className="text-[10px] text-white/70 font-bold">المنقضية:</span>
+                                <span className="text-[14px] font-bold text-white" style={{fontFamily: 'Arial, sans-serif'}}>{toEn(Math.max(0, today.hijriDay - 1))}</span>
+                            </div>
+                            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/10 border border-yellow-400/40 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-md">
+                                <span className="text-[10px] text-yellow-200/90 font-bold">المتبقية:</span>
+                                <span className="text-[14px] font-bold text-yellow-400 drop-shadow-md" style={{fontFamily: 'Arial, sans-serif'}}>{toEn(Math.max(0, totalMonthDays - today.hijriDay + 1))}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={() => setShowCalendar(false)} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors mr-3 mt-1"><X size={20}/></button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto hide-scrollbar space-y-4 pb-10 px-1 mt-2">
+                    {((settings.city === 'كربلاء المقدسة' || settings.city === 'Karbala') && now.getFullYear() === 2026 && (now.getMonth() === 1 || now.getMonth() === 2) ? PDF_DATA : apiData).map((d, i) => {
+                        let hDay;
+                        
+                        if (d.hijriDayStr) {
+                            hDay = Math.max(1, Math.min(totalMonthDays, parseInt(d.hijriDayStr) + settings.hijriOffset));
+                        } else {
+                            hDay = Math.max(1, Math.min(totalMonthDays, (i + 1) + settings.hijriOffset));
+                        }
+                        
+                        const isPassed = hDay < today.hijriDay;
+                        const isToday = hDay === today.hijriDay;
+                        const dt = d.dateObj || new Date(2026, d.m-1, d.d);
+
+                        return (
+                            <div key={i} ref={el => calendarDayRefs.current[hDay] = el} className={`rounded-[24px] p-4 transition-all ${isToday ? 'bg-gradient-to-br from-white/15 to-white/5 border border-yellow-400/60 shadow-[0_10px_30px_rgba(0,0,0,0.5)] scale-[1.02]' : 'bg-white/5 border border-white/5'} ${isPassed ? 'opacity-50 grayscale' : ''}`}>
+                                <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${isToday ? 'bg-yellow-400 text-black shadow-md' : 'bg-white/10 text-white'}`} style={{fontFamily: 'Arial, sans-serif'}}>{toEn(hDay)}</span>
+                                        <span className="text-[13px] font-bold">{getDayNameAR(dt)}</span>
+                                    </div>
+                                    <span className="text-[10px] opacity-70 font-bold tracking-widest" style={{fontFamily: 'Arial, sans-serif'}}>{toEn(dt.getDate())} - {toEn(dt.getMonth() + 1)} - {toEn(dt.getFullYear())} م</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center" style={{fontFamily: 'Arial, sans-serif'}}>
+                                    {visiblePrayersBase.map(p => {
+                                        let tValue = d[p.id];
+                                        if(p.id === 'sunset' && !tValue && d.maghrib) tValue = s2t(t2s(d.maghrib) - 15*60);
+                                        if(p.id === 'asr' && !tValue && d.dhuhr) tValue = s2t(t2s(d.dhuhr) + 3*3600);
+                                        if(p.id === 'isha' && !tValue && d.maghrib) tValue = s2t(t2s(d.maghrib) + 50*60);
+                                        if(p.id === 'imsak' && !tValue && d.fajr) tValue = s2t(t2s(d.fajr) - 10*60);
+
+                                        const tVal = format12Hour(tValue);
+                                        const Icon = p.icon;
+                                        
+                                        return (
+                                            <div key={p.id} className="bg-black/30 rounded-xl p-2 relative overflow-hidden group">
+                                                <Icon size={30} className="absolute -left-2 -bottom-2 opacity-10 text-white group-hover:scale-110 transition-transform" />
+                                                <div className="flex justify-center items-center gap-1 mb-1 relative z-10">
+                                                    <Icon size={10} className="opacity-60 text-yellow-400" />
+                                                    <span className="text-[9px] opacity-80 font-sans">{p.label}</span>
+                                                </div>
+                                                <div className="text-[11px] font-bold text-white relative z-10">{tVal.t} <span className="text-[7px] opacity-50">{tVal.ap}</span></div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        )}
+    </div>
+  );
+}

@@ -1,0 +1,8 @@
+# خطوط مرجعية مأخوذة من مستودع Google Fonts (ofl/amiri, ofl/reemkufi)
+# الرخصة: SIL Open Font License 1.1
+# المصدر: https://github.com/google/fonts
+# الاستخدام: شاشة اليوم (الكشيدة والعناوين) وشاشات الدعاء/القرآن.
+
+- Amiri-Regular.ttf
+- Amiri-Bold.ttf
+- ReemKufi[wght].ttf (Variable font: الوزن يُحدد عبر FontWeight)

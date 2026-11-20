@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- عدّاد الودجت المصغّر — سطر واحد (WIDGETSPRO: MiniRow / DynamicPill) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layoutDirection="rtl"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp">
+
+    <TextView
+        android:id="@+id/widget_chrono_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="باقي على الفجر"
+        android:textColor="#B3B9C0D4"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <Chronometer
+        android:id="@+id/widget_chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/widget_chrono_pill"
+        android:includeFontPadding="false"
+        android:layoutDirection="ltr"
+        android:paddingStart="10dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="2dp"
+        android:textColor="#FFFFD700"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+</LinearLayout>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- احتياطي لما قبل أندرويد 12: نفس هوية التطبيق الليلية -->
+    <color name="ic_launcher_dynamic_bg">#0B1120</color>
+</resources>

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // klibs.io MCP Server الرسمي من JetBrains — فهرس مكتبات Kotlin Multiplatform
+  // https://github.com/JetBrains/klibs-io/blob/master/integrations/mcp/README.md
+  // الشكل التالي متوافق مع OpenCode V1 وV2 (V2 يعتبره صيغة V1 مدعومة).
+  "mcp": {
+    "klibs": {
+      "type": "remote",
+      "url": "https://api.klibs.io/mcp",
+      "enabled": true
+    }
+  }
+}

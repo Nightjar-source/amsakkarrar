@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- الإشعار الحي (الموسّع) — RemoteViews مخصّص 100% وخلفية القوس كاملة الحدود.
+     قواعد ملء بطاقات الشركات (MIUI/HyperOS، One UI، ColorOS، Pixel):
+     • الجذر wrap_content حتى يقيسه النظام بارتفاع محتواه بلا فراغات ميتة.
+     • لا padding على الجذر إطلاقًا؛ الخلفية تلمس كل الحواف.
+     • forceDarkAllowed=false يمنع الوضع الداكن من قلب ألوان الصورة على Android 10+.
+     • الارتفاع النهائي < 256dp كي لا يبني النظام نسخة "عملاقة" بحواف ملوّنة. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/notif_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:forceDarkAllowed="false"
+    android:padding="0dp"
+    tools:targetApi="q">
+
+    <!-- الخلفية؛ match_parent داخل الجذر ⇒ تملأ البطاقة كاملة بلا حدود -->
+    <ImageView
+        android:id="@+id/notif_bg_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
+
+    <!-- المحتوى؛ Padding داخلي فقط — الجذر نفسه بلا أي padding -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layoutDirection="rtl"
+        android:orientation="vertical"
+        android:minHeight="148dp"
+        android:paddingStart="20dp"
+        android:paddingTop="15dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="15dp">
+
+        <!-- الرأس: دائرة اللهب المتدرجة + «إمساكية كرار» -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp">
+
+            <FrameLayout
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/notif_flame_circle">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_notif_flame" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="9dp"
+                android:letterSpacing="0.06"
+                android:maxLines="1"
+                android:text="إمساكية كرار"
+                android:textColor="#FFF5F5F7"
+                android:textSize="13.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:letterSpacing="0.18"
+                android:maxLines="1"
+                android:text="مباشر"
+                android:textColor="#FFFFD700"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- الصف الأوسط: العدّاد + الوقت المتبقي -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="bottom"
+            android:orientation="horizontal"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/live_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.06"
+                    android:maxLines="1"
+                    android:text="باقي على الإمساك"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/live_target"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layoutDirection="ltr"
+                    android:maxLines="1"
+                    android:text="5:18 صباحاً"
+                    android:textColor="#FFF5F5F7"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.22"
+                    android:text="متبقي"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <Chronometer
+                    android:id="@+id/live_chrono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:layoutDirection="ltr"
+                    android:textColor="#FFFFD700"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- شريط التقدم البيضوي — صورة مرسومة (نفس مصدر رسم الودجت حرفيًا):
+             تعبئة من اليمين RTL + تدرّج المرجع + رأس مستدير. -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:layout_marginTop="15dp">
+
+            <ProgressBar
+                android:id="@+id/live_progress_native"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="28dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/notif_progress_day"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/live_progress"
+                android:layout_width="match_parent"
+                android:layout_height="28dp"
+                android:contentDescription="@null"
+                android:scaleType="fitXY" />
+        </FrameLayout>
+    </LinearLayout>
+</FrameLayout>

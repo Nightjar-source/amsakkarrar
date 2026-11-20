@@ -1,0 +1,107 @@
+name: Release APK
+
+on:
+   push:
+     tags:
+       - 'v*'
+   workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+   build-release:
+     name: Build & Release Signed APK
+     runs-on: ubuntu-latest
+     env:
+       ANDROID_HOME: /usr/local/lib/android/sdk
+       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+     steps:
+       - name: Checkout
+         uses: actions/checkout@v4
+
+       - name: Set up JDK 21
+         uses: actions/setup-java@v4
+         with:
+           java-version: '21'
+           distribution: 'zulu'
+
+       - name: Setup Gradle
+         uses: gradle/actions/setup-gradle@v4
+
+       - name: Make gradlew executable
+         run: chmod +x gradlew
+
+       - name: Restore signing credentials
+         env:
+           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+         run: |
+           mkdir -p androidApp
+           if [ -n "$KEYSTORE_BASE64" ]; then
+             echo "$KEYSTORE_BASE64" | base64 -d > androidApp/Nightjar.keystore
+           elif [ -f "keystore_base64.txt" ]; then
+             cat keystore_base64.txt | base64 -d > androidApp/Nightjar.keystore
+           fi
+           echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-19941994}" >> local.properties
+           echo "KEY_PASSWORD=${KEY_PASSWORD:-19941994}" >> local.properties
+
+       - name: Build release APK (R8 full mode + resource shrinking)
+         run: ./gradlew :androidApp:assembleRelease --no-daemon --stacktrace
+
+       - name: Locate APK
+         id: find_apk
+         run: |
+           APK_PATH=$(find androidApp/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+           NAMED_APK="androidApp/build/outputs/apk/release/amsakkarrar-release.apk"
+           if [ -n "$APK_PATH" ]; then
+             cp "$APK_PATH" "$NAMED_APK"
+           fi
+           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+           echo "named_apk=$NAMED_APK" >> $GITHUB_OUTPUT
+
+       - name: Verify 16 KB zip alignment
+         run: |
+           set -e
+           ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign -type f | sort -V | tail -n 1)
+           if [ -z "$ZIPALIGN" ]; then
+             echo "::warning::zipalign not on runner SDK — skipping 16 KB alignment check"
+             exit 0
+           fi
+           APK_PATH="${{ steps.find_apk.outputs.apk_path }}"
+           if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
+             echo "::warning::No APK found to verify — skipping"
+             exit 0
+           fi
+           echo "Using: $ZIPALIGN"
+           "$ZIPALIGN" -c -P 16 -v 4 "$APK_PATH"
+
+       - name: Upload APK artifact
+         uses: actions/upload-artifact@v4
+         with:
+           name: amsakkarrar-signed-apk
+           path: |
+             ${{ steps.find_apk.outputs.apk_path }}
+             ${{ steps.find_apk.outputs.named_apk }}
+           if-no-files-found: error
+
+       - name: Create GitHub Release
+         uses: softprops/action-gh-release@v2
+         if: startsWith(github.ref, 'refs/tags/')
+         with:
+           files: |
+             ${{ steps.find_apk.outputs.apk_path }}
+             ${{ steps.find_apk.outputs.named_apk }}
+           name: إمساكية كرار 2026 ${{ github.ref_name }}
+           body: |
+             # إمساكية كرار 2026 — ${{ github.ref_name }}
+
+             بناء Release موقع؛ أمان 16 KB جاهز؛ targetSdk 37؛ جوانب Play Quality وVita تمّ متابعتها؛ تنازلات الودجت/الإشعارات (android 12+ صالحة وملائمة).
+
+             ## التوافق
+             - `targetSdk 37 / compileSdk 37 / minSdk 24` — target API ≥ 36 المطلوب.
+             - **16 KB page size**: لا كود Native خاص بالتطبيق؛ المكتبات الوحيدة (`androidx.graphics.path`, `androidx.datastore`) جاهزة (LOAD 2**14).
+             - **R8 full mode** نشط مع `isShrinkResources`: قواعد الحفظ طفيفة — no broad `*` keep.
+             - **16 KB zip alignment**: تُتحقق في CI على كل بناء (`zipalign -c -P 16`).

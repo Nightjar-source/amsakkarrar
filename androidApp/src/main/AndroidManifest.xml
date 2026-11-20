@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- الشبكة: الطقس الاختياري فقط (كل المواقيت والمدن أوفلاين) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- الموقع: تحديد أقرب مدينة من قاعدة GeoNames الأوفلاين + القبلة -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- الإشعارات والأذان -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- ترقية الإشعار الحي إلى Live Update (Now Bar / شريحة شريط الحالة على أندرويد 16+) -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- المنبهات الدقيقة -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- تشغيل الأذان في المقدمة -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- البوصلة -->
+    <uses-feature
+        android:name="android.hardware.sensor.compass"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:resizeableActivity="true"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Caliq">
+
+        <!-- Samsung DeX: لا يُنهى التطبيق عند وصل/فصل شاشة خارجية -->
+        <meta-data
+            android:name="com.samsung.android.keepalive.density"
+            android:value="true" />
+
+        <!-- النوافذ الحرة (Desktop windowing / Android 15+):
+             يسمح للنظام بعرض خيار «نافذة جديدة» لنسخ متعددة من التطبيق. -->
+        <property
+            android:name="android.window.PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI"
+            android:value="true" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|density|uiMode|keyboard|navigation"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Caliq.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- خدمة تشغيل الأذان -->
+        <service
+            android:name=".notifications.AdhanService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- مستقبل منبهات الصلوات -->
+        <receiver
+            android:name=".notifications.PrayerAlarmReceiver"
+            android:exported="false" />
+
+        <!-- إعادة الجدولة بعد الإقلاع وتغيّر الوقت -->
+        <receiver
+            android:name=".notifications.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- يُستدعى عند سحب الإشعار الحي (deleteIntent) لتسجيل الإخفاء -->
+        <receiver
+            android:name=".notifications.LiveDismissReceiver"
+            android:exported="false" />
+
+        <!-- زر «إيقاف الأذان» وسحب بطاقة التشغيل: يوقف الصوت فورًا.
+             stopService مسموح من الخلفية دائمًا (عكس startService). -->
+        <receiver
+            android:name=".notifications.AdhanStopReceiver"
+            android:exported="false" />
+
+        <!-- التحديث الدوري للإشعار الحي والودجت يتم عبر WorkManager فقط
+             (WidgetRefreshWorker) — لا مستقبل منبهات متكررة. -->
+
+        <!-- ================= الويدجت (4) ================= -->
+
+        <receiver
+            android:name=".widget.TodayWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_today">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_today" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TimesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_times">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_times" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CountdownWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_countdown">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_countdown" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.HijriWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_hijri">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_hijri" />
+        </receiver>
+
+
+        <receiver
+            android:name=".widget.ClockWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_clock">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_clock" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.JourneyWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_journey">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_journey" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.DailyDeedsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_dailydeeds">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/karar_widget_dailydeeds" />
+        </receiver>
+
+        <!-- إعدادات خلفية الودجتات (Material / Blur / شفاف) — تُفتح من ⚙ أو الضغط المطوّل -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Caliq">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <!-- تحديث عند تغيير التاريخ/الساعة من الجهاز -->
+        <receiver
+            android:name=".notifications.TickReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

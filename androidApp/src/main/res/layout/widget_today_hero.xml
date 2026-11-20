@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  هيدر الودجت الرئيسي — RemoteViews لأنه الوحيد الذي يدعم خط Reem Kufi
+  (Glance يقبل أسماء خطوط النظام فقط). التصميم من `widgetsnotifications.html`:
+  كشيدة «رمضـ 16 ـان» + التاريخ + حبة «باقي على…» + عدّاد بوحدات
+  + شريط تقدم بيضوي سميك (صورة مرسومة بتدرج المرجع) + طرفا الشريط
+  + شبكة مربعات الصلوات الست (3×2) بنفس هوية PrayerBoxCell في Glance.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_hero_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minWidth="180dp"
+    android:layoutDirection="rtl"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp">
+
+    <!-- الكشيدة: رمضـ + رقم اليوم + ـان بخط Reem Kufi -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/widget_kashida_pre"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/reem_kufi"
+            android:includeFontPadding="false"
+            android:text="رمضـ"
+            android:textColor="#FFFFD700"
+            android:textSize="27sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_kashida_day"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/reem_kufi"
+            android:includeFontPadding="false"
+            android:minWidth="26dp"
+            android:gravity="center"
+            android:text="16"
+            android:textColor="#FFFFFFFF"
+            android:textSize="21sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_kashida_post"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/reem_kufi"
+            android:includeFontPadding="false"
+            android:text="ـان"
+            android:textColor="#FFFFD700"
+            android:textSize="27sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_hero_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:maxLines="1"
+        android:fontFamily="@font/reem_kufi"
+        android:includeFontPadding="false"
+        android:text="السبت 7-3-2026"
+        android:textColor="#99B9C0D4"
+        android:textSize="8.5sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_hero_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/widget_label_pill"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="2dp"
+        android:text="باقي على الفجر"
+        android:textColor="#FFFFD700"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <Chronometer
+        android:id="@+id/widget_hero_chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layoutDirection="ltr"
+        android:layout_marginTop="1dp"
+        android:includeFontPadding="false"
+        android:shadowColor="#66FFD700"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="8"
+        android:textColor="#FFFFD700"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <!-- وحدات العدّاد الثلاث — بترتيب الأرقام نفسه (ساعات يسارًا ← ثوانٍ يمينًا) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layoutDirection="ltr"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="ساعة"
+            android:textColor="#99B9C0D4"
+            android:textSize="6.5sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="دقيقة"
+            android:textColor="#99B9C0D4"
+            android:textSize="6.5sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="ثانية"
+            android:textColor="#99B9C0D4"
+            android:textSize="6.5sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_hero_target"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:maxLines="1"
+        android:text="موعد 5:18 ص"
+        android:textColor="#99B9C0D4"
+        android:textSize="8sp" />
+
+    <!-- شريط تقدم بيضوي سميك (16dp) — صورة مرسومة كاملة (مسار + تدرج + رأس مستدير)
+         عبر WidgetProgressStrip بدل ProgressBar/layer-list: موثوقة الزوايا على
+         سامسونج One UI وشاومي HyperOS، ومطابقة لـ grad-day/grad-night في المرجع. -->
+    <ImageView
+        android:id="@+id/widget_hero_progress"
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:layout_marginTop="6dp"
+        android:contentDescription="@null"
+        android:scaleType="fitXY" />
+
+    <!-- طرفا الشريط -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp">
+
+        <TextView
+            android:id="@+id/widget_hero_progress_start"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="منتصف الليل"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_hero_progress_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="الإمساك"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- مربعات الصلوات الست (3×2) — نفس هوية PrayerBoxCell في Glance حتى لا تتضارب
+         الهوية البصرية بين الـArc Hero والـGlance: نشطة = ذهبي شفاف #26FFB432،
+         غير نشطة = زجاج أبيض #1AFFFFFF بحد #26FFFFFF، العنوان بخط Reem Kufi. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/widget_prayer_1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/widget_prayer_cell"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="2dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="2dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:id="@+id/widget_prayer_1_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/reem_kufi"
+                    android:includeFontPadding="false"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="الإمساك"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_1_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="5:18"
+                    android:textColor="#F5F5F7"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_1_period"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="صباحاً"
+                    android:textColor="#99B9C0D4"
+                    android:textSize="6sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_prayer_2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_prayer_cell"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="2dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="2dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:id="@+id/widget_prayer_2_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/reem_kufi"
+                    android:includeFontPadding="false"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="الفجر"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_2_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="5:33"
+                    android:textColor="#F5F5F7"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_2_period"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="صباحاً"
+                    android:textColor="#99B9C0D4"
+                    android:textSize="6sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_prayer_3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_prayer_cell"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="2dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="2dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:id="@+id/widget_prayer_3_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/reem_kufi"
+                    android:includeFontPadding="false"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="الظهر"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_3_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="12:15"
+                    android:textColor="#F5F5F7"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_3_period"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="مساءً"
+                    android:textColor="#99B9C0D4"
+                    android:textSize="6sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/widget_prayer_4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/widget_prayer_cell"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="2dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="2dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:id="@+id/widget_prayer_4_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/reem_kufi"
+                    android:includeFontPadding="false"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="العصر"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_4_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="3:40"
+                    android:textColor="#F5F5F7"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_4_period"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="مساءً"
+                    android:textColor="#99B9C0D4"
+                    android:textSize="6sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_prayer_5"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_prayer_cell"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="2dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="2dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:id="@+id/widget_prayer_5_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/reem_kufi"
+                    android:includeFontPadding="false"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="المغرب"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_5_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="6:19"
+                    android:textColor="#F5F5F7"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_5_period"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="مساءً"
+                    android:textColor="#99B9C0D4"
+                    android:textSize="6sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_prayer_6"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_prayer_cell"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="2dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="2dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:id="@+id/widget_prayer_6_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/reem_kufi"
+                    android:includeFontPadding="false"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="العشاء"
+                    android:textColor="#B3B9C0D4"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_6_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="7:30"
+                    android:textColor="#F5F5F7"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_prayer_6_period"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="مساءً"
+                    android:textColor="#99B9C0D4"
+                    android:textSize="6sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

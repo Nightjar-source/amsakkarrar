@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- عدّاد الودجت الكبير — مطابق لـ widgetsnotifications.html:
+     يملأ الخلية كاملة ويتوسّط عموديًا (لا فراغ أسفل المحتوى)،
+     حبة «باقي على…» + عدّاد ساعة/دقيقة/ثانية بوحدات + شريط تقدم سميك + طرفا الشريط -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layoutDirection="rtl"
+    android:gravity="center_horizontal|center_vertical"
+    android:orientation="vertical"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp">
+
+    <TextView
+        android:id="@+id/widget_chrono_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/widget_label_pill"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="3dp"
+        android:text="باقي على الفجر"
+        android:textColor="#FFFFD700"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <Chronometer
+        android:id="@+id/widget_chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layoutDirection="ltr"
+        android:layout_marginTop="2dp"
+        android:includeFontPadding="false"
+        android:shadowColor="#66FFD700"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="8"
+        android:textColor="#FFFFD700"
+        android:textSize="32sp"
+        android:textStyle="bold" />
+
+    <!-- وحدات العدّاد الثلاث — بترتيب الأرقام نفسه (ساعات يسارًا ← ثوانٍ يمينًا) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:baselineAligned="false"
+        android:layoutDirection="ltr"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="ساعة"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="دقيقة"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="ثانية"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_chrono_target"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:maxLines="1"
+        android:text="موعد 5:18 ص"
+        android:textColor="#99B9C0D4"
+        android:textSize="8sp" />
+
+    <!-- شريط تقدم موحّد مع الإشعار الحي: صورة مرسومة بتدرج المرجع
+         (WidgetProgressStrip) بدل ProgressBar — الزوايا والرأس المستدير مضمونان
+         على سامسونج/شاومي. ارتفاع 16dp (حجم كبير). -->
+    <ImageView
+        android:id="@+id/widget_chrono_progress"
+        android:layout_width="match_parent"
+        android:layout_height="16dp"
+        android:layout_marginTop="6dp"
+        android:contentDescription="@null"
+        android:scaleType="fitXY" />
+
+    <!-- طرفا شريط التقدم: منتصف الليل ← الإمساك -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp">
+
+        <TextView
+            android:id="@+id/widget_progress_start"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="منتصف الليل"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_progress_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="الإمساك"
+            android:textColor="#99B9C0D4"
+            android:textSize="7sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>
