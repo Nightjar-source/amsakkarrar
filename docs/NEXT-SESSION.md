@@ -1,6 +1,40 @@
 
 ---
 
+## ✅ 2026-11-22 — نافذة إذن الموقع الموحّدة الأصلية (خلفية فاخرة غير شفافة) + توحيد استدعاء الـ GPS
+
+- **إنهاء مشكلة شفافية نافذة الموقع الجغرافي 100%:**
+  - تم بناء [LocationPermissionDialog.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/components/LocationPermissionDialog.kt) كحوار أصلي فاخر بأسطح مصمتة عالية التباين (`0xFF172033` إلى `0xFF0B1120` مع حدود ذهبية ناعمة)، مانعاً أي شفافية غير مقصودة.
+  - إبراز شارة **«أوفلاين 100%»** وضمان الخصوصية بأن جميع الحسابات الفلكية تجري محلياً دون إرسال أي إحداثيات لخوادم خارجية.
+  - خياران صريحان: زر رئيسي ذهبي «السماح بتحديد موقعي» + زر احتياطي رسمي «إعدادات الجهاز» لفتح إعدادات النظام مباشرة.
+- **توحيد طلب الموقع الجغرافي في كافة شاشات التطبيق:**
+  - أصبحت جميع الأزرار والنداءات في [SettingsScreen.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/SettingsScreen.kt)، [CityPickerSheet.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/components/CityPickerSheet.kt)، و [ShrinesQiblaScreen.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/ShrinesQiblaScreen.kt) تستدعي المسار الموحد `state.showLocationPrompt = true`.
+  - إدارة مركزية للإذن في [AppShell.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/navigation/AppShell.kt) مع استشعار تلقائي للـ GPS فور منح الصلاحية دون الحاجة لإعادة الضغط.
+- **إصلاح برمجيات الودجت وبناء التطبيق:**
+  - إصلاح قوس إغلاق زائد في [KararWidgets.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/androidApp/src/main/kotlin/com/Nightjar/amsakkarrar/widget/KararWidgets.kt#L936).
+  - اجتياز أوامر البناء بنجاح تام:
+    - `.\gradlew.bat :shared:compileAndroidMain --console=plain` -> **BUILD SUCCESSFUL**.
+    - `.\gradlew.bat :androidApp:compileDebugKotlin --console=plain` -> **BUILD SUCCESSFUL**.
+
+---
+
+## ✅ 2026-11-21 — تطوير بطاقة طور القمر الواقعية + تدقيق المحرك الفلكي وقاعدة المدن
+
+- **تطوير بطاقة طور القمر الفلكي فائق الدقة (Hyper-Realistic Moon):**
+  - بناء [MoonPhaseIcon.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/components/MoonPhaseIcon.kt) بطبقات إشعاعية وهالة قمرية مزدوجة (`Lunar Corona`).
+  - ضوء دافنشي التراكمي (`Earthshine`) لإظهار الجانب المظلم كروياً بثلاثية الأبعاد بدقة تلسكوبية.
+  - محاكاة تضاريس البحار القمرية الحقيقية (*Mare Tranquillitatis*, *Oceanus Procellarum*, *Mare Imbrium*, *Mare Crisium*).
+  - فوهة تيخو الكبرى (*Tycho*) مع منظومة الأشعة الامتدادية الشعاعية (*Ray System*) وفوهتا كوبرنيكوس وكبلر.
+  - إطار سماء ليلية مرصعة بالنجوم وعمر القمر بالأيام بدقة عشرية داخل [ShrinesQiblaScreen.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/ShrinesQiblaScreen.kt).
+  - إزالة رسم القمر المكرر من داخل قرص البوصلة لمنع التزاحم البصري.
+- **تدقيق المحرك الفلكي وقاعدة بيانات المدن:**
+  - مطابقة [AstronomicalEngine.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/core/astronomy/AstronomicalEngine.kt) لخوارزميات مرصد الكفيل (زوايا 18°/4°/14°، معالجة خطوط العرض العليا والقواعد الفقهية الـ 7، ومنتصف الليل الشيعي والسني).
+  - تثبيت قاعدة بيانات المدن `files/cities.json` (9.1MB) أوفلاين بالكامل، مع حساب القرب المكاني عبر معادلة هافرسين الكروية وصياغة «بالقرب من ...».
+  - توضيح معمارية الودجت: دمج Compose-first عبر Jetpack Glance 1.2 مع العداد العتادي `Chronometer` لتنازل بالثانية بصفر استهلاك، وتحديث خلفية `ArcBackground` ديناميكياً لتطابق سماء اللحظة.
+  - البناء البرمجي: نجاح أمر `:shared:compileAndroidMain` بنسبة 100%.
+
+---
+
 ## ✅ 2026-11-20 — مهارة FFmpeg + نشر ep53
 
 - قراءة وتثبيت `ffmpeg-skill` في كل المواقع (`مونتاج\skills`, `.claude`, `.agents`, `.config\opencode`)

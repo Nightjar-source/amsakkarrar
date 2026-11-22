@@ -126,16 +126,6 @@ fun SettingsScreen(
         onPauseOrDispose {}
     }
     var showCityPicker by remember { mutableStateOf(false) }
-    // النافذة داخل التطبيق أولًا قبل نافذة النظام — توضح لماذا نحتاج الموقع.
-    var showLocationAsk by remember { mutableStateOf(false) }
-    // طلب صلاحية الموقع من النظام أولًا، ثم المتابعة تلقائيًا بعد الموافقة
-    var gpsAfterGrant by remember { mutableStateOf(false) }
-    LaunchedEffect(gpsAfterGrant, permissions.status.location) {
-        if (gpsAfterGrant && permissions.status.location) {
-            gpsAfterGrant = false
-            state.detectLocation()
-        }
-    }
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -194,9 +184,8 @@ fun SettingsScreen(
                     if (permissions.status.location) {
                         scope.launch { state.detectLocation() }
                     } else {
-                        // النافذة داخل التطبيق أولًا — تشرح لماذا نحتاج الموقع
-                        // وتعرض خيار السماح/الإلغاء، ثم يفتح النظام إن وافق.
-                        showLocationAsk = true
+                        // إظهار نافذة إذن الموقع الموحّدة والأصلية
+                        state.showLocationPrompt = true
                     }
                 },
                 onIp = { scope.launch { state.detectLocationByIp() } },
@@ -423,7 +412,13 @@ fun SettingsScreen(
         item {
             SettingsAccordion(title = "الصلاحيات", icon = Icons.Filled.Lock) {
                 PermissionRow("الإشعارات", permissions.status.notifications) { permissions.requestNotifications() }
-                PermissionRow("الموقع (للقبلة والمدن)", permissions.status.location) { permissions.requestLocation() }
+                PermissionRow("الموقع (للقبلة والمدن)", permissions.status.location) {
+                    if (permissions.status.location) {
+                        scope.launch { state.detectLocation() }
+                    } else {
+                        state.showLocationPrompt = true
+                    }
+                }
                 PermissionRow("المنبهات الدقيقة", permissions.status.exactAlarm) { permissions.requestExactAlarm() }
                 PermissionRow("استثناء البطارية", permissions.status.batteryOptimized) { permissions.requestBatteryExemption() }
                 Box(
@@ -476,72 +471,6 @@ fun SettingsScreen(
 
     CityPickerSheet(visible = showCityPicker, state = state, onDismiss = { showCityPicker = false })
 
-    // نافذة داخل التطبيق أولًا — «لماذا نحتاج الموقع؟» + خيار السماح/الإلغاء.
-    // أو رفض النظام أو النقر خارج → تُغلق؛ «السماح بالموقع» يفتح نافذة النظام.
-    SpringDialog(
-        visible = showLocationAsk,
-        onDismissRequest = { showLocationAsk = false },
-        dismissible = true
-    ) {
-        GlassCard(
-            modifier = Modifier.fillMaxWidth(),
-            corner = 24.dp,
-            contentPadding = PaddingValues(20.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(23.dp))
-                        .background(KararColors.Mint.copy(alpha = 0.16f))
-                        .border(1.dp, KararColors.Mint.copy(alpha = 0.4f), RoundedCornerShape(23.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Filled.MyLocation,
-                        contentDescription = null,
-                        tint = KararColors.Mint,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(Modifier.size(12.dp))
-                Column {
-                    Text(
-                        text = "الموقع الجغرافي",
-                        color = KararColors.TextPrimary,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                    Text(
-                        text = "يستخدم فقط لحساب أوقات الصلاة والقبلة والمينة الهجرية بدقة إحداثياتك.",
-                        color = KararColors.TextMuted,
-                        fontSize = 10.sp,
-                        lineHeight = 15.sp
-                    )
-                }
-            }
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = "لا نجمع إحداثياتك ولا نرسلها لأي خادم — الحساب كله أوفلاين على جهازك، ويمكنك إلغاء ذلك في أي وقت من «الضبط».",
-                color = KararColors.TextSecondary,
-                fontSize = 11.sp,
-                lineHeight = 18.sp
-            )
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { showLocationAsk = false }) {
-                    Text("ليس الآن")
-                }
-                TextButton(onClick = {
-                    showLocationAsk = false
-                    gpsAfterGrant = true
-                    permissions.requestLocation()
-                }) {
-                    Text("السماح بالموقع")
-                }
-            }
-        }
-    }
 }
 
 // =====================================================================

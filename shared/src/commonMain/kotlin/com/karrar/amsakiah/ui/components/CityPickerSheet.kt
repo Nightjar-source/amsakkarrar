@@ -142,9 +142,7 @@ fun CityPickerSheet(
                                     onDismiss()
                                 }
                             } else {
-                                // اطلب الصلاحية فقط؛ بعد منحها يتابع LaunchedEffect.
-                                gpsAfterGrant = true
-                                permissions.requestLocation()
+                                state.showLocationPrompt = true
                             }
                         }
                         .padding(horizontal = 12.dp, vertical = 7.dp)

@@ -46,6 +46,9 @@ class AppState {
     var toast by mutableStateOf<ToastMessage?>(kernel.toast)
         private set
 
+    /** حالة ظهور نافذة إذن الموقع الجغرافي الموحّدة عبر كافة الشاشات */
+    var showLocationPrompt by mutableStateOf(false)
+
     init {
         // كل عدّة state→UI من داخل الـKernel تمر هنا — نُحدّث الحقول المقروءة من الواجهة.
         kernel.onStateChanged = { syncFromKernel() }

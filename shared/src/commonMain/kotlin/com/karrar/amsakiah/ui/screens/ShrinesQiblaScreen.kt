@@ -267,9 +267,7 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                     if (permissions.status.location) {
                         scope.launch { state.detectLocation() }
                     } else {
-                        // نافذة نظام أصلية لطلب صلاحية الموقع
-                        gpsAfterGrant = true
-                        permissions.requestLocation()
+                        state.showLocationPrompt = true
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -287,45 +285,78 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
             }
         }
 
-        // ---------- طور القمر — بطاقة أوضح: قرص القمر في سماء دائرية مستقلة،
-        // النسبة في كبسولة ذهبية، وشريط إضاءة بعلامتي «محاق/بدر» ----------
+        // ---------- طور القمر الفلكي الواقعي — بطاقة متكاملة مع سماء نجمية وتفاصيل فيزيائية ----------
         item {
             val settings = state.settings
             val today = remember(settings.hijriOffset) { PrayerCalculator.todayDate(settings) }
             val hijri = remember(today, settings.hijriOffset) { PrayerCalculator.hijriFor(settings, today) }
             val moon = remember(hijri.day) { moonDetailsByHijriDay(hijri.day) }
+            val moonAgeDays = remember(hijri.day) {
+                val age = ((hijri.day - 0.5).coerceAtLeast(0.5) * 10).toInt() / 10.0
+                age.toString()
+            }
             GlassCard(modifier = Modifier.fillMaxWidth(), corner = 24.dp) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 18.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // سماء ليلية دائرية خلف القمر — تفصل الهلال عن سطح البطاقة
+                        // سماء ليلية كروية عميقة مع نجوم متلألئة خلف القمر
                         Box(
                             modifier = Modifier
-                                .size(92.dp)
+                                .size(96.dp)
                                 .clip(CircleShape)
                                 .background(
                                     Brush.radialGradient(
-                                        listOf(Color(0xFF243456), Color(0xFF070C18))
+                                        listOf(Color(0xFF1E293B), Color(0xFF090D16), Color(0xFF020617))
                                     )
                                 )
-                                .border(1.dp, KararColors.Gold.copy(alpha = 0.35f), CircleShape),
+                                .border(1.2.dp, KararColors.Gold.copy(alpha = 0.45f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
+                            // نجوم سماوية ثابتة ناعمة
+                            Canvas(modifier = Modifier.size(96.dp)) {
+                                val stars = listOf(
+                                    Offset(0.18f * size.width, 0.22f * size.height) to 1.1f,
+                                    Offset(0.78f * size.width, 0.18f * size.height) to 1.3f,
+                                    Offset(0.85f * size.width, 0.72f * size.height) to 0.9f,
+                                    Offset(0.15f * size.width, 0.78f * size.height) to 1.2f,
+                                    Offset(0.50f * size.width, 0.12f * size.height) to 0.8f
+                                )
+                                for ((pos, r) in stars) {
+                                    drawCircle(Color.White.copy(alpha = 0.65f), radius = r.dp.toPx(), center = pos)
+                                }
+                            }
                             MoonPhaseIcon(
                                 hijriDay = hijri.day,
-                                modifier = Modifier.size(78.dp)
+                                modifier = Modifier.size(80.dp)
                             )
                         }
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(
-                                text = "طور القمر",
-                                color = KararColors.TextMuted,
-                                fontSize = 9.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "طور القمر الفلكي",
+                                    color = KararColors.TextMuted,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.8.sp
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(KararColors.Gold.copy(alpha = 0.15f))
+                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = "$moonAgeDays يوم",
+                                        color = KararColors.Gold,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(2.dp))
                             Text(
                                 text = moon.phaseName,
                                 color = KararColors.TextPrimary,
@@ -336,11 +367,11 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                             Text(
                                 text = "ليلة ${hijri.day} ${hijri.monthName} ${hijri.year} هـ",
                                 color = KararColors.TextSecondary,
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        // النسبة كرقم كبير داخل كبسولة ذهبية مصمتة — لا سطر صغير
+                        // النسبة كرقم كبير داخل كبسولة ذهبية مصمتة
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
@@ -352,7 +383,7 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                                     KararColors.Gold.copy(alpha = 0.45f),
                                     RoundedCornerShape(16.dp)
                                 )
-                                .padding(horizontal = 11.dp, vertical = 7.dp)
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
                             Text(
                                 text = "${moon.illumination}%",
@@ -368,7 +399,7 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                             )
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(14.dp))
                     // شريط الإضاءة — تعبئة من اليمين (RTL) بتدرّج ذهبي
                     Box(
                         modifier = Modifier
@@ -392,17 +423,24 @@ fun ShrinesQiblaScreen(state: AppState, contentPadding: PaddingValues) {
                                 )
                         )
                     }
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(5.dp))
                     Row(Modifier.fillMaxWidth()) {
                         Text(
-                            "محاق",
+                            "🌑 محاق (0%)",
                             color = KararColors.TextMuted,
                             fontSize = 8.5.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            "بدر",
+                            "🌓 تربيع",
+                            color = KararColors.TextMuted,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            "🌕 بدر (100%)",
                             color = KararColors.TextMuted,
                             fontSize = 8.5.sp,
                             fontWeight = FontWeight.Bold
@@ -602,65 +640,6 @@ private fun CompassRose(
                 radius = 5.dp.toPx(),
                 center = sunPos
             )
-
-            // ---------- القمر الواقعي مع الطور حسب اليوم الهجري على مساره الفلكي ----------
-            val moonAzimuthDeg = ((sunAzimuthDeg + ((hijriDay - 1) / 29.53) * 360.0) % 360.0)
-            val moonRad = moonAzimuthDeg * PI / 180.0
-            val moonPos = Offset(
-                (center.x + celestialOrbitRadius * sin(moonRad)).toFloat(),
-                (center.y - celestialOrbitRadius * cos(moonRad)).toFloat()
-            )
-            val moonRadius = 6.dp.toPx()
-            val geom = com.karrar.amsakiah.core.astronomy.moonGeometry(hijriDay, 1f)
-            // هالة القمر الخافتة
-            drawCircle(Color(0x26E2E8F0), radius = 11.dp.toPx(), center = moonPos)
-            // قرص القمر المظلم
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFF1E293B), Color(0xFF090D16)),
-                    center = moonPos,
-                    radius = moonRadius
-                ),
-                radius = moonRadius,
-                center = moonPos
-            )
-            drawCircle(
-                color = Color.White.copy(alpha = 0.25f),
-                radius = moonRadius,
-                center = moonPos,
-                style = Stroke(0.6.dp.toPx())
-            )
-            // السطح المضاء للقمر
-            if (!geom.isNewMoon) {
-                val rx = geom.rx * moonRadius
-                val litPath = Path().apply {
-                    moveTo(moonPos.x, moonPos.y - moonRadius)
-                    if (geom.isFullMoon) {
-                        addOval(androidx.compose.ui.geometry.Rect(moonPos.x - moonRadius, moonPos.y - moonRadius, moonPos.x + moonRadius, moonPos.y + moonRadius))
-                    } else {
-                        addArc(
-                            androidx.compose.ui.geometry.Rect(moonPos.x - moonRadius, moonPos.y - moonRadius, moonPos.x + moonRadius, moonPos.y + moonRadius),
-                            270f,
-                            if (geom.isWaxing) 180f else -180f
-                        )
-                        val waxingCrescent = geom.isWaxing == (geom.illuminationRatio < 0.5f)
-                        addArc(
-                            androidx.compose.ui.geometry.Rect(moonPos.x - rx, moonPos.y - moonRadius, moonPos.x + rx, moonPos.y + moonRadius),
-                            90f,
-                            if (waxingCrescent) -180f else 180f
-                        )
-                        close()
-                    }
-                }
-                drawPath(
-                    path = litPath,
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFFFFDF7), Color(0xFFFDE68A), Color(0xFFE2E8F0)),
-                        center = moonPos,
-                        radius = moonRadius * 1.2f
-                    )
-                )
-            }
 
             // سهم المكان المختار
             rotate(targetBearing.toFloat(), pivot = center) {

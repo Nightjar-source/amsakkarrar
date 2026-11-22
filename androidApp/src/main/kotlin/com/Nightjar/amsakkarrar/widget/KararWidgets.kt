@@ -933,7 +933,6 @@ private fun DailyDeedWidgetRow(deed: DailyDeed, compact: Boolean) {
         )
     }
 }
-}
 
 @Composable
 private fun DeedStatCell(

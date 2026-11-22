@@ -118,6 +118,7 @@ import com.karrar.amsakiah.ui.adaptive.rememberAppAdaptiveLayout
 import com.karrar.amsakiah.ui.adaptive.supportsListDetail
 import com.karrar.amsakiah.ui.adaptive.topBarHeight
 import com.karrar.amsakiah.ui.components.CityPickerSheet
+import com.karrar.amsakiah.ui.components.LocationPermissionDialog
 import com.karrar.amsakiah.ui.components.DuaPlayerOverlay
 import com.karrar.amsakiah.ui.components.GlassSurface
 import com.karrar.amsakiah.ui.components.LiquidFloatingBottomBar
@@ -186,6 +187,15 @@ fun AppShell(
 ) {
     val layout = rememberAppAdaptiveLayout()
     val permissions = rememberPermissionController()
+    val scope = rememberCoroutineScope()
+    var gpsAfterGrant by remember { mutableStateOf(false) }
+
+    LaunchedEffect(permissions.status.location) {
+        if (permissions.status.location && gpsAfterGrant) {
+            gpsAfterGrant = false
+            state.detectLocation()
+        }
+    }
     // «تقليل الحركة» من النظام: تُلغى انزلاقات الشاشات والتبويبات فقط.
     val reduceMotion = rememberReduceMotion()
 
@@ -685,6 +695,25 @@ fun AppShell(
             visible = showCityPicker,
             state = state,
             onDismiss = { showCityPicker = false }
+        )
+
+        // نافذة طلب إذن الموقع الجغرافي الموحّدة والأصلية لكافة شاشات التطبيق
+        LocationPermissionDialog(
+            visible = state.showLocationPrompt,
+            onDismissRequest = { state.showLocationPrompt = false },
+            onGrant = {
+                state.showLocationPrompt = false
+                if (permissions.status.location) {
+                    scope.launch { state.detectLocation() }
+                } else {
+                    gpsAfterGrant = true
+                    permissions.requestLocation()
+                }
+            },
+            onOpenSettings = {
+                state.showLocationPrompt = false
+                permissions.openAppSettings()
+            }
         )
     }
     }
