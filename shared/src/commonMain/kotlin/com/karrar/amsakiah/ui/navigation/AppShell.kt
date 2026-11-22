@@ -55,6 +55,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -195,6 +196,17 @@ fun AppShell(
             gpsAfterGrant = false
             state.detectLocation()
         }
+    }
+
+    // استشعار ذكي لعودة المستخدم للتطبيق (بعد فتح الإعدادات أو تشغيل GPS من النظام)
+    LifecycleResumeEffect(Unit) {
+        permissions.refresh()
+        state.syncLocationSystemState()
+        if (permissions.status.location && (gpsAfterGrant || state.settings.useGps)) {
+            gpsAfterGrant = false
+            scope.launch { state.detectLocation() }
+        }
+        onPauseOrDispose {}
     }
     // «تقليل الحركة» من النظام: تُلغى انزلاقات الشاشات والتبويبات فقط.
     val reduceMotion = rememberReduceMotion()
