@@ -98,12 +98,20 @@ object AppDataStore {
         val cached = cache[KEY_SETTINGS.name] as? String
         if (cached != null) return cached
         val context = AndroidAppContext.optional() ?: return null
+        // 1) قراءة فورية متزامنة من SharedPreferences من الذاكرة (0ms) بلا حجز خيوط
+        val spValue = runCatching {
+            context.getSharedPreferences("karar_settings", Context.MODE_PRIVATE)
+                .getString("app_settings_json", null)
+        }.getOrNull()
+        if (!spValue.isNullOrBlank()) {
+            cache[KEY_SETTINGS.name] = spValue
+            return spValue
+        }
+        // 2) احتياطي DataStore إذا لم تكن موجودة في SP
         return runCatching {
             runBlocking(Dispatchers.IO) {
                 context.appDataStore.data.first()[KEY_SETTINGS]
             }?.also { cache[KEY_SETTINGS.name] = it }
-                ?: context.getSharedPreferences("karar_settings", Context.MODE_PRIVATE)
-                    .getString("app_settings_json", null)?.also { cache[KEY_SETTINGS.name] = it }
         }.getOrNull()
     }
 
@@ -121,19 +129,32 @@ object AppDataStore {
         val cached = cache[key] as? String ?: cache[KEY_WIDGET_STYLE.name] as? String
         if (cached != null) return cached
         val context = AndroidAppContext.optional() ?: return null
+        val spValue = runCatching {
+            val sp = context.getSharedPreferences("karar_widget_style", Context.MODE_PRIVATE)
+            sp.getString(key, null) ?: sp.getString("style", null)
+        }.getOrNull()
+        if (!spValue.isNullOrBlank()) {
+            cache[key] = spValue
+            return spValue
+        }
         return runCatching {
             val prefKey = if (key == "style") KEY_WIDGET_STYLE else stringPreferencesKey(key)
             runBlocking(Dispatchers.IO) {
                 val prefs = context.appDataStore.data.first()
                 prefs[prefKey]?.also { cache[prefKey.name] = it }
                     ?: prefs[KEY_WIDGET_STYLE]?.also { cache[KEY_WIDGET_STYLE.name] = it }
-            } ?: context.getSharedPreferences("karar_widget_style", Context.MODE_PRIVATE)
-                .getString(key, null)?.also { cache[key] = it }
+            }
         }.getOrNull()
     }
 
     fun writeWidgetStyle(key: String, value: String) {
         val prefKey = if (key == "style") KEY_WIDGET_STYLE else stringPreferencesKey(key)
+        cache[prefKey.name] = value
+        cache[key] = value
+        runCatching {
+            AndroidAppContext.optional()?.getSharedPreferences("karar_widget_style", Context.MODE_PRIVATE)
+                ?.edit()?.putString(key, value)?.apply()
+        }
         writeString(prefKey, value)
     }
 
