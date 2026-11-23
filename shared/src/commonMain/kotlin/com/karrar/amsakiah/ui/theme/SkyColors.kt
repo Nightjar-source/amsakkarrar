@@ -51,11 +51,14 @@ object SkyTheme {
     val skyGradients = listOf(
         SkyGradientPoint(0f, Color(8, 10, 25), Color(15, 15, 40), Color(70, 100, 255, 76)),
         SkyGradientPoint(4.5f * 3600f, Color(15, 12, 35), Color(40, 25, 60), Color(100, 80, 200, 102)),
-        SkyGradientPoint(5.5f * 3600f, Color(50, 25, 70), Color(240, 90, 40), Color(255, 120, 40, 178)),
+        // الشروق الشتوي والفجر الصادق (شفق برتقالي ناري يعانق سماء الشفق البنفسجية)
+        SkyGradientPoint(5.5f * 3600f, Color(0xFF281C38), Color(0xFFE65100), Color(0xFFFFA000)),
         SkyGradientPoint(6.5f * 3600f, Color(60, 120, 180), Color(250, 190, 120), Color(255, 220, 120, 153)),
         SkyGradientPoint(12f * 3600f, Color(25, 130, 220), Color(110, 200, 255), Color(255, 255, 255, 102)),
         SkyGradientPoint(17f * 3600f, Color(45, 90, 160), Color(220, 150, 110), Color(255, 190, 90, 128)),
-        SkyGradientPoint(18.5f * 3600f, Color(40, 25, 70), Color(220, 50, 30), Color(255, 70, 20, 204)),
+        // الغروب الشتوي والشفق المغربي الناري (مطابق لألوان الصورة المرفقة)
+        SkyGradientPoint(18.2f * 3600f, Color(0xFF2C1930), Color(0xFFE65100), Color(0xFFFFB300)),
+        SkyGradientPoint(18.8f * 3600f, Color(0xFF1E142B), Color(0xFFC0392B), Color(0xFFE65100)),
         SkyGradientPoint(19.5f * 3600f, Color(18, 15, 40), Color(35, 20, 55), Color(90, 50, 150, 128)),
         SkyGradientPoint(24f * 3600f, Color(8, 10, 25), Color(15, 15, 40), Color(70, 100, 255, 76))
     )
@@ -130,12 +133,14 @@ object SkyTheme {
         val dynamicGradients = listOf(
             SkyGradientPoint(0f, Color(8, 10, 25), Color(15, 15, 40), Color(70, 100, 255, 76)),
             SkyGradientPoint(preDawnSec, Color(15, 12, 35), Color(40, 25, 60), Color(100, 80, 200, 102)),
-            SkyGradientPoint(fajrSec, Color(50, 25, 70), Color(240, 90, 40), Color(255, 120, 40, 178)),
+            // الشروق الشتوي والفجر الصادق
+            SkyGradientPoint(fajrSec, Color(0xFF281C38), Color(0xFFE65100), Color(0xFFFFA000)),
             SkyGradientPoint(sunriseSec, Color(60, 120, 180), Color(250, 190, 120), Color(255, 220, 120, 153)),
             SkyGradientPoint(dhuhrSec, Color(25, 130, 220), Color(110, 200, 255), Color(255, 255, 255, 102)),
             SkyGradientPoint(asrSec, Color(45, 90, 160), Color(220, 150, 110), Color(255, 190, 90, 128)),
-            SkyGradientPoint(sunsetSec, Color(40, 25, 70), Color(220, 50, 30), Color(255, 70, 20, 204)),
-            SkyGradientPoint(maghribSec, Color(25, 18, 50), Color(120, 30, 40), Color(180, 50, 80, 150)),
+            // الغروب الشتوي والشفق المغربي الناري (مطابق لألوان الصورة المرفقة)
+            SkyGradientPoint(sunsetSec, Color(0xFF2C1930), Color(0xFFE65100), Color(0xFFFFB300)),
+            SkyGradientPoint(maghribSec, Color(0xFF1E142B), Color(0xFFC0392B), Color(0xFFE65100)),
             SkyGradientPoint(nightFallSec, Color(18, 15, 40), Color(35, 20, 55), Color(90, 50, 150, 128)),
             SkyGradientPoint(86400f, Color(8, 10, 25), Color(15, 15, 40), Color(70, 100, 255, 76))
         )

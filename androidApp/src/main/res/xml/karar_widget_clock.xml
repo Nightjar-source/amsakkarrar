@@ -13,4 +13,4 @@
     android:updatePeriodMillis="1800000"
     android:configure="com.Nightjar.amsakkarrar.widget.WidgetConfigActivity"
     android:widgetFeatures="reconfigurable|configuration_optional"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen|keyguard" />
