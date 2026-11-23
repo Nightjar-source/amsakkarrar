@@ -7,7 +7,9 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -554,46 +556,66 @@ private fun CountdownSection(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.05f))
-                .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
-                .padding(
-                    horizontal = if (compact) 16.dp else 24.dp,
-                    vertical = 4.dp
-                )
-        ) {
-            Text(
-                text = label,
-                color = KararColors.Gold,
-                fontSize = if (compact) 10.sp else 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // الترتيب الرسمي للعدّاد: الساعات يسارًا ← الدقائق وسطًا ← الثواني يمينًا.
-        // ⚠️ يجب أن يحيط `CompositionLocalProvider` بالـRow نفسها لا بمحتواها:
-        // الـRow تقيس ترتيب أبنائها باتجاه التخطيط السائد عند موضعها، فإذا عُزل
-        // الاتجاه داخل المحتوى بقيت الأرقام معكوسة (RTL) رغم تغيير أبنائها.
-        androidx.compose.runtime.CompositionLocalProvider(
-            androidx.compose.ui.platform.LocalLayoutDirection provides
-                androidx.compose.ui.unit.LayoutDirection.Ltr
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp)
+        val reduceMotion = rememberReduceMotion()
+        AnimatedContent(
+            targetState = currentActive,
+            transitionSpec = {
+                val isForward = targetState > initialState
+                // انسيابية تقليب الصلوات أفقياً (يمين / يسار):
+                val dir = if (isForward) -1 else 1
+                (slideInHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { width -> dir * width / 3 } +
+                    fadeIn(animationSpec = effectsSpec(reduceMotion)))
+                    .togetherWith(
+                        slideOutHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { width -> -dir * width / 3 } +
+                        fadeOut(animationSpec = effectsSpec(reduceMotion))
+                    )
+            },
+            label = "prayer-countdown-flip",
+            modifier = Modifier.fillMaxWidth()
+        ) { _ ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                CountdownDigit(hours, compact)
-                CountdownColon(compact)
-                CountdownDigit(minutes, compact)
-                CountdownColon(compact)
-                CountdownDigit(seconds, compact)
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.05f))
+                        .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
+                        .padding(
+                            horizontal = if (compact) 16.dp else 24.dp,
+                            vertical = 4.dp
+                        )
+                ) {
+                    Text(
+                        text = label,
+                        color = KararColors.Gold,
+                        fontSize = if (compact) 10.sp else 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // الترتيب الرسمي للعدّاد: الساعات يسارًا ← الدقائق وسطًا ← الثواني يمينًا.
+                androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.compose.ui.platform.LocalLayoutDirection provides
+                        androidx.compose.ui.unit.LayoutDirection.Ltr
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp)
+                    ) {
+                        CountdownDigit(hours, compact)
+                        CountdownColon(compact)
+                        CountdownDigit(minutes, compact)
+                        CountdownColon(compact)
+                        CountdownDigit(seconds, compact)
+                    }
+                }
             }
         }
 

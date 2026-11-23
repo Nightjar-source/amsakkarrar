@@ -94,11 +94,44 @@ object AppDataStore {
     }
 
     // ---- إعدادات التطبيق ----
-    fun readSettings(): String? = cache[KEY_SETTINGS.name] as? String
-    fun writeSettings(value: String) = writeString(KEY_SETTINGS, value)
+    fun readSettings(): String? {
+        val cached = cache[KEY_SETTINGS.name] as? String
+        if (cached != null) return cached
+        val context = AndroidAppContext.optional() ?: return null
+        return runCatching {
+            runBlocking(Dispatchers.IO) {
+                context.appDataStore.data.first()[KEY_SETTINGS]
+            }?.also { cache[KEY_SETTINGS.name] = it }
+                ?: context.getSharedPreferences("karar_settings", Context.MODE_PRIVATE)
+                    .getString("app_settings_json", null)?.also { cache[KEY_SETTINGS.name] = it }
+        }.getOrNull()
+    }
+
+    fun writeSettings(value: String) {
+        cache[KEY_SETTINGS.name] = value
+        runCatching {
+            AndroidAppContext.optional()?.getSharedPreferences("karar_settings", Context.MODE_PRIVATE)
+                ?.edit()?.putString("app_settings_json", value)?.apply()
+        }
+        writeString(KEY_SETTINGS, value)
+    }
 
     // ---- نمط الودجت (عام + لكل appWidgetId) ----
-    fun readWidgetStyle(key: String): String? = cache[key] as? String ?: cache[KEY_WIDGET_STYLE.name] as? String
+    fun readWidgetStyle(key: String): String? {
+        val cached = cache[key] as? String ?: cache[KEY_WIDGET_STYLE.name] as? String
+        if (cached != null) return cached
+        val context = AndroidAppContext.optional() ?: return null
+        return runCatching {
+            val prefKey = if (key == "style") KEY_WIDGET_STYLE else stringPreferencesKey(key)
+            runBlocking(Dispatchers.IO) {
+                val prefs = context.appDataStore.data.first()
+                prefs[prefKey]?.also { cache[prefKey.name] = it }
+                    ?: prefs[KEY_WIDGET_STYLE]?.also { cache[KEY_WIDGET_STYLE.name] = it }
+            } ?: context.getSharedPreferences("karar_widget_style", Context.MODE_PRIVATE)
+                .getString(key, null)?.also { cache[key] = it }
+        }.getOrNull()
+    }
+
     fun writeWidgetStyle(key: String, value: String) {
         val prefKey = if (key == "style") KEY_WIDGET_STYLE else stringPreferencesKey(key)
         writeString(prefKey, value)
