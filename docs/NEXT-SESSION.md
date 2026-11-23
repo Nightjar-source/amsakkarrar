@@ -1,6 +1,24 @@
 
 ---
 
+## ✅ 2026-11-23 — ترقية Compose BOM 2026.11.01 + تقليب عدادات الصلوات أفقياً (Swipe/Pager) + عزل الودجت أوفلاين
+
+- **ترقية حزم Compose و Material 3 إلى نوفمبر 2026:**
+  - اعتماد `androidx.compose:compose-bom:2026.11.01` رسمياً في `androidApp/build.gradle.kts`.
+  - التحقق من تفعيل Material 3 وخلو المشروع بنسبة 100% من `ConstraintLayout` و `MotionLayout` القديمة.
+  - تكوين مستودعات Gradle بفلترة نطاقات الحزم لمنع أخطاء DNS ولضمان سحب الحزم مباشرة من Google Maven.
+- **التقليب الأفقي السلس بين عدادات الصلوات (يمين / يسار):**
+  - في [TodayScreen.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/TodayScreen.kt): إضافة انتقال أفقي ذكي `AnimatedContent(targetState = currentActive)` لتقليب بطاقة الصلاة والعداد كاملاً يميناً ويساراً (`slideInHorizontally` / `slideOutHorizontally` مع `fadeIn` / `fadeOut`).
+  - دعم فيزياء الزنبرك الطبيعية وحركات السحب باللمس والنقر على مؤشرات الصلوات أو شبكة الأوقات السفلية بنعومة فائقة ودون أي ارتعاش.
+- **عزل الودجت لقراءة البيانات وحساب المواقيت ذاتياً عند إغلاق التطبيق:**
+  - في [AppDataStore.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/androidMain/kotlin/com/karrar/amsakiah/core/settings/AppDataStore.kt): معالجة القراءة المباشرة من القرص (DataStore + SharedPreferences) عندما يكون التطبيق مغلقاً أو عند إيقافه نهائياً.
+  - يعمل الودجت في استقلالية كاملة لحساب مواقيت الصلاة، الهجري، وتدرج خلفية السماء `ArcBackground` ذاتياً دون الحاجة لفتح التطبيق وبصفر استهلاك للطاقة.
+- **البناء والإصدار الرسمي:**
+  - نجاح `:shared:compileAndroidMain` و `:androidApp:compileDebugKotlin`.
+  - إنشاء وإرسال وسم الإصدار `v1.2.0` إلى المستودع لبدء سير عمل GitHub Actions لبناء وتوقيع الـ APK ونشره في Releases.
+
+---
+
 ## ✅ 2026-11-22 — نافذة إذن الموقع الموحّدة الأصلية (خلفية فاخرة غير شفافة) + توحيد استدعاء الـ GPS
 
 - **إنهاء مشكلة شفافية نافذة الموقع الجغرافي 100%:**
