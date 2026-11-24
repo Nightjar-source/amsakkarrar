@@ -85,19 +85,19 @@ object KararTokens {
 
         // ------------------------------------------------------------------
         // Material 3 Expressive (2026): حركة نابضية (Spring) بنوعين:
-        //  - Spatial: للحركة والانتقالات والأحجام (مرونة 0.8).
+        //  - Spatial: للحركة والانتقالات والأحجام (مرونة ناعمة رطبة بلا تشنج).
         //  - Effects: للتلاشي والتلوين (بدون ارتداد، استجابة أسرع).
         // القيم مطابقة لرموز ExpressiveMotionTokens الرسمية في material3 1.4.
         // ------------------------------------------------------------------
-        const val SpatialDamping = 0.8f
-        /** Expressive: النابض المكاني السريع يرتد أكثر (0.6)، الافتراضي/البطيء 0.8. */
-        const val SpatialDampingFast = 0.6f
-        const val SpatialStiffnessDefault = 380f
-        const val SpatialStiffnessFast = 800f
-        const val SpatialStiffnessSlow = 200f
-        /** نابض «السائل» (Fluid Spring): لا يقفز، ينزلق بمرونة — مناسب للمنسدلات الكبيرة. */
-        const val SpatialDampingFluid = 0.76f
-        const val SpatialStiffnessFluid = 320f
+        const val SpatialDamping = 0.82f
+        /** Expressive: النابض المكاني السريع يرتد أكثر (0.75)، الافتراضي/البطيء 0.85. */
+        const val SpatialDampingFast = 0.75f
+        const val SpatialStiffnessDefault = 320f
+        const val SpatialStiffnessFast = 650f
+        const val SpatialStiffnessSlow = 180f
+        /** نابض «السائل» (Fluid Spring): رطب وسلس جداً بلا ارتداد ولا لاغ — مناسب للمنسدلات والانتقالات. */
+        const val SpatialDampingFluid = 0.88f
+        const val SpatialStiffnessFluid = 260f
 
         const val EffectsDamping = 1f
         const val EffectsStiffnessDefault = 1600f

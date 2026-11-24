@@ -123,10 +123,15 @@ fun UnifiedReaderScreen(
         if (bodyText != null) {
             bodyText
         } else {
+            val content = JinanContentTexts.getProcessed(contentId).ifBlank { "" }
             buildString {
-                append("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\n")
-                if (subtitle.isNotBlank()) append(subtitle).append("\n\n")
-                append(JinanContentTexts.getProcessed(contentId).ifBlank { "" })
+                if (!content.startsWith("بِسْمِ اللَّهِ") && !content.contains("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ")) {
+                    append("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\n")
+                }
+                if (subtitle.isNotBlank() && !content.startsWith(subtitle)) {
+                    append(subtitle).append("\n\n")
+                }
+                append(content)
             }
         }
     }
@@ -281,12 +286,12 @@ fun UnifiedReaderScreen(
                     }
                 }
 
-                // شريط تقليب الصفحات العائم — كبسولة زجاجية أنيقة تقلب يمين ويسار
+                // شريط تقليب الصفحات العائم — كبسولة زجاجية أنيقة واحدة فقط تطفو فوق مسافة النظام
                 if (spreadCount > 1) {
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 6.dp)
+                            .padding(bottom = navigationBottom + 12.dp)
                             .clip(RoundedCornerShape(22.dp))
                             .background(theme.bar.copy(alpha = 0.94f))
                             .border(1.dp, theme.barBorder, RoundedCornerShape(22.dp))
@@ -501,13 +506,13 @@ fun UnifiedReaderScreen(
             }
         }
 
-        // نقطة استرجاع الواجهة في وضع الملء — تطفو أسفل المنتصف فوق مسافة التنقل النظامية وتستعيد كل شيء بلمسة.
+        // نقطة استرجاع الواجهة في وضع الملء — تطفو على الجانب الأيسر السفلي لتفادي أي تداخل
         if (!chromeVisible) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = navigationBottom + 14.dp)
-                    .size(48.dp)
+                    .align(Alignment.BottomStart)
+                    .padding(start = safeStart + 16.dp, bottom = navigationBottom + 16.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(theme.bar.copy(alpha = 0.92f))
                     .border(1.dp, theme.barBorder, CircleShape)
@@ -853,7 +858,11 @@ private fun splitIntoBookPages(text: String, targetPageChars: Int = 850): List<S
     val pages = mutableListOf<String>()
     val current = StringBuilder()
     for (token in tokens) {
-        if (current.length + token.length > targetPageChars && current.isNotBlank()) {
+        // إذا كان الرمز سطرًا جديدًا متعددًا أو فاصل سورة/عنوان رئيسي كبير، ننهي الصفحة إذا كانت ممتلئة بنسبة معقولة
+        val isMajorBreak = token.startsWith("بِسْمِ اللَّهِ") || token.contains("\n\n\n")
+        if ((current.length + token.length > targetPageChars && current.isNotBlank()) ||
+            (isMajorBreak && current.length > targetPageChars / 2)
+        ) {
             pages.add(current.toString().trim())
             current.clear()
         }

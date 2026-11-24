@@ -272,7 +272,12 @@ fun SettingsScreen(
                     title = "الإشعار الحي (العدّاد)",
                     subtitle = "اختياري — عدّاد حي بشريط تقدم في شريط الإشعارات، يتحدّث تلقائيًا",
                     checked = settings.liveNotification,
-                    onChange = { c -> state.update { it.copy(liveNotification = c) } }
+                    onChange = { c ->
+                        if (c && !permissions.status.notifications) {
+                            permissions.requestNotifications()
+                        }
+                        state.update { it.copy(liveNotification = c) }
+                    }
                 )
                 PrayerSelectionCard(
                     title = "أوقات العدّاد",
@@ -297,7 +302,12 @@ fun SettingsScreen(
                     title = "بطاقة الأذان عند دخول الوقت",
                     subtitle = "اختياري — بطاقة واحدة لكل صلاة، وصوت الأذان مرة واحدة",
                     checked = settings.adhanEnabled,
-                    onChange = { c -> state.update { it.copy(adhanEnabled = c) } }
+                    onChange = { c ->
+                        if (c && !permissions.status.notifications) {
+                            permissions.requestNotifications()
+                        }
+                        state.update { it.copy(adhanEnabled = c) }
+                    }
                 )
                 PrayerSelectionCard(
                     title = "أوقات الأذان",

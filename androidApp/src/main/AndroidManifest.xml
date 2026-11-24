@@ -92,6 +92,15 @@
             </intent-filter>
         </receiver>
 
+        <!-- مستقبل بث تغيير الإعدادات وتغيير المدينة لحظيًا لتحديث الودجت والإشعار -->
+        <receiver
+            android:name=".widget.SettingsChangeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.Nightjar.amsakkarrar.ACTION_SETTINGS_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <!-- يُستدعى عند سحب الإشعار الحي (deleteIntent) لتسجيل الإخفاء -->
         <receiver
             android:name=".notifications.LiveDismissReceiver"

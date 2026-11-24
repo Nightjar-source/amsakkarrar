@@ -92,8 +92,8 @@ fun TasksScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // العنوان في الشريط العلوي الموحّد فقط — بلا تكرار داخل الشاشة.
-        // ---------- المجموعة الأولى: محفوظاتي من «مفاتيح الجنان» ----------
-        item { SectionTitle("⭐ محفوظاتي من «مفاتيح الجنان» (${favorites.size})") }
+        // ---------- المجموعة الأولى: محفوظاتي من «القرآن ومفاتيح الجنان» ----------
+        item { SectionTitle("⭐ محفوظاتي (${favorites.size})") }
         if (favorites.isEmpty()) {
             item {
                 GlassCard(
@@ -121,13 +121,13 @@ fun TasksScreen(
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "لا توجد أعمال محفوظة بعد",
+                            "لا توجد عناصر محفوظة بعد",
                             color = KararColors.TextPrimary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "اضبط ⭐ داخل قارئ «مفاتيح الجنان» أو القارئ الموحّد، ثم شاهدها هنا.",
+                            "اضبط ⭐ داخل القرآن الكريم أو مفاتيح الجنان، ثم شاهدها هنا.",
                             color = KararColors.TextMuted,
                             fontSize = 11.sp,
                             lineHeight = 17.sp
@@ -137,6 +137,7 @@ fun TasksScreen(
             }
         }
         items(favorites, key = { "fav-${it.id}" }) { item ->
+            val isQuran = item.id in 1001..1114
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -151,28 +152,33 @@ fun TasksScreen(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(CircleShape)
-                        .background(KararColors.Purple.copy(alpha = 0.14f))
-                        .border(1.dp, KararColors.Purple.copy(alpha = 0.4f), CircleShape),
+                        .background(if (isQuran) KararColors.Gold.copy(alpha = 0.16f) else KararColors.Purple.copy(alpha = 0.14f))
+                        .border(1.dp, if (isQuran) KararColors.Gold.copy(alpha = 0.45f) else KararColors.Purple.copy(alpha = 0.4f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.MenuBook,
                         contentDescription = null,
-                        tint = KararColors.Purple,
+                        tint = if (isQuran) KararColors.Gold else KararColors.Purple,
                         modifier = Modifier.size(19.dp)
                     )
                 }
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    item.title,
-                    color = KararColors.TextPrimary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 17.sp,
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        item.title,
+                        color = KararColors.TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        if (isQuran) "القرآن الكريم" else "مفاتيح الجنان",
+                        color = KararColors.TextMuted,
+                        fontSize = 9.sp
+                    )
+                }
                 Spacer(Modifier.width(8.dp))
                 // نجمة مزالة — إزالة من المفضلة
                 Icon(

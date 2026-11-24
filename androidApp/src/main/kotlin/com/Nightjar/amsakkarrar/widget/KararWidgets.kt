@@ -400,7 +400,7 @@ class TodayWidget : GlanceAppWidget() {
 private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWidgetId: Int) {
     val tier = rememberWidgetTier()
     val gridEntries = snapshot.widgetEntries()
-    WidgetFrame(context, appWidgetId, tier, snapshot = snapshot) {
+    WidgetFrame(context, appWidgetId, tier, center = true, snapshot = snapshot) {
         when (tier) {
             WidgetTier.LARGE -> {
                 // هيدر RemoteViews بخط Reem Kufi + شريط بيضوي سميك + العدّاد بوحدات

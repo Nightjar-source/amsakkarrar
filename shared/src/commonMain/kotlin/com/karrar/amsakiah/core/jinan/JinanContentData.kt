@@ -876,6 +876,14 @@ object JinanContentData {
     // عند طلب المراجع الصوتي، تُضاف لاحقًا كنماذج صوتية منفصلة.
 
     fun findItemById(id: Int): JinanItem? {
+        // إذا كان المعرف يبدأ بـ 1000 فهو يمثل سورة من القرآن الكريم (1001 إلى 1114)
+        if (id in 1001..1114) {
+            val surahNum = id - 1000
+            val quran = quranSurahs.getOrNull(surahNum - 1)
+            if (quran != null) {
+                return JinanItem(id, "سورة ${quran.title}", quran.arabicText)
+            }
+        }
         for (part in bookParts) {
             for (chapter in part.chapters) {
                 for (section in chapter.sections) {

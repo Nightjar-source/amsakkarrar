@@ -519,7 +519,11 @@ fun AppShell(
                         }
                         entry(AppRoute.Tasks) {
                             val openReader: (com.karrar.amsakiah.core.jinan.JinanItem) -> Unit = { item ->
-                                openKeysChild(AppRoute.JinanReader(item.id, item.title))
+                                if (item.id in 1001..1114) {
+                                    openKeysChild(AppRoute.Quran)
+                                } else {
+                                    openKeysChild(AppRoute.JinanReader(item.id, item.title))
+                                }
                             }
                             TasksScreen(
                                 state = state,
@@ -879,15 +883,18 @@ private fun UnifiedTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (canGoBack && !searchMode) {
+        AnimatedVisibility(
+            visible = canGoBack && !searchMode,
+            enter = slideInHorizontally(animationSpec = motionSpatialFluid()) { -it / 2 } + fadeIn(animationSpec = motionEffects()),
+            exit = slideOutHorizontally(animationSpec = motionSpatialFluid()) { -it / 2 } + fadeOut(animationSpec = motionEffects())
+        ) {
             CircleGlassButton(
                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                 label = "رجوع",
                 onClick = onBack
             )
-        } else {
-            // خانة صامتة بمقاس زر الرجوع تمامًا — مقاس الخانات ثابت فلا يقفز
-            // العنوان (أو الكبسولة) يمينًا/يسارًا بين تبويب وآخر (DF-09).
+        }
+        if (!canGoBack && !searchMode) {
             Box(Modifier.size(KararTokens.Size.circleButton))
         }
 

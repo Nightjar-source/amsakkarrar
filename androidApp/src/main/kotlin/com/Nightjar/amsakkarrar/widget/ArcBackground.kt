@@ -239,12 +239,23 @@ object ArcBackground {
             val fillStart = if (fillFromEnd) wF - fillW else 0f
             val fillEnd = fillStart + fillW
             val fillR = min(radius, fillW / 2f)
+            // تدرج شريط التقدم:
+            // في النهار: تدرج الشمس الذهبي الدافئ الأصلي (من اليمين لليسار في RTL)
+            // يبدأ من الأصفر الساطع وينتهي بالعنبري الدافئ دون أي لون أحمر تحذيري
             val fillColors = if (isDay) {
-                intArrayOf(0xFFFFE066.toInt(), 0xFFFF9F1C.toInt(), 0xFFE71D36.toInt())
+                if (fillFromEnd) {
+                    intArrayOf(0xFFFF8F00.toInt(), 0xFFFFB300.toInt(), 0xFFFFE066.toInt())
+                } else {
+                    intArrayOf(0xFFFFE066.toInt(), 0xFFFFB300.toInt(), 0xFFFF8F00.toInt())
+                }
             } else {
-                intArrayOf(0xFF80A1D4.toInt(), 0xFFC0D6DF.toInt(), 0xFFF2F5EA.toInt())
+                if (fillFromEnd) {
+                    intArrayOf(0xFF80A1D4.toInt(), 0xFFC0D6DF.toInt(), 0xFFF2F5EA.toInt())
+                } else {
+                    intArrayOf(0xFFF2F5EA.toInt(), 0xFFC0D6DF.toInt(), 0xFF80A1D4.toInt())
+                }
             }
-            val glowColor = if (isDay) 0x40FF9F1C.toInt() else 0x4080A1D4.toInt()
+            val glowColor = if (isDay) 0x33FFB300.toInt() else 0x3380A1D4.toInt()
 
             // هالة خفيفة تحيط بالتعبئة (بدل box-shadow — RemoteViews لا ترسم ظلال)
             val glowExpand = hF * 0.16f

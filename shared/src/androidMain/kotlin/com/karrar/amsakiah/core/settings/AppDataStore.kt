@@ -1,6 +1,7 @@
 package com.karrar.amsakiah.core.settings
 
 import android.content.Context
+import android.content.Intent
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -117,11 +118,20 @@ object AppDataStore {
 
     fun writeSettings(value: String) {
         cache[KEY_SETTINGS.name] = value
+        val ctx = AndroidAppContext.optional()
         runCatching {
-            AndroidAppContext.optional()?.getSharedPreferences("karar_settings", Context.MODE_PRIVATE)
+            ctx?.getSharedPreferences("karar_settings", Context.MODE_PRIVATE)
                 ?.edit()?.putString("app_settings_json", value)?.apply()
         }
         writeString(KEY_SETTINGS, value)
+        // بث فوري لنظام أندرويد لتحديث الودجتات والإشعار الحي لحظة تغيير المدينة أو الإعدادات
+        runCatching {
+            ctx?.let { appContext ->
+                val intent = Intent("com.Nightjar.amsakkarrar.ACTION_SETTINGS_CHANGED")
+                    .setPackage(appContext.packageName)
+                appContext.sendBroadcast(intent)
+            }
+        }
     }
 
     // ---- نمط الودجت (عام + لكل appWidgetId) ----

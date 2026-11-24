@@ -54,7 +54,6 @@ fun App() {
     var weather by remember { mutableStateOf<WeatherInfo?>(null) }
     var showSplash by remember { mutableStateOf(true) }
     val permissions = rememberPermissionController()
-    var showNotificationAsk by remember { mutableStateOf(false) }
 
     DisposableEffect(state) {
         onDispose { state.dispose() }
@@ -120,13 +119,12 @@ fun App() {
         }
     }
 
-    // مدة السبلاش الدنيا + طلب إذن الإشعارات بلطف بعد أن تستقر الواجهة:
-    // لا نطلب الصلاحية في أول ومضة — ننتظر حتى يرى المستخدم التطبيق أولًا.
+    // مدة السبلاش الدنيا + طلب إذن الإشعارات عبر نافذة النظام الرسمية مباشرة دون نوافذ مكررة
     LaunchedEffect(Unit) {
-        delay(1600)
+        delay(1200)
         showSplash = false
         if (!permissions.status.notifications) {
-            showNotificationAsk = true
+            permissions.requestNotifications()
         }
     }
 
@@ -172,47 +170,6 @@ fun App() {
                     exit = fadeOut(animationSpec = motionEffects())
                 ) {
                     SplashScreen()
-                }
-
-                // طلب إذن الإشعارات — نافذة تأكيد على Spring Motion (دواخل نفس النافذة،
-                // full-bleed بدون أشرطة فارغة) بدلًا من حوار النظام.
-                SpringDialog(
-                    visible = showNotificationAsk,
-                    onDismissRequest = { showNotificationAsk = false },
-                    dismissible = true
-                ) {
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        corner = 24.dp,
-                        contentPadding = PaddingValues(20.dp)
-                    ) {
-                        Text(
-                            text = "إذن الإشعارات",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = "لنصلك بطاقة الأذان عند دخول وقت الصلاة، والعدّاد التنازلي للصلاة القادمة " +
-                                "في شريط الإشعارات. لا نُصدر أي صوت ما لم تُفعّل ذلك من الإعدادات، " +
-                                "ونحترم كتم النظام وزر الصوت.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(Modifier.height(14.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = { showNotificationAsk = false }) {
-                                Text("ليس الآن")
-                            }
-                            TextButton(onClick = {
-                                showNotificationAsk = false
-                                permissions.requestNotifications()
-                            }) {
-                                Text("تفعيل الإشعارات")
-                            }
-                        }
-                    }
                 }
             }
         }
