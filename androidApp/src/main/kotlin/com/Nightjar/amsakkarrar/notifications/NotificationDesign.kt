@@ -79,8 +79,8 @@ object NotificationDesign {
             .setSmallIcon(R.drawable.ic_notif_small)
             .setCustomContentView(compactViews)
             .setCustomBigContentView(fullViews)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setOngoing(false)
             .setOnlyAlertOnce(true)
             .setSilent(true)
@@ -131,10 +131,6 @@ object NotificationDesign {
                 ArcBackground.progressBitmap(isDay, snapshot.periodProgress * 100f, 660, 54)
             }
             setImageViewBitmap(R.id.live_progress, progressBmp)
-            // ProgressBar أصلي بنفس النسبة — جاهز على الأجهزة التي تحترم layer-list
-            setProgressBar(R.id.live_progress_native, 100, (snapshot.periodProgress * 100f).toInt(), false)
-            if (isDay) setInt(R.id.live_progress_native, "setProgressDrawable", R.drawable.notif_progress_day)
-            else setInt(R.id.live_progress_native, "setProgressDrawable", R.drawable.notif_progress)
         }
     }
 

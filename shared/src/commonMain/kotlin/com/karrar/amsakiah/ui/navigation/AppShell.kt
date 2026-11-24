@@ -14,6 +14,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -883,128 +885,145 @@ private fun UnifiedTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AnimatedVisibility(
-            visible = canGoBack && !searchMode,
-            enter = slideInHorizontally(animationSpec = motionSpatialFluid()) { -it / 2 } + fadeIn(animationSpec = motionEffects()),
-            exit = slideOutHorizontally(animationSpec = motionSpatialFluid()) { -it / 2 } + fadeOut(animationSpec = motionEffects())
-        ) {
-            CircleGlassButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                label = "رجوع",
-                onClick = onBack
-            )
-        }
-        if (!canGoBack && !searchMode) {
-            Box(Modifier.size(KararTokens.Size.circleButton))
-        }
-
-        if (searchMode) {
-            // وضع البحث: الكبسولة كلها تتحول لحقل بحث أنيق بجانب الاسم.
-            GlassSurface(
-                modifier = searchOverlayModifier.weight(1f),
-                shape = CircleShape,
-                elevation = 14.dp
+        if (!searchMode) {
+            // مساحة ثابتة لزر الرجوع حتى لا يقفز العنوان أفقياً عند ظهوره واختفائه
+            Box(
+                modifier = Modifier.size(KararTokens.Size.circleButton),
+                contentAlignment = Alignment.Center
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                AnimatedVisibility(
+                    visible = canGoBack,
+                    enter = scaleIn(initialScale = 0.82f, animationSpec = motionSpatialFluid()) +
+                        fadeIn(animationSpec = motionEffects()),
+                    exit = scaleOut(targetScale = 0.82f, animationSpec = motionSpatialFluid()) +
+                        fadeOut(animationSpec = motionEffects())
                 ) {
-                    Icon(
-                        Icons.Filled.Search,
-                        contentDescription = null,
-                        tint = KararColors.Gold,
-                        modifier = Modifier.size(19.dp)
-                    )
-                    androidx.compose.foundation.text.BasicTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchChange,
-                        singleLine = true,
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            color = KararColors.TextPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            textDirection = androidx.compose.ui.text.style.TextDirection.Rtl
-                        ),
-                        cursorBrush = androidx.compose.ui.graphics.SolidColor(KararColors.Gold),
-                        modifier = Modifier.weight(1f),
-                        decorationBox = { inner ->
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    "ابحث…",
-                                    color = KararColors.TextMuted,
-                                    fontSize = 14.sp
-                                )
-                            }
-                            inner()
-                        }
+                    CircleGlassButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        label = "رجوع",
+                        onClick = onBack
                     )
                 }
             }
-            CircleGlassButton(
-                icon = Icons.Filled.Close,
-                label = "إغلاق البحث",
-                onClick = onSearchToggle
-            )
-            return
         }
 
-        GlassSurface(
+        AnimatedContent(
+            targetState = searchMode,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight(),
-            shape = CircleShape,
-            elevation = 14.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 18.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    AnimatedContent(
-                        targetState = title,
-                        transitionSpec = {
-                            // lambda غير تركيبية: تمرير حالة التركيب المحيط.
-                            (
-                                slideInVertically(animationSpec = spatialSpec(reduceMotion)) { -it / 2 } +
-                                    fadeIn(animationSpec = effectsSpec(reduceMotion))
-                                ).togetherWith(
-                                slideOutVertically(animationSpec = spatialSpec(reduceMotion)) { it / 2 } +
-                                    fadeOut(animationSpec = effectsSpec(reduceMotion))
-                            )
-                        },
-                        label = "topbar-title",
-                        contentAlignment = Alignment.Center
-                    ) { current ->
-                        // حجم الخط يتكيّف مع طول العنوان (سائل): طويل ← يصغُر بلا قصّ.
-                        // العنوان محدود العرض دائمًا (maxLines=1 + Ellipsis end)
-                        // ومثبت في المنتصف — لا يقصّه إلا الاستحالة الحقيقية.
-                        val adaptiveSize = when {
-                            current.length <= 12 -> 15.sp
-                            current.length <= 20 -> 13.5.sp
-                            current.length <= 30 -> 11.5.sp
-                            current.length <= 40 -> 9.5.sp
-                            else -> 8.5.sp
-                        }
-                        Text(
-                            text = current,
-                            color = KararColors.TextPrimary,
-                            fontSize = adaptiveSize,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center
+            transitionSpec = {
+                (scaleIn(initialScale = 0.96f, animationSpec = spatialFluidSpec(reduceMotion)) +
+                    fadeIn(animationSpec = effectsSpec(reduceMotion)))
+                    .togetherWith(
+                        scaleOut(targetScale = 0.96f, animationSpec = spatialFluidSpec(reduceMotion)) +
+                            fadeOut(animationSpec = effectsSpec(reduceMotion))
+                    )
+            },
+            label = "topbar-search-mode"
+        ) { isSearch ->
+            if (isSearch) {
+                // وضع البحث: الكبسولة كلها تتحول لحقل بحث أنيق بجانب الاسم.
+                GlassSurface(
+                    modifier = searchOverlayModifier.fillMaxSize(),
+                    shape = CircleShape,
+                    elevation = 14.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = null,
+                            tint = KararColors.Gold,
+                            modifier = Modifier.size(19.dp)
                         )
+                        androidx.compose.foundation.text.BasicTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchChange,
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = KararColors.TextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                textDirection = androidx.compose.ui.text.style.TextDirection.Rtl
+                            ),
+                            cursorBrush = androidx.compose.ui.graphics.SolidColor(KararColors.Gold),
+                            modifier = Modifier.weight(1f),
+                            decorationBox = { inner ->
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        "ابحث…",
+                                        color = KararColors.TextMuted,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                inner()
+                            }
+                        )
+                    }
+                }
+            } else {
+                GlassSurface(
+                    modifier = Modifier.fillMaxSize(),
+                    shape = CircleShape,
+                    elevation = 14.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            AnimatedContent(
+                                targetState = title,
+                                transitionSpec = {
+                                    (
+                                        slideInVertically(animationSpec = spatialSpec(reduceMotion)) { -it / 2 } +
+                                            fadeIn(animationSpec = effectsSpec(reduceMotion))
+                                        ).togetherWith(
+                                        slideOutVertically(animationSpec = spatialSpec(reduceMotion)) { it / 2 } +
+                                            fadeOut(animationSpec = effectsSpec(reduceMotion))
+                                    )
+                                },
+                                label = "topbar-title",
+                                contentAlignment = Alignment.Center
+                            ) { current ->
+                                val adaptiveSize = when {
+                                    current.length <= 12 -> 15.sp
+                                    current.length <= 20 -> 13.5.sp
+                                    current.length <= 30 -> 11.5.sp
+                                    current.length <= 40 -> 9.5.sp
+                                    else -> 8.5.sp
+                                }
+                                Text(
+                                    text = current,
+                                    color = KararColors.TextPrimary,
+                                    fontSize = adaptiveSize,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
 
-        if (supportsSearch) {
+        if (searchMode) {
+            CircleGlassButton(
+                icon = Icons.Filled.Close,
+                label = "إغلاق البحث",
+                onClick = onSearchToggle
+            )
+        } else if (supportsSearch) {
             CircleGlassButton(
                 icon = Icons.Filled.Search,
                 label = "بحث",

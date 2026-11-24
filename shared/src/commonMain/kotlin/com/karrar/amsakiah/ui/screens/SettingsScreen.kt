@@ -1321,22 +1321,36 @@ private fun ThemeModeRow(
                             .clip(RoundedCornerShape(50))
                             .background(bg)
                             .clickable { onChange(mode) }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            .padding(horizontal = 9.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             icon,
                             contentDescription = ThemeMode.label(mode),
                             tint = tint,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(13.dp)
                         )
-                        Text(
-                            ThemeMode.label(mode),
-                            color = tint,
-                            fontSize = 10.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                        )
+                        AnimatedVisibility(
+                            visible = selected,
+                            enter = expandHorizontally(
+                                animationSpec = tween(durationMillis = 220, easing = KararTokens.Motion.Fluid),
+                                expandFrom = Alignment.Start
+                            ) + fadeIn(motionEffects()),
+                            exit = shrinkHorizontally(
+                                animationSpec = tween(durationMillis = 200, easing = KararTokens.Motion.Fluid),
+                                shrinkTowards = Alignment.Start
+                            ) + fadeOut(motionEffects())
+                        ) {
+                            Text(
+                                ThemeMode.label(mode),
+                                color = KararColors.OnGold,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
                     }
                 }
             }
