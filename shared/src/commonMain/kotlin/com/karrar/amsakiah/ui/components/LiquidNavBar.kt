@@ -66,11 +66,11 @@ import com.karrar.amsakiah.ui.motion.motionSpatial
  */
 private fun floatingNavColors(isDark: Boolean): Pair<Color, Color> =
     if (isDark) {
-        // داكن: 10% أبيض (نمط المرجع bg-white/10) + حد أبيض 12% — لا كتلة لونية.
-        Color(0x1AFFFFFF) to Color(0x1FFFFFFF)
+        // داكن شفاف خفيف متناغم مع السماء بدون أي طبقات سوداء أو لطخات داكنة
+        Color(0x1A000000) to Color(0x22FFFFFF)
     } else {
-        // فاتح: 65% أبيض مصنفر فوق الخلفية الدافئة + حد أسود 13% — تباين مقروء.
-        Color(0xA6FFFFFF) to Color(0x21000000)
+        // فاتح شفاف رقيق ناعم
+        Color(0x2AFFFFFF) to Color(0x33FFFFFF)
     }
 
 @Composable
@@ -93,7 +93,6 @@ fun LiquidFloatingBottomBar(
             .widthIn(max = KararTokens.Size.navBarMaxWidth)
             .fillMaxWidth()
             .height(62.dp)
-            .shadow(14.dp, shape, ambientColor = Color(0x40000000), spotColor = Color(0x40000000))
             .clip(shape)
             .background(containerColor)
             .border(BorderStroke(1.dp, containerBorder), shape)
@@ -229,7 +228,6 @@ fun LiquidVerticalRail(
             .height((entries.size * 64).dp + 16.dp)
             .widthIn(max = 88.dp)
             .fillMaxWidth()
-            .shadow(14.dp, RoundedCornerShape(26.dp), ambientColor = Color(0x40000000), spotColor = Color(0x40000000))
             .clip(RoundedCornerShape(26.dp))
             .background(containerColor)
             .border(BorderStroke(1.dp, containerBorder), RoundedCornerShape(26.dp))

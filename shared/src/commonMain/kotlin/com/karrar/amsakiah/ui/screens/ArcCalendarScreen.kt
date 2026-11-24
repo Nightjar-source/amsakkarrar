@@ -154,7 +154,7 @@ fun ArcCalendarScreen(
             contentPadding = PaddingValues(
                 start = 14.dp + startInset,
                 end = 14.dp + endInset,
-                top = topInset + 148.dp,
+                top = topInset + 108.dp,
                 bottom = bottomInset + 24.dp
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -218,46 +218,12 @@ fun ArcCalendarScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "$monthTitle لعام $year هـ • $todayLine",
+                        text = todayLine,
                         color = palette.textMuted,
                         fontSize = 9.5.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                }
-                // المنقضية والمتبقية بجانب شريط العنوان أو تحته
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(palette.surface)
-                            .border(1.dp, palette.border, RoundedCornerShape(10.dp))
-                            .padding(horizontal = 7.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "منقضية: $passed",
-                            color = palette.textMuted,
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(palette.surface)
-                            .border(1.dp, KararColors.Gold.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
-                            .padding(horizontal = 7.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "متبقية: $remaining",
-                            color = KararColors.Gold,
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
                 Spacer(Modifier.width(8.dp))
                 // سهم الشهر السابق
@@ -291,61 +257,52 @@ fun ArcCalendarScreen(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
 
-            // مربعي «المنقضية» و «المتبقية» بنفس هوية amsak3d.tsx
+            // سطر أنيق عائم: اسم الشهر الهجري على اليمين، والمربعين العائمين (منقضية ومتبقية) على اليسار
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // المنقضية
+                Text(
+                    text = "$monthTitle لعام $year هـ",
+                    color = KararColors.Gold,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.07f))
-                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.Center,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "المنقضية: ",
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "$passed",
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-
-                // المتبقية
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(palette.gold.copy(alpha = 0.16f))
-                        .border(1.dp, palette.gold.copy(alpha = 0.40f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "المتبقية: ",
-                        color = palette.gold,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "$remaining",
-                        color = palette.gold,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(palette.surface)
+                            .border(1.dp, palette.border, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "منقضية: $passed",
+                            color = palette.textMuted,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(palette.surface)
+                            .border(1.dp, KararColors.Gold.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "متبقية: $remaining",
+                            color = KararColors.Gold,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

@@ -407,13 +407,13 @@ private fun TodayWidgetContent(context: Context, snapshot: PrayerSnapshot, appWi
                 // + شبكة الصلوات الست داخل الـHero نفسه (وليست صف Glance مكرر).
                 AndroidRemoteViews(
                     remoteViews = todayHeroRemoteViews(context, snapshot),
-                    modifier = GlanceModifier.fillMaxWidth()
+                    modifier = GlanceModifier.fillMaxSize()
                 )
             }
             WidgetTier.MEDIUM -> {
                 AndroidRemoteViews(
                     remoteViews = todayHeroRemoteViews(context, snapshot, compact = true),
-                    modifier = GlanceModifier.fillMaxWidth()
+                    modifier = GlanceModifier.fillMaxSize()
                 )
             }
             WidgetTier.COMPACT -> {

@@ -9,10 +9,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_hero_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:minWidth="180dp"
     android:layoutDirection="rtl"
-    android:gravity="center_horizontal"
+    android:gravity="center"
     android:orientation="vertical"
     android:paddingStart="4dp"
     android:paddingEnd="4dp">

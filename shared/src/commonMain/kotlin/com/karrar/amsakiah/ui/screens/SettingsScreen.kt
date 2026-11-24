@@ -1298,7 +1298,7 @@ private fun ThemeModeRow(
                     fontSize = 9.sp
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ThemeMode.all.forEach { mode ->
                     val selected = current == mode
                     val icon = when (mode) {
@@ -1306,37 +1306,37 @@ private fun ThemeModeRow(
                         ThemeMode.DARK -> Icons.Filled.DarkMode
                         else -> Icons.Filled.BrightnessAuto
                     }
+                    val bg by animateColorAsState(
+                        targetValue = if (selected) KararColors.Gold else KararColors.CardSoft,
+                        animationSpec = motionEffects(),
+                        label = "theme-mode-bg"
+                    )
+                    val tint by animateColorAsState(
+                        targetValue = if (selected) KararColors.OnGold else KararColors.TextSecondary,
+                        animationSpec = motionEffects(),
+                        label = "theme-mode-tint"
+                    )
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .background(if (selected) KararColors.Gold else KararColors.CardSoft)
+                            .background(bg)
                             .clickable { onChange(mode) }
-                            .padding(horizontal = 9.dp, vertical = 6.dp),
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             icon,
                             contentDescription = ThemeMode.label(mode),
-                            tint = if (selected) KararColors.OnGold else KararColors.TextSecondary,
-                            modifier = Modifier.size(13.dp)
+                            tint = tint,
+                            modifier = Modifier.size(14.dp)
                         )
-                        AnimatedVisibility(
-                            visible = selected,
-                            // كشف أفقي نابض (M3 Expressive) بدل الظهور المفاجئ،
-                            // ويتحول إلى قطع فوري في وضع «تقليل الحركة».
-                            enter = expandHorizontally(motionSpatial()) +
-                                fadeIn(motionEffects()),
-                            exit = shrinkHorizontally(motionSpatial()) +
-                                fadeOut(motionEffects())
-                        ) {
-                            Text(
-                                ThemeMode.label(mode),
-                                color = KararColors.OnGold,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Text(
+                            ThemeMode.label(mode),
+                            color = tint,
+                            fontSize = 10.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                        )
                     }
                 }
             }

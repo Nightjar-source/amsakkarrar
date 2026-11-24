@@ -111,15 +111,8 @@ object ArcBackground {
             )
         }
         val rect = RectF(0f, 0f, widthPx.toFloat(), heightPx.toFloat())
-        canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
-
-        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 2.5f
-            color = 0x33E5C368.toInt()
-        }
-        val strokeRect = RectF(1.5f, 1.5f, widthPx - 1.5f, heightPx - 1.5f)
-        canvas.drawRoundRect(strokeRect, cornerRadiusPx - 1.5f, cornerRadiusPx - 1.5f, strokePaint)
+        // ملء كامل المستطيل حتى حوافه تماماً ليتطابق مع بطاقة النظام دون أي إطار أو زوايا مقصوصة
+        canvas.drawRect(rect, paint)
 
         return out
     }
@@ -240,19 +233,19 @@ object ArcBackground {
             val fillEnd = fillStart + fillW
             val fillR = min(radius, fillW / 2f)
             // تدرج شريط التقدم:
-            // في النهار: تدرج الشمس الذهبي الدافئ الأصلي (من اليمين لليسار في RTL)
-            // يبدأ من الأصفر الساطع وينتهي بالعنبري الدافئ دون أي لون أحمر تحذيري
+            // في النهار: تدرج الشمس الذهبي الدافئ الموحد والمتناسق مع خطوط وأرقام التطبيق والودجت
+            // تدرج متصل بين درجات الذهب والكهرمان دون أي لون أحمر
             val fillColors = if (isDay) {
                 if (fillFromEnd) {
-                    intArrayOf(0xFFFF8F00.toInt(), 0xFFFFB300.toInt(), 0xFFFFE066.toInt())
+                    intArrayOf(0xFFFFB300.toInt(), 0xFFFFCA28.toInt(), 0xFFFFE082.toInt())
                 } else {
-                    intArrayOf(0xFFFFE066.toInt(), 0xFFFFB300.toInt(), 0xFFFF8F00.toInt())
+                    intArrayOf(0xFFFFE082.toInt(), 0xFFFFCA28.toInt(), 0xFFFFB300.toInt())
                 }
             } else {
                 if (fillFromEnd) {
-                    intArrayOf(0xFF80A1D4.toInt(), 0xFFC0D6DF.toInt(), 0xFFF2F5EA.toInt())
+                    intArrayOf(0xFF7986CB.toInt(), 0xFF9FA8DA.toInt(), 0xFFC5CAE9.toInt())
                 } else {
-                    intArrayOf(0xFFF2F5EA.toInt(), 0xFFC0D6DF.toInt(), 0xFF80A1D4.toInt())
+                    intArrayOf(0xFFC5CAE9.toInt(), 0xFF9FA8DA.toInt(), 0xFF7986CB.toInt())
                 }
             }
             val glowColor = if (isDay) 0x33FFB300.toInt() else 0x3380A1D4.toInt()
