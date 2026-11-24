@@ -213,12 +213,33 @@ object PrayerCalculator {
     fun slots(settings: AppSettings, date: LocalDate, nowSeconds: Int): List<PrayerSlot> {
         val times = timesFor(settings, date)
         val adjusted = adjustedTimes(times, settings)
+        val tomorrowTimes by lazy {
+            val tomorrow = date.plus(DatePeriod(days = 1))
+            adjustedTimes(timesFor(settings, tomorrow), settings)
+        }
         val ids = visibleIds(settings, date)
         val nextId = nextPrayerId(settings, date, nowSeconds)?.first
         return ids.map { id ->
-            val raw = adjusted[id] ?: 0.0
-            val (t12, ap, t24) = formatHour(raw)
-            PrayerSlot(id, PrayerMeta.label(id), raw, t12, ap, t24, id == nextId)
+            val todayRaw = adjusted[id] ?: 0.0
+            val todaySec = (todayRaw * 3600).roundToInt()
+            // إذا انقضى وقت هذا الموعد اليوم، نعرض موعد الغد مع علامة isTomorrow
+            val isPassed = nowSeconds >= todaySec
+            val finalRaw = if (isPassed) {
+                tomorrowTimes[id] ?: todayRaw
+            } else {
+                todayRaw
+            }
+            val (t12, ap, t24) = formatHour(finalRaw)
+            PrayerSlot(
+                id = id,
+                label = PrayerMeta.label(id),
+                rawHour = finalRaw,
+                time12 = t12,
+                amPm = ap,
+                time24 = t24,
+                isNext = id == nextId,
+                isTomorrow = isPassed
+            )
         }
     }
 

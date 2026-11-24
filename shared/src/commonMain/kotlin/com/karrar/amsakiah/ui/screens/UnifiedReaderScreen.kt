@@ -116,7 +116,8 @@ fun UnifiedReaderScreen(
     var themeId by remember { mutableStateOf("auto") }
     var withDiacritics by remember { mutableStateOf(true) }
     var fontIndex by remember { mutableIntStateOf(0) }
-    var isTwoPageMode by remember(contentId) { mutableStateOf(true) }
+    // 0: ورقة حقيقية تقلب أفقياً (كتاب)، 1: تمرير مستمر عمودي
+    var readingLayoutMode by remember(contentId) { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
     val body = remember(contentId, bodyText, subtitle) {
@@ -182,7 +183,7 @@ fun UnifiedReaderScreen(
             // Compact (< 600dp): ورقة واحدة لملء شاشة الهاتف العمودية.
             // Medium/Expanded (>= 600dp) أو أفقي (Landscape): ورقتان متقابلتان كالكتاب الحقيقي.
             val isLandscapeOrWide = maxWidth >= 600.dp || (maxHeight < 500.dp && maxWidth >= 540.dp)
-            val showTwoPages = isLandscapeOrWide && isTwoPageMode
+            val showTwoPages = isLandscapeOrWide && readingLayoutMode == 0
 
             val pages = remember(renderedBody, showTwoPages) {
                 splitIntoBookPages(renderedBody, targetPageChars = if (showTwoPages) 760 else 920)
@@ -207,7 +208,37 @@ fun UnifiedReaderScreen(
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
-                if (showTwoPages) {
+                if (readingLayoutMode == 1) {
+                    // وضع التمرير العمودي المستمر لجميع الصفحات
+                    val scrollState = rememberScrollState()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .padding(horizontal = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        pages.forEachIndexed { pageIdx, pageContent ->
+                            ReaderBookPage(
+                                pageNumber = pageIdx + 1,
+                                totalPages = pages.size,
+                                content = pageContent,
+                                theme = theme,
+                                activeFont = activeFont.first,
+                                fontSize = fontSize,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            if (pageIdx < pages.size - 1) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(theme.barBorder.copy(alpha = 0.35f))
+                                )
+                            }
+                        }
+                    }
+                } else if (showTwoPages) {
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
@@ -286,58 +317,6 @@ fun UnifiedReaderScreen(
                     }
                 }
 
-                // شريط تقليب الصفحات العائم — كبسولة زجاجية أنيقة واحدة فقط تطفو فوق مسافة النظام
-                if (spreadCount > 1) {
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = navigationBottom + 12.dp)
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(theme.bar.copy(alpha = 0.94f))
-                            .border(1.dp, theme.barBorder, RoundedCornerShape(22.dp))
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        RoundIcon(
-                            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            description = "الصفحة السابقة",
-                            tint = if (pagerState.currentPage > 0) theme.icon else theme.icon.copy(alpha = 0.25f),
-                            onClick = {
-                                if (pagerState.currentPage > 0) {
-                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-                                }
-                            }
-                        )
-
-                        val pageIndicator = if (showTwoPages) {
-                            val p1 = pagerState.currentPage * 2 + 1
-                            val p2 = minOf(pagerState.currentPage * 2 + 2, pages.size)
-                            if (p1 == p2) "ورقة $p1 من ${pages.size}" else "ورقة $p1 - $p2 من ${pages.size}"
-                        } else {
-                            "ورقة ${pagerState.currentPage + 1} من ${pages.size}"
-                        }
-
-                        Text(
-                            text = pageIndicator,
-                            color = theme.title,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = activeFont.first
-                        )
-
-                        RoundIcon(
-                            icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            description = "الصفحة التالية",
-                            tint = if (pagerState.currentPage < spreadCount - 1) theme.icon else theme.icon.copy(alpha = 0.25f),
-                            onClick = {
-                                if (pagerState.currentPage < spreadCount - 1) {
-                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
-                                }
-                            }
-                        )
-                    }
-                }
             }
         }
 
@@ -388,12 +367,12 @@ fun UnifiedReaderScreen(
                             onClick = onToggleFavorite
                         )
                     }
-                    // زر التبديل بين وضع الورقتين والصفحة الواحدة
+                    // زر التبديل بين وضع تقليب الكتاب الحقيقي أفقياً والتمرير العمودي
                     RoundIcon(
-                        icon = if (isTwoPageMode) Icons.AutoMirrored.Filled.MenuBook else Icons.Filled.CropSquare,
-                        description = if (isTwoPageMode) "عرض ورقتين (كتاب) — انقر لملء الشاشة بصفحة واحدة" else "صفحة واحدة — انقر لعرض ورقتين كالكتاب",
-                        tint = if (isTwoPageMode) KararColors.Gold else theme.icon,
-                        onClick = { isTwoPageMode = !isTwoPageMode }
+                        icon = if (readingLayoutMode == 0) Icons.AutoMirrored.Filled.MenuBook else Icons.Filled.ViewAgenda,
+                        description = if (readingLayoutMode == 0) "وضع تقليب الكتاب — انقر للتمرير العمودي" else "وضع التمرير العمودي — انقر لتقليب الكتاب",
+                        tint = if (readingLayoutMode == 0) KararColors.Gold else theme.icon,
+                        onClick = { readingLayoutMode = if (readingLayoutMode == 0) 1 else 0 }
                     )
                     // زر الأدوات المخصص — يظهر/يخفي شريط الأدوات فقط (زر مستقل بدل ما يكون ظاهرا دائما).
                     RoundIcon(
@@ -506,13 +485,13 @@ fun UnifiedReaderScreen(
             }
         }
 
-        // نقطة استرجاع الواجهة في وضع الملء — تطفو على الجانب الأيسر السفلي لتفادي أي تداخل
+        // نقطة استرجاع الواجهة في وضع الملء — تطفو بطرف الشاشة بالأعلى جانباً كما طلب المستخدم
         if (!chromeVisible) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = safeStart + 16.dp, bottom = navigationBottom + 16.dp)
-                    .size(44.dp)
+                    .align(Alignment.TopStart)
+                    .padding(start = safeStart + 16.dp, top = statusTop + 14.dp)
+                    .size(42.dp)
                     .clip(CircleShape)
                     .background(theme.bar.copy(alpha = 0.92f))
                     .border(1.dp, theme.barBorder, CircleShape)

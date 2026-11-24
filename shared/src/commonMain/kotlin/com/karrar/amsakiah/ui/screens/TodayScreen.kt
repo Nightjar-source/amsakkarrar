@@ -841,16 +841,20 @@ private fun PrayerStrip(
                 itemsIndexed(visibleIds, key = { _, id -> id }) { _, id ->
                     val todayHour = todayTimes[id] ?: 0.0
                     val isTonightFajrOrImsak = isNightTime && (id == "imsak" || id == "fajr")
-                    val showTomorrow = id == targetId && targetIsTomorrow && !isTonightFajrOrImsak
+                    // إذا انقضت الصلاة اليوم ننتقل تلقائياً لوقت الغد
+                    val isPast = nowSeconds >= (todayHour * 3600).roundToInt()
+                    val showTomorrow = isPast || (id == targetId && targetIsTomorrow && !isTonightFajrOrImsak)
                     val rawHour = if (showTomorrow) tomorrowTimes[id] ?: todayHour else todayHour
                     val formatted = PrayerCalculator.formatHour(rawHour, use24Hour)
+                    // في الليل بعد المغرب: لا نكتب (غداً) على الفجر/الإمساك لأن الليلة صارت ليلتهما طبيعياً
+                    val displayTomorrowLabel = showTomorrow && !(isNightTime && (id == "imsak" || id == "fajr"))
                     PrayerCard(
                         id = id,
                         label = PrayerMeta.label(id),
                         time12 = formatted.first,
                         amPm = formatted.second,
                         active = id == targetId,
-                        tomorrow = showTomorrow,
+                        tomorrow = displayTomorrowLabel,
                         compact = compact,
                         onClick = { onPrayerClick(id) }
                     )

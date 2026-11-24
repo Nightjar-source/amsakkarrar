@@ -147,14 +147,14 @@ fun ArcCalendarScreen(
         val startInset = contentPadding.calculateStartPadding(layoutDirection)
         val endInset = contentPadding.calculateEndPadding(layoutDirection)
 
-        // ---------- بطاقات الأيام: تمتد كامل الشاشة وتمر تحت الشريط العائم ----------
+        // ---------- بطاقات الأيام: تمتد كامل الشاشة وتمر تحت الشريط العائم مع مسافة أمان كافية ----------
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 14.dp + startInset,
                 end = 14.dp + endInset,
-                top = topInset + 122.dp,
+                top = topInset + 148.dp,
                 bottom = bottomInset + 24.dp
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -172,7 +172,7 @@ fun ArcCalendarScreen(
             }
         }
 
-        // ---------- الرأس الموحد العائم: رجوع + العنوان وسنة الهجرة + أزرار التنقل السريعة + المنقضية والمتبقية ----------
+        // ---------- الرأس الموحد العائم: رجوع + «مواقيت الصلاة» + التاريخ + المنقضية والمتبقية ----------
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -185,7 +185,7 @@ fun ArcCalendarScreen(
                 .clip(RoundedCornerShape(26.dp))
                 .background(palette.surfaceHigh.copy(alpha = 0.94f))
                 .border(1.dp, palette.border, RoundedCornerShape(26.dp))
-                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -210,25 +210,60 @@ fun ArcCalendarScreen(
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "أوقات الصلاة شهر $monthTitle لعام $year هـ",
+                        text = "مواقيت الصلاة",
                         color = palette.textPrimary,
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = todayLine,
+                        text = "$monthTitle لعام $year هـ • $todayLine",
                         color = palette.textMuted,
-                        fontSize = 9.sp,
+                        fontSize = 9.5.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+                // المنقضية والمتبقية بجانب شريط العنوان أو تحته
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(palette.surface)
+                            .border(1.dp, palette.border, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "منقضية: $passed",
+                            color = palette.textMuted,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(palette.surface)
+                            .border(1.dp, KararColors.Gold.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "متبقية: $remaining",
+                            color = KararColors.Gold,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                Spacer(Modifier.width(8.dp))
                 // سهم الشهر السابق
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
                         .background(palette.surface)
                         .border(1.dp, palette.border, CircleShape)
@@ -237,13 +272,13 @@ fun ArcCalendarScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("›", color = palette.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("›", color = palette.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(4.dp))
                 // سهم الشهر التالي
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
                         .background(palette.surface)
                         .border(1.dp, palette.border, CircleShape)
@@ -252,7 +287,7 @@ fun ArcCalendarScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("‹", color = palette.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("‹", color = palette.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
