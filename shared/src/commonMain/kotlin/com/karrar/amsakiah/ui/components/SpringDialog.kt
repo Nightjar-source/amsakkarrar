@@ -7,6 +7,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -126,8 +129,10 @@ fun SpringDialog(
                     )
             )
 
-            // ── البطاقة المرفوعة ──
-            val base = Modifier.widthIn(max = 420.dp)
+            // ── البطاقة المرفوعة مع مراعاة مسافات الأمان الديناميكية للنظام ──
+            val base = Modifier
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .widthIn(max = 440.dp)
             val imeAware = if (imePadding) base.imePadding() else base
             Box(
                 modifier = imeAware

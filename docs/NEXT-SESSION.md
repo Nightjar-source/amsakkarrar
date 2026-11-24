@@ -1,6 +1,30 @@
 
 ---
 
+## ✅ 2026-11-23 — الإصدار 1.2.3: إصلاح كراش القارئ + ضبط شارات التقويم + انسيابية الحركات + اندماج الإشعار وودجت شاشة القفل
+
+- **إصلاح السبب الجذري لكراش القارئ (UnifiedReaderScreen):**
+  - استبدال الـ Regex الحاوي على Look-behind غير محدود الطول `(?<=﴿\\d+﴾)` بدالة تقطيع خطية نقية في كوتلن تفحص علامات الترقيم ورمز نهاية الآية `﴾`.
+  - القضاء التام على استثناء `java.util.regex.PatternSyntaxException: Look-behind pattern matches must have a bounded maximum length` على محرك Android ICU.
+- **تنظيف أسماء وزوايا طرق الحساب في شاشة الضبط:**
+  - في [OfflineCities.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/core/astronomy/OfflineCities.kt): إزالة وسوم التصحيح `(ID:X)` التي كانت تنعكس مشوهة `(0:ID)` في الواجهة العربية، وكتابة الزوايا الفلكية المعتمدة رسمياً لكل معيار بالعربية الفصحى (مثل: «معهد ليفا - قم المقدسة (فجر 16° / مغرب 14°)»).
+- **تحديث إصدار التطبيق في ملف البناء:**
+  - رفع النسخة إلى `versionName = "1.2.3"` و `versionCode = 10804` في `androidApp/build.gradle.kts`.
+- **تصميم تقويم القوس (ArcCalendarScreen) وفق amsak3d.tsx:**
+  - إضافة شارات الإحصاء الرقمي: «المنقضية» (خلفية زجاجية بيضاء شبه شفافة) و«المتبقية» (شارة ذهبية دافئة).
+  - ضبط الهوامش العلوية لقائمة الأيام لمنع تداخل زوايا البطاقات مع شريط العنوان العائم.
+- **انسيابية الحركات ونعومة التقليب (M3 Expressive Spring Physics):**
+  - في [SettingsScreen.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/SettingsScreen.kt): تحويل فتح وإغلاق تفاصيل المعيار المتقدم إلى `AnimatedVisibility` بحركة زنبركية فيزيائية رطبة (`Spring.DampingRatioLowBouncy`).
+  - في [TodayScreen.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/screens/TodayScreen.kt): اعتماد زنبرك ناعم خالٍ من الارتداد (`Spring.DampingRatioNoBouncy`) لتقليب الصلوات لمنع وميض وتشتت أرقام العداد التنازلي.
+- **ودجت شاشة القفل (Lock Screen / Keyguard):**
+  - إضافة وسم `android:widgetCategory="home_screen|keyguard"` في ملفات الـ XML السبعة للودجت لتفعيل ظهورها مباشرة على شاشة القفل في أجهزة أندرويد المدعومة.
+- **اندماج الإشعارات التلقائي مع واجهات شاومي HyperOS وسامسونج One UI:**
+  - بناء دالة `ArcBackground.renderNotifBackground`: مزج ألوان السماء الحية مع عمق الزجاج الليلي الداكن، ورسم حواف مستديرة ناعمة وإطار ذهبي رقيق 0.8dp، وضبط `scaleType="fitXY"` لمنع ظهور الإشعار كمربع أزرق مقطوع الأطراف.
+- **ألوان السماء والطقس الشتوي الواقعي:**
+  - إثراء درجات ألوان الشروق والغروب الشتوي في [SkyColors.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/ui/theme/SkyColors.kt) وتوليد طقس تقديري واقعي أوفلاين في [Weather.android.kt](file:///c:/Users/kar/StudioProjects/RamadanappV7/amsakkarrar/shared/src/commonMain/kotlin/com/karrar/amsakiah/core/weather/Weather.android.kt).
+
+---
+
 ## ✅ 2026-11-23 — ترقية Compose BOM 2026.11.01 + تقليب عدادات الصلوات أفقياً (Swipe/Pager) + عزل الودجت أوفلاين
 
 - **ترقية حزم Compose و Material 3 إلى نوفمبر 2026:**

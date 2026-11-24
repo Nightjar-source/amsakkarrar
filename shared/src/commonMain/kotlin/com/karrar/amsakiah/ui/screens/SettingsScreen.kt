@@ -2,9 +2,14 @@
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -925,8 +930,6 @@ private val SETTINGS_METHODS_ADVANCED = listOf(
 @Composable
 private fun MethodSelector(selected: String, onSelect: (String) -> Unit) {
     var showAdvanced by rememberSaveable { mutableStateOf(false) }
-    // السريعة دائمًا ٤ فقط، و«متقدمة» لا توسّع إلا بعد النقر عليها —
-    // نفس البنية في المرجع وفيه تقلص تلقائي بلا ازدحام.
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         MethodChipsGrid(SETTINGS_METHODS_QUICK, selected, onSelect, columns = 2)
         Row(
@@ -946,9 +949,28 @@ private fun MethodSelector(selected: String, onSelect: (String) -> Unit) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
-            Text(if (showAdvanced) "−" else "+", color = KararColors.Gold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = if (showAdvanced) "−" else "+",
+                color = KararColors.Gold,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
-        if (showAdvanced) {
+        AnimatedVisibility(
+            visible = showAdvanced,
+            enter = expandVertically(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeIn(animationSpec = tween(250)),
+            exit = shrinkVertically(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeOut(animationSpec = tween(200))
+        ) {
             MethodChipsGrid(SETTINGS_METHODS_ADVANCED, selected, onSelect, columns = 2)
         }
     }

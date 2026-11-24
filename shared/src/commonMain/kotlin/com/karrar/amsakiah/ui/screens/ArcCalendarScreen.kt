@@ -154,7 +154,7 @@ fun ArcCalendarScreen(
             contentPadding = PaddingValues(
                 start = 14.dp + startInset,
                 end = 14.dp + endInset,
-                top = topInset + 72.dp,
+                top = topInset + 122.dp,
                 bottom = bottomInset + 24.dp
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -172,8 +172,8 @@ fun ArcCalendarScreen(
             }
         }
 
-        // ---------- الرأس الموحد العائم: رجوع + العنوان وسنة الهجرة + أزرار التنقل السريعة ----------
-        Row(
+        // ---------- الرأس الموحد العائم: رجوع + العنوان وسنة الهجرة + أزرار التنقل السريعة + المنقضية والمتبقية ----------
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
@@ -185,71 +185,133 @@ fun ArcCalendarScreen(
                 .clip(RoundedCornerShape(26.dp))
                 .background(palette.surfaceHigh.copy(alpha = 0.94f))
                 .border(1.dp, palette.border, RoundedCornerShape(26.dp))
-                .padding(horizontal = 10.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 12.dp, vertical = 9.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(palette.surface)
-                    .border(1.dp, palette.border, CircleShape)
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "رجوع",
-                    tint = palette.textPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(palette.surface)
+                        .border(1.dp, palette.border, CircleShape)
+                        .clickable(onClick = onBack),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "رجوع",
+                        tint = palette.textPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "أوقات الصلاة شهر $monthTitle لعام $year هـ",
+                        color = palette.textPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = todayLine,
+                        color = palette.textMuted,
+                        fontSize = 9.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                // سهم الشهر السابق
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(palette.surface)
+                        .border(1.dp, palette.border, CircleShape)
+                        .clickable {
+                            if (month == 1) { month = 12; year -= 1 } else month -= 1
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("›", color = palette.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.width(6.dp))
+                // سهم الشهر التالي
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(palette.surface)
+                        .border(1.dp, palette.border, CircleShape)
+                        .clickable {
+                            if (month == 12) { month = 1; year += 1 } else month += 1
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("‹", color = palette.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
             }
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = "أوقات الصلاة شهر $monthTitle لعام $year هـ",
-                    color = palette.textPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = todayLine,
-                    color = palette.textMuted,
-                    fontSize = 9.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            // سهم الشهر السابق
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(palette.surface)
-                    .border(1.dp, palette.border, CircleShape)
-                    .clickable {
-                        if (month == 1) { month = 12; year -= 1 } else month -= 1
-                    },
-                contentAlignment = Alignment.Center
+
+            Spacer(Modifier.height(8.dp))
+
+            // مربعي «المنقضية» و «المتبقية» بنفس هوية amsak3d.tsx
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("›", color = palette.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.width(6.dp))
-            // سهم الشهر التالي
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(palette.surface)
-                    .border(1.dp, palette.border, CircleShape)
-                    .clickable {
-                        if (month == 12) { month = 1; year += 1 } else month += 1
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text("‹", color = palette.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                // المنقضية
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.07f))
+                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "المنقضية: ",
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "$passed",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+
+                // المتبقية
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(palette.gold.copy(alpha = 0.16f))
+                        .border(1.dp, palette.gold.copy(alpha = 0.40f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "المتبقية: ",
+                        color = palette.gold,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "$remaining",
+                        color = palette.gold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
         }
     }

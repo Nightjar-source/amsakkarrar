@@ -834,7 +834,22 @@ private fun readerTheme(id: String): ReaderThemeResolved {
  */
 private fun splitIntoBookPages(text: String, targetPageChars: Int = 850): List<String> {
     if (text.length <= targetPageChars) return listOf(text)
-    val tokens = text.split(Regex("(?<=[\\n\\.\\،\\؛\\؟\\!\\۝])|(?<=﴿\\d+﴾)")).map { it }.filter { it.isNotEmpty() }
+    val tokens = mutableListOf<String>()
+    val currentToken = StringBuilder()
+    var i = 0
+    while (i < text.length) {
+        val c = text[i]
+        currentToken.append(c)
+        if (c == '\n' || c == '.' || c == '،' || c == '؛' || c == '؟' || c == '!' || c == '۝' || c == '﴾') {
+            tokens.add(currentToken.toString())
+            currentToken.clear()
+        }
+        i++
+    }
+    if (currentToken.isNotEmpty()) {
+        tokens.add(currentToken.toString())
+    }
+
     val pages = mutableListOf<String>()
     val current = StringBuilder()
     for (token in tokens) {

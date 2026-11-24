@@ -82,6 +82,57 @@ object ArcBackground {
     }
 
     /**
+     * خلفية مخصصة للإشعارات (شاومي HyperOS / سامسونج One UI / أندرويد 14+):
+     * - تمزج ألوان السماء الحية مع عمق الزجاج الليلي الداكن لضمان تباين عالي للنصوص.
+     * - زوايا مستديرة ناعمة (Rounded Corners) مع إطار ذهبي رقيق لمنع أي قص فج وتندمج تماماً داخل بطاقة النظام.
+     */
+    fun renderNotifBackground(
+        nowSeconds: Int,
+        widthPx: Int = 720,
+        heightPx: Int = 320,
+        cornerRadiusPx: Float = 48f
+    ): Bitmap {
+        val (top, bottom, _) = SkyTheme.getSkyColorsForSecond(nowSeconds.toFloat())
+        val out = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+
+        val topArgb = top.toArgb()
+        val bottomArgb = bottom.toArgb()
+
+        val blendedTop = blendColors(topArgb, 0xFF141624.toInt(), 0.55f)
+        val blendedBottom = blendColors(bottomArgb, 0xFF0D0E16.toInt(), 0.40f)
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = LinearGradient(
+                0f, 0f, 0f, heightPx.toFloat(),
+                intArrayOf(blendedTop, blendedBottom),
+                null,
+                Shader.TileMode.CLAMP
+            )
+        }
+        val rect = RectF(0f, 0f, widthPx.toFloat(), heightPx.toFloat())
+        canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
+
+        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 2.5f
+            color = 0x33E5C368.toInt()
+        }
+        val strokeRect = RectF(1.5f, 1.5f, widthPx - 1.5f, heightPx - 1.5f)
+        canvas.drawRoundRect(strokeRect, cornerRadiusPx - 1.5f, cornerRadiusPx - 1.5f, strokePaint)
+
+        return out
+    }
+
+    private fun blendColors(foreground: Int, background: Int, alpha: Float): Int {
+        val a = alpha.coerceIn(0f, 1f)
+        val r = (android.graphics.Color.red(foreground) * a + android.graphics.Color.red(background) * (1 - a)).toInt()
+        val g = (android.graphics.Color.green(foreground) * a + android.graphics.Color.green(background) * (1 - a)).toInt()
+        val b = (android.graphics.Color.blue(foreground) * a + android.graphics.Color.blue(background) * (1 - a)).toInt()
+        return android.graphics.Color.rgb(r, g, b)
+    }
+
+    /**
      * يبني صورة الخلفية 480×480 بكسل (تُمدّد على الودجت/الإشعار عبر scaleType="fitXY").
      * كلٌّ من الودجت والإشعارات تستخدم الخلفية نفسها — تزامن كلي حرفي.
      *

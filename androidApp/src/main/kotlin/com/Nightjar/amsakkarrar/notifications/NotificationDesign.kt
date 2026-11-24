@@ -103,9 +103,13 @@ object NotificationDesign {
         val layout = if (compact) R.layout.notification_live_compact else R.layout.notification_live
 
         return RemoteViews(context.packageName, layout).apply {
-            // خلفية القوس الديناميكية — شريط عمودي 4×256 (~4KB) يُمدَّد عبر fitXY؛
-            // الشريط آمن لمعاملة RemoteViews (~1MB) على سامسونغ بينما 512px القديمة كانت بدون ضرورة.
-            setImageViewBitmap(R.id.notif_bg_image, ArcBackground.renderStrip(snapshot.nowSeconds))
+            // خلفية القوس الديناميكية المتكيفة المندمجة مع البطاقة
+            val notifBmp = if (compact) {
+                ArcBackground.renderNotifBackground(snapshot.nowSeconds, widthPx = 720, heightPx = 180, cornerRadiusPx = 36f)
+            } else {
+                ArcBackground.renderNotifBackground(snapshot.nowSeconds, widthPx = 720, heightPx = 360, cornerRadiusPx = 48f)
+            }
+            setImageViewBitmap(R.id.notif_bg_image, notifBmp)
             setTextViewText(R.id.live_label, "باقي على ${snapshot.nextLabel}")
             if (!compact) {
                 setTextViewText(R.id.live_target, snapshot.nextTime)
@@ -213,7 +217,12 @@ object NotificationDesign {
         val seconds = currentDaySeconds(context)
         val layout = if (compact) R.layout.notification_prayer_compact else R.layout.notification_prayer
         return RemoteViews(context.packageName, layout).apply {
-            setImageViewBitmap(R.id.notif_bg_image, ArcBackground.renderStrip(seconds))
+            val notifBmp = if (compact) {
+                ArcBackground.renderNotifBackground(seconds, widthPx = 720, heightPx = 180, cornerRadiusPx = 36f)
+            } else {
+                ArcBackground.renderNotifBackground(seconds, widthPx = 720, heightPx = 360, cornerRadiusPx = 48f)
+            }
+            setImageViewBitmap(R.id.notif_bg_image, notifBmp)
             if (compact) {
                 setTextViewText(R.id.prayer_compact_title, "حان الآن موعد $prayerLabel")
                 setTextViewText(R.id.prayer_compact_time, currentTime)

@@ -12,6 +12,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -213,106 +216,118 @@ fun TodayScreen(
         }
     }
 
-    // المسافات الآمنة الأفقية تُطبَّق مرة واحدة في الشل (safeDrawing) عبر
-    // contentPadding؛ هنا هامش تصميم بسيط فقط حتى لا يُحسب الثقب مرّتين.
+    val layoutDirection = LocalLayoutDirection.current
+    val topInset = contentPadding.calculateTopPadding()
+    val bottomInset = contentPadding.calculateBottomPadding()
+    val startInset = contentPadding.calculateStartPadding(layoutDirection)
+    val endInset = contentPadding.calculateEndPadding(layoutDirection)
+
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
     ) {
-        // المحتوى وحده يُزاح بمسافات آمنة — الخلفية الحية مرسومة في جذر الشل ممتدة للحواف وخلف الشريط الجانبي.
-        val stageCompact = maxHeight < 620.dp
-        val stageWidth = minOf(maxWidth, KararTokens.Size.todayStageMaxWidth)
-        Box(Modifier.fillMaxSize().padding(contentPadding)) {
+        val screenWidth = maxWidth
+        val screenHeight = maxHeight
+        val stageCompact = screenHeight < 620.dp
         val compact = stageCompact
+        val scrollState = rememberScrollState()
 
+        // التمرير يمتد من الحافة للحافة كاملة الشاشة (Edge-to-Edge) وخلف أشرطة النظام
+        // والشريط العائم بلا أي "حد تمرير" أو قص مستطيل
         Column(
             modifier = Modifier
-                .align(Alignment.Center)
-                .width(stageWidth)
-                .fillMaxHeight()
-                // على الشاشات الصغيرة/المنقسمة: المحتوى يتمرّر بدل أن يُقصّ —
-                // القوس يبقى كاملًا والأرقام لا تُفقد تحت الحواف.
-                .verticalScroll(rememberScrollState())
+                .fillMaxSize()
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            TodayHeader(
-                settings = settings,
-                weather = weather,
-                hijri = hijri,
-                date = date,
-                onOpenSettings = onOpenSettings
-            )
+            // مسافة الأمان العلوية تحت شريط الحالة
+            Spacer(Modifier.height(topInset))
 
-            // ---- القوس ----
-            BoxWithConstraints(
+            // المسرح الداخلي: موسّط في الشاشات العريضة/المستطيلة ويمتد انسيابياً
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
+                    .widthIn(max = KararTokens.Size.todayStageMaxWidth)
+                    .padding(start = startInset, end = endInset),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // المساحة المتاحة فعليًا داخل المسرح بعد هامش التصميم الموحّد
-                // (16dp لكل جهة — نفس `p-4` في المرجع). الهوامش الآمنة للنظام
-                // وصلت أصلًا عبر contentPadding من الشل.
-                val availableW = (maxWidth - 32.dp).coerceAtLeast(1.dp)
-                // نسبة المسرح من SkyArc تشمل هامش النصّين الطرفيين ⇒ لا فراغ ميّت
-                // ولا قصّ لكلمة «الشروق» أو «المغرب».
-                val arcHeight = minOf(maxHeight, availableW / SKY_ARC_STAGE_ASPECT)
-                val arcWidth = arcHeight * SKY_ARC_STAGE_ASPECT
-                SkyArc(
-                    progress = phase.progress,
-                    isNight = isNight,
-                    hijriDay = hijri.day,
-                    timeText = clock.first,
-                    meridiem = clock.second,
-                    leftLabel = phase.leftLabel,
-                    leftTime = PrayerCalculator.formatHour(phase.leftHour, state.settings.use24Hour).first,
-                    rightLabel = phase.rightLabel,
-                    rightTime = PrayerCalculator.formatHour(phase.rightHour, state.settings.use24Hour).first,
-                    subPhaseBadge = phase.badge,
-                    // لا padding إضافي بعد size: الحشو بعد القياس يضاعف الهامش ويصغّر القوس.
-                    modifier = Modifier.size(width = arcWidth, height = arcHeight)
+                TodayHeader(
+                    settings = settings,
+                    weather = weather,
+                    hijri = hijri,
+                    date = date,
+                    onOpenSettings = onOpenSettings
                 )
-            }
 
-            if (countdownIds.isEmpty() || targetId == null) {
-                // سلوك V7: عند إلغاء كل الصلوات يبقى فراغ ثابت دون عدّاد.
-                Spacer(Modifier.height(100.dp))
-            } else {
-                CountdownSection(
-                    label = countdownLabel,
-                    hours = hoursLeft,
-                    minutes = minutesLeft,
-                    seconds = secondsLeft,
-                    dotsCount = countdownIds.size,
-                    activeDot = activeIndex,
-                    compact = compact,
-                    onDotClick = { manualIndex = it },
-                    onSwipeNext = {
-                        manualIndex = (activeIndex + 1).mod(countdownIds.size)
-                    },
-                    onSwipePrevious = {
-                        manualIndex = (activeIndex - 1 + countdownIds.size).mod(countdownIds.size)
-                    }
-                )
-            }
+                // ---- القوس السماوي التفاعلي ----
+                val availableW = minOf(screenWidth - 32.dp, KararTokens.Size.todayStageMaxWidth - 32.dp).coerceAtLeast(1.dp)
+                val targetArcHeight = (availableW / SKY_ARC_STAGE_ASPECT).coerceAtMost(if (compact) 230.dp else 295.dp)
+                val arcWidth = targetArcHeight * SKY_ARC_STAGE_ASPECT
 
-            BottomArea(
-                visibleIds = visibleIds,
-                todayTimes = todayTimes,
-                tomorrowTimes = tomorrowTimes,
-                targetId = targetId,
-                targetIsTomorrow = targetIsTomorrow,
-                isNightTime = isNightTime,
-                compact = compact,
-                use24Hour = state.settings.use24Hour,
-                onOpenCalendar = onOpenArcCalendar,
-                onPrayerClick = { id ->
-                    if (countdownIds.isNotEmpty()) {
-                        val index = countdownIds.indexOf(id)
-                        if (index >= 0) manualIndex = index
-                    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(targetArcHeight + 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SkyArc(
+                        progress = phase.progress,
+                        isNight = isNight,
+                        hijriDay = hijri.day,
+                        timeText = clock.first,
+                        meridiem = clock.second,
+                        leftLabel = phase.leftLabel,
+                        leftTime = PrayerCalculator.formatHour(phase.leftHour, state.settings.use24Hour).first,
+                        rightLabel = phase.rightLabel,
+                        rightTime = PrayerCalculator.formatHour(phase.rightHour, state.settings.use24Hour).first,
+                        subPhaseBadge = phase.badge,
+                        modifier = Modifier.size(width = arcWidth, height = targetArcHeight)
+                    )
                 }
-            )
+
+                if (countdownIds.isEmpty() || targetId == null) {
+                    // سلوك V7: عند إلغاء كل الصلوات يبقى فراغ ثابت دون عدّاد.
+                    Spacer(Modifier.height(100.dp))
+                } else {
+                    CountdownSection(
+                        label = countdownLabel,
+                        hours = hoursLeft,
+                        minutes = minutesLeft,
+                        seconds = secondsLeft,
+                        dotsCount = countdownIds.size,
+                        activeDot = activeIndex,
+                        compact = compact,
+                        onDotClick = { manualIndex = it },
+                        onSwipeNext = {
+                            manualIndex = (activeIndex + 1).mod(countdownIds.size)
+                        },
+                        onSwipePrevious = {
+                            manualIndex = (activeIndex - 1 + countdownIds.size).mod(countdownIds.size)
+                        }
+                    )
+                }
+
+                BottomArea(
+                    visibleIds = visibleIds,
+                    todayTimes = todayTimes,
+                    tomorrowTimes = tomorrowTimes,
+                    targetId = targetId,
+                    targetIsTomorrow = targetIsTomorrow,
+                    isNightTime = isNightTime,
+                    compact = compact,
+                    use24Hour = state.settings.use24Hour,
+                    onOpenCalendar = onOpenArcCalendar,
+                    onPrayerClick = { id ->
+                        if (countdownIds.isNotEmpty()) {
+                            val index = countdownIds.indexOf(id)
+                            if (index >= 0) manualIndex = index
+                        }
+                    }
+                )
+            }
+
+            // مسافة الأمان السفلية لضمان تدفق ومرور المحتوى كاملاً تحت شريط التنقل واستقراره فوقه بأريحية
+            Spacer(Modifier.height(bottomInset + 20.dp))
         }
-        } // Box(contentPadding)
     }
 }
 
@@ -561,12 +576,22 @@ private fun CountdownSection(
             targetState = currentActive,
             transitionSpec = {
                 val isForward = targetState > initialState
-                // انسيابية تقليب الصلوات أفقياً (يمين / يسار):
+                // انسيابية تقليب الصلوات أفقياً (يمين / يسار) بفيزياء الزنبرك السائلة وبدون أي ارتداد أو وميض:
                 val dir = if (isForward) -1 else 1
-                (slideInHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { width -> dir * width / 3 } +
+                (slideInHorizontally(
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                    )
+                ) { width -> dir * width / 3 } +
                     fadeIn(animationSpec = effectsSpec(reduceMotion)))
                     .togetherWith(
-                        slideOutHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { width -> -dir * width / 3 } +
+                        slideOutHorizontally(
+                            animationSpec = androidx.compose.animation.core.spring(
+                                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
+                                stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                            )
+                        ) { width -> -dir * width / 3 } +
                         fadeOut(animationSpec = effectsSpec(reduceMotion))
                     )
             },
