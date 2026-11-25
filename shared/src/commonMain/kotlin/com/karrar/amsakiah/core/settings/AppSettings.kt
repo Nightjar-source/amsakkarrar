@@ -29,6 +29,8 @@ data class AppSettings(
     val methodCode: String = "alkafeel",
     val asrMethod: String = "shafii",
     val highLatRule: String = "aqrab_48",
+    /** مصدر بيانات الحساب: `offline` (المحرك الفلكي المحلي) أو `api` (أونلاين عند التوفر) */
+    val dataSource: String = "offline",
     val hijriOffset: Int = 0,
 
     /** تعديل يدوي بالدقائق لكل وقت (imsak, fajr, sunrise, dhuhr, asr, sunset, maghrib, isha, midnight) */

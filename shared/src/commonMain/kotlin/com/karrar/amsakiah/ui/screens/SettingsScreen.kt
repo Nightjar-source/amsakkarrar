@@ -716,30 +716,187 @@ private fun SettingsHero(
         Spacer(Modifier.height(14.dp))
 
         // ---------- طريقة الحساب — مدمجة داخل المرصد (لا قسم مستقل بعد اليوم) ----------
+        val activeMethodSpec = OfflineCities.methodsMatrix.firstOrNull { it.code == settings.methodCode }
+        val isShiaMethod = activeMethodSpec?.isShia ?: true
         Text(
-            "طريقة الحساب",
+            "طريقة الحساب ومصدر البيانات",
             color = KararColors.TextMuted,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            OfflineCities.methodsMatrix.firstOrNull { it.code == settings.methodCode }?.name ?: settings.methodCode,
+            activeMethodSpec?.name ?: settings.methodCode,
             color = KararColors.Gold,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
+        if (activeMethodSpec != null) {
+            val maghribDesc = if (activeMethodSpec.maghribType == 0) "${activeMethodSpec.maghribVal}°" else "${activeMethodSpec.maghribVal.toInt()} د"
+            val ishaDesc = if (activeMethodSpec.ishaType == 0) "${activeMethodSpec.ishaVal}°" else "${activeMethodSpec.ishaVal.toInt()} د"
+            Text(
+                "الفجر ${activeMethodSpec.fajr}° • المغرب $maghribDesc • العشاء $ishaDesc",
+                color = KararColors.TextMuted,
+                fontSize = 9.sp
+            )
+        }
         Spacer(Modifier.height(6.dp))
+
+        // التبديل بين المحرك الفلكي أوفلاين وطريقة الأونلاين (API) من ملف الكفيل
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf(
+                "offline" to "المحرك الفلكي أوفلاين",
+                "api" to "مزامنة أونلاين (API)"
+            ).forEach { (sourceCode, sourceLabel) ->
+                val isSourceSelected = settings.dataSource == sourceCode
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isSourceSelected) KararColors.Teal.copy(alpha = 0.20f) else KararColors.CardSoft)
+                        .border(
+                            1.dp,
+                            if (isSourceSelected) KararColors.Teal.copy(alpha = 0.65f) else KararColors.Border,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .clickable { state.update { it.copy(dataSource = sourceCode) } }
+                        .padding(vertical = 8.dp, horizontal = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        sourceLabel,
+                        color = if (isSourceSelected) KararColors.Teal else KararColors.TextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
         MethodSelector(
             selected = settings.methodCode,
             onSelect = onSelectMethod
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(10.dp))
+
+        // فرعيات المعيار (قواعد خطوط العرض الصيفية من ملف الكفيل)
         Text(
-            "قاعدة خطوط العرض الحالية: ${PrayerCalculator.highLatFor(settings.highLatRule).titleAr}",
+            "فرعيات المعيار وخطوط العرض العليا",
             color = KararColors.TextMuted,
-            fontSize = 9.sp
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
         )
+        Spacer(Modifier.height(6.dp))
+        val subRules = if (isShiaMethod) {
+            listOf(
+                "sayegh" to "تقويم الصائغ",
+                "aqrab_48" to "أقرب بلد 48° (لندن)",
+                "aqrab_45" to "أقرب بلد 45° (قم)",
+                "none" to "بدون تعديل"
+            )
+        } else {
+            listOf(
+                "fixed_90" to "الفاصل الثابت 90 د",
+                "sab_ul_layl" to "قاعدة سُبع الليل",
+                "angle_based" to "النسبة الزاوية 60°",
+                "night_middle" to "نصف الليل",
+                "none" to "بدون تعديل"
+            )
+        }
+        @OptIn(ExperimentalFlexBoxApi::class)
+        FlexBox(
+            config = {
+                wrap(FlexWrap.Wrap)
+                gap(6.dp)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            subRules.forEach { (ruleCode, ruleLabel) ->
+                val isRuleSelected = settings.highLatRule == ruleCode
+                Box(
+                    modifier = Modifier
+                        .flex {
+                            basis(128.dp)
+                            grow(1f)
+                        }
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isRuleSelected) KararColors.Amber.copy(alpha = 0.20f) else KararColors.CardSoft
+                        )
+                        .border(
+                            1.dp,
+                            if (isRuleSelected) KararColors.Amber.copy(alpha = 0.65f) else KararColors.Border,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .clickable { state.update { it.copy(highLatRule = ruleCode) } }
+                        .padding(vertical = 7.dp, horizontal = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        ruleLabel,
+                        color = if (isRuleSelected) KararColors.Amber else KararColors.TextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = if (isRuleSelected) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        // مذهب حساب العصر (يظهر بنعومة للمعايير غير الشيعية)
+        AnimatedVisibility(
+            visible = !isShiaMethod,
+            enter = expandVertically(motionSpatialFluid()) + fadeIn(motionEffects()),
+            exit = shrinkVertically(motionSpatialFluid()) + fadeOut(motionEffects())
+        ) {
+            Column(Modifier.padding(top = 8.dp)) {
+                Text(
+                    "مذهب حساب العصر",
+                    color = KararColors.TextMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(
+                        "shafii" to "الجمهور (مثل القامة)",
+                        "hanafi" to "الحنفي (مثلا القامة)"
+                    ).forEach { (asrCode, asrLabel) ->
+                        val isAsrSelected = settings.asrMethod == asrCode
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isAsrSelected) KararColors.Gold.copy(alpha = 0.20f) else KararColors.CardSoft)
+                                .border(
+                                    1.dp,
+                                    if (isAsrSelected) KararColors.Gold.copy(alpha = 0.65f) else KararColors.Border,
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .clickable { state.update { it.copy(asrMethod = asrCode) } }
+                                .padding(vertical = 7.dp, horizontal = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                asrLabel,
+                                color = if (isAsrSelected) KararColors.Gold else KararColors.TextSecondary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         Spacer(Modifier.height(12.dp))
 

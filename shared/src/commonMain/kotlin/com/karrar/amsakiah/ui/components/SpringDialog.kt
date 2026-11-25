@@ -89,14 +89,20 @@ fun SpringDialog(
         label = "spring-dialog-alpha"
     )
     val cardScale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0.84f,
-        // «Fluid Spring»: لا bounce ولا lag — مرونة سينمائية خفيفة.
-        animationSpec = motionSpatialFluid(dampingRatio = 0.7f),
+        targetValue = if (visible) 1f else 0.88f,
+        // «Fluid Spring»: حركة رطبة بلا ارتداد حاد
+        animationSpec = motionSpatialFluid(
+            dampingRatio = KararTokens.Motion.SpatialDampingFluid,
+            stiffness = KararTokens.Motion.SpatialStiffnessDefault
+        ),
         label = "spring-dialog-scale"
     )
     val cardOffsetY by animateFloatAsState(
         targetValue = if (visible) 0f else 44f,
-        animationSpec = motionSpatialFluid(dampingRatio = 0.7f),
+        animationSpec = motionSpatialFluid(
+            dampingRatio = KararTokens.Motion.SpatialDampingFluid,
+            stiffness = KararTokens.Motion.SpatialStiffnessDefault
+        ),
         label = "spring-dialog-offset"
     )
 

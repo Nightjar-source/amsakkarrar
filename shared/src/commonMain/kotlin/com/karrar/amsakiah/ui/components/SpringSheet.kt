@@ -94,11 +94,11 @@ fun SpringSheet(
         label = "spring-sheet-alpha"
     )
     val sheetOffset by animateFloatAsState(
-        targetValue = if (visible) 0f else 280f,
-        // «Fluid Spring»: وزن الورقة يدخل بدل لفظحها ثم ارتداد بطيء
+        targetValue = if (visible) 0f else 420f,
+        // «Fluid Spring»: حركة رطبة ناعمة بلا ارتداد حاد عند فتح وإغلاق ورقة المدن
         animationSpec = motionSpatialFluid(
-            dampingRatio = 0.66f,
-            stiffness = KararTokens.Motion.SpatialStiffnessFluid
+            dampingRatio = KararTokens.Motion.SpatialDampingFluid,
+            stiffness = KararTokens.Motion.SpatialStiffnessDefault
         ),
         label = "spring-sheet-offset"
     )

@@ -1,11 +1,14 @@
 package com.karrar.amsakiah.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import com.karrar.amsakiah.ui.motion.ambientMotionEnabled
+import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.theme.KararTokens
 import kotlin.math.PI
 import kotlin.math.ceil
 import kotlin.math.sin
@@ -38,13 +43,18 @@ fun WeatherEffects(
     isNight: Boolean,
     modifier: Modifier = Modifier
 ) {
-    if (code == null) return
-    val isCloudy = code in 1..48
-    val isRain = (code in 51..67) || (code in 80..82) || code >= 95
-    val isSnow = (code in 71..77) || code == 85 || code == 86
-    if (!isCloudy && !isRain && !isSnow) return
+    val isCloudy = code != null && code in 1..48
+    val isRain = code != null && ((code in 51..67) || (code in 80..82) || code >= 95)
+    val isSnow = code != null && ((code in 71..77) || code == 85 || code == 86)
+    val active = isCloudy || isRain || isSnow
 
-    val transition = rememberInfiniteTransition(label = "weather")
+    AnimatedVisibility(
+        visible = active,
+        enter = fadeIn(animationSpec = motionEffects(KararTokens.Motion.EffectsStiffnessSlow)),
+        exit = fadeOut(animationSpec = motionEffects(KararTokens.Motion.EffectsStiffnessSlow)),
+        modifier = modifier.fillMaxSize()
+    ) {
+        val transition = rememberInfiniteTransition(label = "weather")
     // «تقليل الحركة»: تبقى طبقات الطقس مرسومة لكن ساكنة تمامًا (بلا انجراف/سقوط).
     val ambient = ambientMotionEnabled()
     // الخفة: كل تأثير يُنشئ مؤشّره فقط عند الحاجة. قبل ذلك كانت مؤشّرات
@@ -258,5 +268,6 @@ fun WeatherEffects(
                 }
             }
         }
+    }
     }
 }

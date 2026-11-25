@@ -300,7 +300,12 @@ fun TodayScreen(
                         availableW / SKY_ARC_STAGE_ASPECT,
                         (topPaneHeight * 0.46f).coerceAtLeast(120.dp)
                     )
-                    val arcWidth = targetArcHeight * SKY_ARC_STAGE_ASPECT
+                    val animatedArcHeight by animateDpAsState(
+                        targetValue = targetArcHeight,
+                        animationSpec = motionSpatialFluid(),
+                        label = "tabletop-arc-height"
+                    )
+                    val arcWidth = animatedArcHeight * SKY_ARC_STAGE_ASPECT
                     SkyArc(
                         progress = phase.progress,
                         isNight = isNight,
@@ -312,7 +317,7 @@ fun TodayScreen(
                         rightLabel = phase.rightLabel,
                         rightTime = PrayerCalculator.formatHour(phase.rightHour, state.settings.use24Hour).first,
                         subPhaseBadge = phase.badge,
-                        modifier = Modifier.size(width = arcWidth, height = targetArcHeight)
+                        modifier = Modifier.size(width = arcWidth, height = animatedArcHeight)
                     )
                     if (countdownIds.isNotEmpty() && targetId != null) {
                         CountdownSection(
@@ -393,15 +398,20 @@ fun TodayScreen(
                     onOpenSettings = onOpenSettings
                 )
 
-                // ---- القوس السماوي التفاعلي ----
+                // ---- القوس السماوي التفاعلي (توسع وتقلص مائي سلس عند تغير الحجم والدوران والطيّ) ----
                 val availableW = minOf(screenWidth - 32.dp, KararTokens.Size.todayStageMaxWidth - 32.dp).coerceAtLeast(1.dp)
                 val targetArcHeight = (availableW / SKY_ARC_STAGE_ASPECT).coerceAtMost(if (compact) 230.dp else 295.dp)
-                val arcWidth = targetArcHeight * SKY_ARC_STAGE_ASPECT
+                val animatedArcHeight by animateDpAsState(
+                    targetValue = targetArcHeight,
+                    animationSpec = motionSpatialFluid(),
+                    label = "sky-arc-height"
+                )
+                val arcWidth = animatedArcHeight * SKY_ARC_STAGE_ASPECT
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(targetArcHeight + 8.dp),
+                        .height(animatedArcHeight + 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     SkyArc(
@@ -415,7 +425,7 @@ fun TodayScreen(
                         rightLabel = phase.rightLabel,
                         rightTime = PrayerCalculator.formatHour(phase.rightHour, state.settings.use24Hour).first,
                         subPhaseBadge = phase.badge,
-                        modifier = Modifier.size(width = arcWidth, height = targetArcHeight)
+                        modifier = Modifier.size(width = arcWidth, height = animatedArcHeight)
                     )
                 }
 
