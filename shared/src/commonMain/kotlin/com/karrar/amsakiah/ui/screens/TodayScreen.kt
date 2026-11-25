@@ -56,6 +56,10 @@ import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -222,14 +226,145 @@ fun TodayScreen(
     val startInset = contentPadding.calculateStartPadding(layoutDirection)
     val endInset = contentPadding.calculateEndPadding(layoutDirection)
 
+    val adaptiveInfo = currentWindowAdaptiveInfoV2()
+    val windowPosture = adaptiveInfo.windowPosture
+    val isTabletop = windowPosture.isTabletop
+    val separatingHinge = remember(windowPosture) {
+        windowPosture.hingeList.firstOrNull { it.isSeparating } ?: windowPosture.hingeList.firstOrNull()
+    }
+    var localHingeTopPx by remember { mutableStateOf<Float?>(null) }
+    var localHingeBottomPx by remember { mutableStateOf<Float?>(null) }
+    val density = LocalDensity.current
+
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { coordinates ->
+                if (isTabletop && separatingHinge != null) {
+                    val b = separatingHinge.bounds
+                    localHingeTopPx = coordinates.windowToLocal(Offset(0f, b.top.toFloat())).y
+                    localHingeBottomPx = coordinates.windowToLocal(Offset(0f, b.bottom.toFloat())).y
+                } else {
+                    localHingeTopPx = null
+                    localHingeBottomPx = null
+                }
+            }
     ) {
         val screenWidth = maxWidth
         val screenHeight = maxHeight
         val stageCompact = screenHeight < 620.dp
         val compact = stageCompact
         val scrollState = rememberScrollState()
+
+        if (isTabletop) {
+            // ---------- وضع الطاولة / Flex Mode في الأجهزة المطوية (Tabletop Posture) ----------
+            // النصف العلوي (فوق المفصل): الهيدر + القوس الشمسي + العدّاد التنازلي
+            // النصف السفلي (تحت المفصل): بطاقات الصلوات الست + زر التقويم بعيداً عن خط الطيّ
+            val fallbackTop = screenHeight * 0.5f
+            val hingeTopDp = with(density) {
+                localHingeTopPx?.coerceIn(120f, constraints.maxHeight.toFloat())?.toDp() ?: fallbackTop
+            }
+            val hingeBottomDp = with(density) {
+                localHingeBottomPx?.coerceIn(0f, constraints.maxHeight.toFloat())?.toDp() ?: fallbackTop
+            }
+            val hingeGapDp = (hingeBottomDp - hingeTopDp).coerceAtLeast(16.dp)
+            val topPaneHeight = (hingeTopDp - topInset).coerceAtLeast(180.dp)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = startInset, end = endInset),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(topInset))
+
+                // الجزء العلوي فوق المفصل
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = KararTokens.Size.todayStageMaxWidth)
+                        .height(topPaneHeight)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    TodayHeader(
+                        settings = settings,
+                        weather = weather,
+                        hijri = hijri,
+                        date = date,
+                        onOpenSettings = onOpenSettings
+                    )
+                    val availableW = minOf(screenWidth - 32.dp, KararTokens.Size.todayStageMaxWidth - 32.dp).coerceAtLeast(1.dp)
+                    val targetArcHeight = minOf(
+                        availableW / SKY_ARC_STAGE_ASPECT,
+                        (topPaneHeight * 0.46f).coerceAtLeast(120.dp)
+                    )
+                    val arcWidth = targetArcHeight * SKY_ARC_STAGE_ASPECT
+                    SkyArc(
+                        progress = phase.progress,
+                        isNight = isNight,
+                        hijriDay = hijri.day,
+                        timeText = clock.first,
+                        meridiem = clock.second,
+                        leftLabel = phase.leftLabel,
+                        leftTime = PrayerCalculator.formatHour(phase.leftHour, state.settings.use24Hour).first,
+                        rightLabel = phase.rightLabel,
+                        rightTime = PrayerCalculator.formatHour(phase.rightHour, state.settings.use24Hour).first,
+                        subPhaseBadge = phase.badge,
+                        modifier = Modifier.size(width = arcWidth, height = targetArcHeight)
+                    )
+                    if (countdownIds.isNotEmpty() && targetId != null) {
+                        CountdownSection(
+                            label = countdownLabel,
+                            hours = hoursLeft,
+                            minutes = minutesLeft,
+                            seconds = secondsLeft,
+                            dotsCount = countdownIds.size,
+                            activeDot = activeIndex,
+                            compact = true,
+                            onDotClick = { manualIndex = it },
+                            onSwipeNext = { manualIndex = (activeIndex + 1).mod(countdownIds.size) },
+                            onSwipePrevious = { manualIndex = (activeIndex - 1 + countdownIds.size).mod(countdownIds.size) }
+                        )
+                    }
+                }
+
+                // فجوة المفصل (لا نضع أي محتوى أو أزرار فوق خط الطيّ)
+                Spacer(Modifier.height(hingeGapDp))
+
+                // الجزء السفلي تحت المفصل — سهل اللمس على السطح الأفقي
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .widthIn(max = KararTokens.Size.todayStageMaxWidth)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    BottomArea(
+                        visibleIds = visibleIds,
+                        todayTimes = todayTimes,
+                        tomorrowTimes = tomorrowTimes,
+                        targetId = targetId,
+                        targetIsTomorrow = targetIsTomorrow,
+                        isNightTime = isNightTime,
+                        compact = true,
+                        use24Hour = state.settings.use24Hour,
+                        onOpenCalendar = onOpenArcCalendar,
+                        onPrayerClick = { id ->
+                            if (countdownIds.isNotEmpty()) {
+                                val index = countdownIds.indexOf(id)
+                                if (index >= 0) manualIndex = index
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(bottomInset + 12.dp))
+                }
+            }
+            return@BoxWithConstraints
+        }
 
         // التمرير يمتد من الحافة للحافة كاملة الشاشة (Edge-to-Edge) وخلف أشرطة النظام
         // والشريط العائم بلا أي "حد تمرير" أو قص مستطيل
