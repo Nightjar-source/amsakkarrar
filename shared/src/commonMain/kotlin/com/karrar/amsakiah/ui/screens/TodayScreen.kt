@@ -840,38 +840,22 @@ private fun PrayerStrip(
             ) {
                 itemsIndexed(visibleIds, key = { _, id -> id }) { _, id ->
                     val todayHour = todayTimes[id] ?: 0.0
-                    val isFajrOrImsak = id == "imsak" || id == "fajr"
-
-                    val rawHour: Double
-                    val showTomorrowBadge: Boolean
-
-                    if (isFajrOrImsak) {
-                        // الفجر والإمساك: بعد انقضائهما في الصباح ينتقلان لوقت الفجر القادم
-                        val pastMorning = nowSeconds >= (todayHour * 3600).roundToInt()
-                        if (pastMorning) {
-                            rawHour = tomorrowTimes[id] ?: todayHour
-                            // في الليل بعد المغرب: ليلة الغد بدأت شرعياً، فلا نكتب (غداً).
-                            // في النهار بين الفجر والمغرب: تظهر (غداً) عند التمرير.
-                            showTomorrowBadge = !isNightTime
-                        } else {
-                            rawHour = todayHour
-                            showTomorrowBadge = false
-                        }
-                    } else {
-                        // بقية الصلوات (الشروق، الظهر، العصر، المغرب، العشاء):
-                        // تبقى على أوقات اليوم الحالي دائماً، ولا تتحول ولا تحمل وسم (غداً) حتى منتصف الليل 12:00 ص
-                        rawHour = todayHour
-                        showTomorrowBadge = false
-                    }
-
+                    val isTonightFajrOrImsak = isNightTime && (id == "imsak" || id == "fajr")
+                    // المنطق الأصلي: عند انتهاء وقت أي صلاة اليوم ينتقل عرضها لوقت اليوم التالي
+                    val isPast = nowSeconds >= (todayHour * 3600).roundToInt()
+                    val showTomorrow = isPast || (id == targetId && targetIsTomorrow && !isTonightFajrOrImsak)
+                    val rawHour = if (showTomorrow) tomorrowTimes[id] ?: todayHour else todayHour
                     val formatted = PrayerCalculator.formatHour(rawHour, use24Hour)
+                    // في الليل بعد المغرب: لا نكتب (غداً) على الفجر/الإمساك لأن الليلة صارت ليلتهما؛
+                    // وبعد الساعة 12 ليلاً يتغير التاريخ المدني فتسقط (غداً) عن جميع الصلوات تلقائياً.
+                    val displayTomorrowLabel = showTomorrow && !isTonightFajrOrImsak
                     PrayerCard(
                         id = id,
                         label = PrayerMeta.label(id),
                         time12 = formatted.first,
                         amPm = formatted.second,
                         active = id == targetId,
-                        tomorrow = showTomorrowBadge,
+                        tomorrow = displayTomorrowLabel,
                         compact = compact,
                         onClick = { onPrayerClick(id) }
                     )
