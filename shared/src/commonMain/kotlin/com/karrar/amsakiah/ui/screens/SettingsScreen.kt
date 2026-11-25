@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalFlexBoxApi
+import androidx.compose.foundation.layout.FlexBox
+import androidx.compose.foundation.layout.FlexWrap
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -1247,38 +1250,45 @@ private fun PrayerSelectionCard(
             }
         }
         Spacer(Modifier.height(8.dp))
-        PrayerMeta.order.chunked(3).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                row.forEach { id ->
-                    val on = id in selected
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .background(
-                                if (on) accent.copy(alpha = 0.18f) else KararColors.CardSoft,
-                                RoundedCornerShape(10.dp)
-                            )
-                            .border(
-                                1.dp,
-                                if (on) accent.copy(alpha = 0.55f) else KararColors.Border,
-                                RoundedCornerShape(10.dp)
-                            )
-                            .clickable { onToggle(id) }
-                            .padding(vertical = 7.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            PrayerMeta.label(id),
-                            color = if (on) accent else KararColors.TextSecondary,
-                            fontSize = 10.sp,
-                            fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
-                            textAlign = TextAlign.Center
+        @OptIn(ExperimentalFlexBoxApi::class)
+        FlexBox(
+            config = {
+                wrap(FlexWrap.Wrap)
+                gap(6.dp)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            PrayerMeta.order.forEach { id ->
+                val on = id in selected
+                Box(
+                    Modifier
+                        .flex {
+                            basis(88.dp)
+                            grow(1f)
+                        }
+                        .background(
+                            if (on) accent.copy(alpha = 0.18f) else KararColors.CardSoft,
+                            RoundedCornerShape(10.dp)
                         )
-                    }
+                        .border(
+                            1.dp,
+                            if (on) accent.copy(alpha = 0.55f) else KararColors.Border,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .clickable { onToggle(id) }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        PrayerMeta.label(id),
+                        color = if (on) accent else KararColors.TextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
                 }
-                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
-            Spacer(Modifier.height(6.dp))
         }
     }
 }

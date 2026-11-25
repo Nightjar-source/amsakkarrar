@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ExperimentalFlexBoxApi
+import androidx.compose.foundation.layout.FlexBox
+import androidx.compose.foundation.layout.FlexWrap
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -17,9 +20,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -102,15 +106,14 @@ fun ArcCalendarScreen(
         "${todayHijri.day} ${todayHijri.monthName} ${todayHijri.year} هـ"
 
     val todayIndex = days.indexOfFirst { it.date == today }
-    // تمرير أولي قبل أي رسمة — فهارس القائمة محسوبة من نفس نسخة `days`
-    val listState = rememberLazyListState(
+    // تمرير أولي قابل للحفظ عبر تغير التوجيه والطيّ (Step 6.2 من adaptive)
+    val gridState = rememberLazyGridState(
         initialFirstVisibleItemIndex = if (todayIndex >= 0) (todayIndex - 1).coerceAtLeast(0) else 0
     )
     LaunchedEffect(days) {
         if (days.isEmpty()) return@LaunchedEffect
         val idx = days.indexOfFirst { it.date == today }
-        // مرة واحدة لكل (السنة، الشهر) — بلا أي حركة عند الفتح
-        listState.scrollToItem(if (idx >= 0) (idx - 1).coerceAtLeast(0) else 0)
+        gridState.scrollToItem(if (idx >= 0) (idx - 1).coerceAtLeast(0) else 0)
     }
 
 
@@ -147,9 +150,10 @@ fun ArcCalendarScreen(
         val startInset = contentPadding.calculateStartPadding(layoutDirection)
         val endInset = contentPadding.calculateEndPadding(layoutDirection)
 
-        // ---------- بطاقات الأيام: تمتد كامل الشاشة وتمر تحت الشريط العائم مع مسافة أمان كافية ----------
-        LazyColumn(
-            state = listState,
+        // ---------- بطاقات الأيام المتكيفة: عمود في الهاتف وأعمدة متعددة في الشاشات الكبيرة ----------
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 340.dp),
+            state = gridState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 14.dp + startInset,
@@ -157,6 +161,7 @@ fun ArcCalendarScreen(
                 top = topInset + 108.dp,
                 bottom = bottomInset + 24.dp
             ),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(days, key = { it.date.toString() }) { day ->
@@ -387,27 +392,29 @@ private fun DayCard(
 
         Spacer(Modifier.height(10.dp))
 
-        // ---- خلايا الأوقات — ثلاثة أعمدة كما في المرجع ----
-        val cells = visibleIds.chunked(3)
-        cells.forEach { rowIds ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                rowIds.forEach { id ->
-                    val raw = day.times[id] ?: 0.0
-                    val formatted = PrayerCalculator.formatHour(raw, use24Hour)
-                    PrayerCell(
-                        id = id,
-                        label = PrayerMeta.label(id),
-                        time = formatted.first,
-                        amPm = formatted.second,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                repeat(3 - rowIds.size) { Spacer(Modifier.weight(1f)) }
+        // ---- خلايا الأوقات بـ FlexBox الرسمي المرن المتكيف مع عرض البطاقة ----
+        @OptIn(ExperimentalFlexBoxApi::class)
+        FlexBox(
+            config = {
+                wrap(FlexWrap.Wrap)
+                gap(6.dp)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            visibleIds.forEach { id ->
+                val raw = day.times[id] ?: 0.0
+                val formatted = PrayerCalculator.formatHour(raw, use24Hour)
+                PrayerCell(
+                    id = id,
+                    label = PrayerMeta.label(id),
+                    time = formatted.first,
+                    amPm = formatted.second,
+                    modifier = Modifier.flex {
+                        basis(86.dp)
+                        grow(1f)
+                    }
+                )
             }
-            Spacer(Modifier.height(6.dp))
         }
     }
 }
