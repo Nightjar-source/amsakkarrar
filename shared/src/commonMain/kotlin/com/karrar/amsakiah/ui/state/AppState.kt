@@ -83,6 +83,9 @@ class AppState {
     /** استشعار الموقع عبر الشبكة (IP) */
     suspend fun detectLocationByIp() { kernel.detectLocationByIp() }
 
+    /** الاكتشاف الذكي التلقائي للمدينة عند الإقلاع عند الحاجة فقط */
+    suspend fun autoDetectLocationOnStartup() { kernel.autoDetectLocationOnStartup() }
+
     /** أظهر تنبيهًا عائمًا */
     fun showToast(text: String, kind: ToastKind = ToastKind.INFO, actionLabel: String? = null) {
         kernel.showToast(text, kind, actionLabel)

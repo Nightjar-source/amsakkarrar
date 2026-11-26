@@ -14,6 +14,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
@@ -1154,45 +1157,51 @@ private fun AppToastHost(
 
     LaunchedEffect(toast?.id) {
         val current = toast ?: return@LaunchedEffect
-        delay(
-            when (current.kind) {
-                ToastKind.LOCATION -> 5_000L
-                ToastKind.ERROR -> 5_000L
-                else -> 3_500L
-            }
-        )
+        delay(5_000L)
         if (state.toast?.id == current.id) state.dismissToast()
     }
 
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         AnimatedVisibility(
             visible = locating || toast != null,
-            enter = slideInVertically(motionSpatial()) { -it / 2 } +
-                fadeIn(motionEffects()),
-            exit = slideOutVertically(
-                motionSpatial(stiffness = KararTokens.Motion.SpatialStiffnessFast, dampingRatio = KararTokens.Motion.SpatialDampingFast)
-            ) { -it / 2 } + fadeOut(motionEffects())
+            enter = expandHorizontally(
+                expandFrom = Alignment.CenterHorizontally,
+                animationSpec = motionSpatialFluid()
+            ) + scaleIn(
+                initialScale = 0.74f,
+                animationSpec = motionSpatialFluid()
+            ) + fadeIn(motionEffects()),
+            exit = shrinkHorizontally(
+                shrinkTowards = Alignment.CenterHorizontally,
+                animationSpec = motionSpatialFluid()
+            ) + scaleOut(
+                targetScale = 0.74f,
+                animationSpec = motionSpatialFluid()
+            ) + fadeOut(motionEffects())
         ) {
-            val current = toast
-            if (current == null) {
-                LocatingPill()
-            } else {
-                ToastPill(
-                    message = current,
-                    onAction = {
-                        if (current.kind == ToastKind.ERROR && current.actionLabel != null) {
-                            // «تشغيل الموقع» يخص خدمة النظام؛ أي إجراء آخر
-                            // (إذن مرفوض) يفتح إعدادات التطبيق لا إعدادات الموقع.
-                            if (current.text.contains("خدمة الموقع")) {
-                                state.openSystemLocationSettings()
-                            } else {
-                                onOpenAppSettings()
+            Box(
+                modifier = Modifier.animateContentSize(animationSpec = motionSpatialFluid()),
+                contentAlignment = Alignment.Center
+            ) {
+                val current = toast
+                if (current == null) {
+                    LocatingPill()
+                } else {
+                    ToastPill(
+                        message = current,
+                        onAction = {
+                            if (current.kind == ToastKind.ERROR && current.actionLabel != null) {
+                                if (current.text.contains("خدمة الموقع")) {
+                                    state.openSystemLocationSettings()
+                                } else {
+                                    onOpenAppSettings()
+                                }
                             }
-                        }
-                        state.dismissToast()
-                    },
-                    onDismiss = { state.dismissToast() }
-                )
+                            state.dismissToast()
+                        },
+                        onDismiss = { state.dismissToast() }
+                    )
+                }
             }
         }
     }

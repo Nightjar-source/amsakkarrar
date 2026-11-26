@@ -68,8 +68,9 @@ class WidgetConfigActivity : ComponentActivity() {
                     initialStyle = WidgetStyleStore.current(this, appWidgetId),
                     onApply = { style ->
                         WidgetStyleStore.set(this, style, appWidgetId)
-                        WidgetUpdater.updateAll(this)
-                        finishWithResult()
+                        WidgetUpdater.updateAllAsync(this) {
+                            runOnUiThread { finishWithResult() }
+                        }
                     },
                     onCancel = { finishWithResult(cancelled = true) }
                 )

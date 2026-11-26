@@ -59,9 +59,10 @@ fun App() {
         onDispose { state.dispose() }
     }
 
-    // تهيئة قاعدة المدن الأوفلاين (على خيط خلفي داخل CityDatabase)
+    // تهيئة قاعدة المدن الأوفلاين + الاكتشاف الذكي للمدينة عبر IP عند أول تثبيت (أو عند غياب النت سابقاً)
     LaunchedEffect(Unit) {
         state.prepareCities()
+        state.autoDetectLocationOnStartup()
     }
 
     // المعالجة المسبقة لمفاتيح الجنان (تُقل بعد الإقلاع، على خيط خلفي):

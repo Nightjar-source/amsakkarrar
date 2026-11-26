@@ -172,7 +172,8 @@ class AppKernel {
                 longitude = city.lon,
                 timeZoneId = city.timeZoneId,
                 useGps = false,
-                locationSource = "manual"
+                locationSource = "manual",
+                locationResolved = true
             )
         }
     }
@@ -215,7 +216,8 @@ class AppKernel {
                         longitude = point.lon,
                         timeZoneId = nearest.city.timeZoneId,
                         useGps = true,
-                        locationSource = "gps"
+                        locationSource = "gps",
+                        locationResolved = true
                     )
                 }
                 showToast("تم تحديد الموقع: ${nearest.city.name}", ToastKind.LOCATION)
@@ -258,7 +260,8 @@ class AppKernel {
                     longitude = ip.longitude,
                     timeZoneId = zone,
                     useGps = false,
-                    locationSource = "ip"
+                    locationSource = "ip",
+                    locationResolved = true
                 )
             }
             showToast("تم تحديد الموقع عبر IP: $cityName", ToastKind.LOCATION)
@@ -266,6 +269,40 @@ class AppKernel {
             locating = false
             notifyStateChanged()
         }
+    }
+
+    /**
+     * الاكتشاف الذكي التلقائي للمدينة عند التشغيل (أول تثبيت أو عند بقاء القيمة الافتراضية
+     * بسبب انقطاع الإنترنت سابقاً):
+     * - إذا سبق حفظ مدينة المستخدم (يدوياً / GPS / IP) وكان `locationResolved = true` -> يتوقف فوراً ولا يعيد الفحص أبداً.
+     * - إذا كان `locationResolved = false` -> يجرب الاتصال بصمت بـ IP، وعند النجاح (حتى لو تطابق مع كربلاء)
+     *   يحفظ المدينة ويثبّت `locationResolved = true` في الذاكرة الدائمة للأبد.
+     * - عند غياب الإنترنت -> يبقى على القيمة الافتراضية دون كراش أو إزعاج، ليعيد المحاولة تلقائياً في الفتح القادم.
+     */
+    suspend fun autoDetectLocationOnStartup() {
+        if (settings.locationResolved) return
+        val ip = runCatching { fetchIpLocation() }.getOrNull() ?: return
+        // تأكيد أن المستخدم لم يغيّر المدينة يدوياً أثناء انتظار استجابة الشبكة
+        if (settings.locationResolved) return
+        val nearest = CityDatabase.nearest(ip.latitude, ip.longitude)
+        nearby = nearest
+        val close = nearest?.takeIf { it.distanceKm <= 80.0 }
+        val cityName = close?.city?.name ?: ip.city.ifBlank { settings.cityName }
+        val countryName = close?.city?.country ?: ip.country.ifBlank { settings.countryName }
+        val zone = ip.timeZoneId ?: close?.city?.timeZoneId ?: settings.timeZoneId
+        update {
+            it.copy(
+                cityName = cityName,
+                countryName = countryName,
+                latitude = ip.latitude,
+                longitude = ip.longitude,
+                timeZoneId = zone,
+                useGps = false,
+                locationSource = "ip",
+                locationResolved = true
+            )
+        }
+        showToast("تم تحديد مدينتك تلقائياً: $cityName", ToastKind.LOCATION)
     }
 
     /** يُسجّل الخطأ في الحالة ويُظهره ككبسولة عائمة — لا إغلاق للتطبيق أبدًا. */

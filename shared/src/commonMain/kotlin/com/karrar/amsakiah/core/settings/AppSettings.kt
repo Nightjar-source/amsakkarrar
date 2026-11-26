@@ -24,6 +24,8 @@ data class AppSettings(
     val useGps: Boolean = false,
     /** مصدر الموقع: manual (اختيار يدوي) / gps (إحداثيات الجهاز) / ip (استشعار عبر IP) */
     val locationSource: String = "manual",
+    /** هل تم تحديد مدينة المستخدم بنجاح (تلقائياً عبر IP/GPS أو يدوياً) وحفظها في الذاكرة الدائمة؟ */
+    val locationResolved: Boolean = false,
 
     // ---------- الحساب ----------
     val methodCode: String = "alkafeel",
