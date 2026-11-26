@@ -734,7 +734,8 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
             nowSeconds = snapshot.nowSeconds,
             sunriseHour = snapshot.sunriseHour,
             sunsetHour = snapshot.sunsetHour,
-            hijriDay = snapshot.hijriDay
+            hijriDay = snapshot.hijriDay,
+            entries = entries
         )
         androidx.glance.Image(
             provider = androidx.glance.ImageProvider(arcBmp),

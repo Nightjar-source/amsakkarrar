@@ -382,34 +382,48 @@ object ArcBackground {
     }
 
     /**
-     * رسم مسار الشمس الجيبي مع خط الأفق والقمر الواقعي المضيء (مثل الصورة الأولى).
+     * حساب لون النص الأكثر تبايناً تلقائياً (WCAG / Material 3) فوق لون الخلفية المعطى.
+     */
+    fun contrastingTextColorArgb(
+        bgArgb: Int,
+        lightArgb: Int = 0xFFFFFFFF.toInt(),
+        darkArgb: Int = 0xFF0F172A.toInt()
+    ): Int {
+        val r = android.graphics.Color.red(bgArgb) / 255.0
+        val g = android.graphics.Color.green(bgArgb) / 255.0
+        val b = android.graphics.Color.blue(bgArgb) / 255.0
+        val lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        return if (lum > 0.42) darkArgb else lightArgb
+    }
+
+    /**
+     * رسم مسار الشمس الجيبي مع نقاط وأوقات الصلوات الظاهرة والقمر الواقعي المضيء (مثل الصورة الأولى).
      */
     fun sunMoonArcBitmap(
         nowSeconds: Int,
         sunriseHour: Double,
         sunsetHour: Double,
         hijriDay: Int,
-        widthPx: Int = 420,
-        heightPx: Int = 110
+        entries: List<com.Nightjar.amsakkarrar.notifications.PrayerEntry> = emptyList(),
+        widthPx: Int = 520,
+        heightPx: Int = 150
     ): Bitmap {
         val out = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(out)
         val wF = widthPx.toFloat()
         val hF = heightPx.toFloat()
-        val horizonY = hF * 0.58f
+        val horizonY = hF * 0.56f
 
         // 1) خط الأفق وظل الليل تحته
-        val nightBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0x22000000
-        }
+        val nightBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x22000000 }
         canvas.drawRect(0f, horizonY, wF, hF, nightBg)
         val horizonPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0x33FFFFFF
+            color = 0x38FFFFFF
             strokeWidth = 1.5f
         }
         canvas.drawLine(0f, horizonY, wF, horizonY, horizonPaint)
 
-        // 2) المنحنى الجيبي لمسار الشمس
+        // 2) المنحنى الجيبي لمسار الشمس والصلوات
         val nowHour = nowSeconds / 3600.0
         val dayLen = (sunsetHour - sunriseHour).coerceAtLeast(1.0)
         val dayFrac = ((nowHour - sunriseHour) / dayLen).coerceIn(0.0, 1.0).toFloat()
@@ -419,10 +433,9 @@ object ArcBackground {
         val steps = 60
         for (i in 0..steps) {
             val t = i / steps.toFloat()
-            val x = wF * 0.05f + t * wF * 0.90f
-            // موجة جيبية ترتفع في الوسط (النهار) وتنزل على الطرفين (الليل)
+            val x = wF * 0.05f + t * wF * 0.74f
             val wave = kotlin.math.cos((t - 0.5f) * 1.45f * kotlin.math.PI).toFloat()
-            val y = horizonY - wave * (hF * 0.42f)
+            val y = horizonY - wave * (hF * 0.36f)
             if (i == 0) inactivePath.moveTo(x, y) else inactivePath.lineTo(x, y)
             if (t >= 0.16f && t <= 0.84f) {
                 if (activePath.isEmpty) activePath.moveTo(x, y) else activePath.lineTo(x, y)
@@ -446,22 +459,45 @@ object ArcBackground {
             }
         )
 
+        // نقاط وأوقات الصلوات على المنحنى (حسب ضبط الإعدادات)
+        val shown = entries.take(6)
+        if (shown.isNotEmpty()) {
+            val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = 0xFFF8FAFC.toInt()
+                textSize = hF * 0.11f
+                textAlign = Paint.Align.CENTER
+                isFakeBoldText = true
+            }
+            val nextLabelPaint = Paint(labelPaint).apply {
+                color = 0xFFFFD700.toInt()
+            }
+            shown.forEachIndexed { idx, entry ->
+                val t = if (shown.size == 1) 0.5f else idx.toFloat() / (shown.size - 1).toFloat()
+                val x = wF * 0.07f + t * wF * 0.70f
+                val wave = kotlin.math.cos((t - 0.5f) * 1.45f * kotlin.math.PI).toFloat()
+                val y = horizonY - wave * (hF * 0.36f)
+                val dotColor = if (entry.isNext) 0xFFFFD700.toInt() else 0xCCF8FAFC.toInt()
+                canvas.drawCircle(x, y, if (entry.isNext) 5.5f else 3.8f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = dotColor })
+                val shortTime = entry.time.replace(" صباحاً", "").replace(" مساءً", "").replace(" ص", "").replace(" م", "")
+                val textY = if (y < horizonY) y - 10f else y + hF * 0.14f
+                canvas.drawText(shortTime, x, textY.coerceIn(14f, hF - 4f), if (entry.isNext) nextLabelPaint else labelPaint)
+            }
+        }
+
         // نقطة الشمس المتوهجة على المسار
         val sunT = 0.16f + dayFrac * (0.84f - 0.16f)
-        val sunX = wF * 0.05f + sunT * wF * 0.90f
+        val sunX = wF * 0.05f + sunT * wF * 0.74f
         val sunWave = kotlin.math.cos((sunT - 0.5f) * 1.45f * kotlin.math.PI).toFloat()
-        val sunY = horizonY - sunWave * (hF * 0.42f)
+        val sunY = horizonY - sunWave * (hF * 0.36f)
         canvas.drawCircle(sunX, sunY, 13f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x44FFD54F })
         canvas.drawCircle(sunX, sunY, 7.5f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFCA28.toInt() })
 
-        // 3) القمر الواقعي بملمس السطح وظل الهلال حسب اليوم الهجري (على اليسار/النهاية)
-        val moonR = hF * 0.24f
-        val moonCx = wF - moonR - 14f
-        val moonCy = hF * 0.36f
+        // 3) القمر الواقعي بملمس السطح وظل الهلال حسب اليوم الهجري (على اليمين/الطرف)
+        val moonR = hF * 0.25f
+        val moonCx = wF - moonR - 12f
+        val moonCy = hF * 0.44f
         val moonPhase = ((hijriDay.coerceIn(1, 30) - 1) / 29.5f)
-        // قرص القمر المظلم
         canvas.drawCircle(moonCx, moonCy, moonR, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF334155.toInt() })
-        // الجزء المضاء حسب الطور
         val moonPath = Path().apply { addCircle(moonCx, moonCy, moonR, Path.Direction.CW) }
         canvas.save()
         canvas.clipPath(moonPath)
@@ -479,8 +515,7 @@ object ArcBackground {
                 )
             }
         )
-        // فوهات خفيفة للواقعية
-        val craterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x1F475569 }
+        val craterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x24475569 }
         canvas.drawCircle(moonCx + moonR * 0.28f, moonCy - moonR * 0.18f, moonR * 0.18f, craterPaint)
         canvas.drawCircle(moonCx - moonR * 0.12f, moonCy + moonR * 0.32f, moonR * 0.14f, craterPaint)
         canvas.drawCircle(moonCx + moonR * 0.10f, moonCy + moonR * 0.10f, moonR * 0.10f, craterPaint)

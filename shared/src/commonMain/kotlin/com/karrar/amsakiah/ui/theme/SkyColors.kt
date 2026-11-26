@@ -1,6 +1,17 @@
 package com.karrar.amsakiah.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+
+/**
+ * حساب لون النص الأكثر تبايناً تلقائياً وفق معايير Material 3 و WCAG
+ * لضمان مقروئية تامة فوق الخلفية السماوية المتغيرة (نهاراً وليلاً).
+ */
+fun contrastingTextColor(
+    background: Color,
+    lightContent: Color = Color.White,
+    darkContent: Color = Color(0xFF0F172A)
+): Color = if (background.luminance() > 0.42f) darkContent else lightContent
 
 /**
  * ألوان «على السماء» الثابتة — لا تتبع الوضع الفاتح/الداكن.
