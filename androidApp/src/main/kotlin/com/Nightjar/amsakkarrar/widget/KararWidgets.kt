@@ -275,7 +275,7 @@ private fun WidgetKashida(snapshot: PrayerSnapshot, fontSize: Int = 26) {
     }
 }
 
-/** شريط تقدّم بشكل حبة دواء سميكة (بديل Pill في HTML). */
+/** شريط تقدّم بشكل حبة دواء سميكة — يستخدم نفس رسم `WidgetProgressStrip` (الودجت والإشعار الحي). */
 @Composable
 private fun PillProgress(
     fraction: Float,
@@ -283,28 +283,16 @@ private fun PillProgress(
     inset: Dp = 18.dp,
     height: Dp = 14.dp
 ) {
-    val f = fraction.coerceIn(0f, 1f)
-    // Glance لا يدعم fillMaxWidth(fraction)؛ نحسب العرض من حجم الودجت ناقص الحاشية الفعلية.
-    val available = (LocalSize.current.width - inset * 2).coerceAtLeast(1.dp)
-    val fillWidth = (available * f).coerceAtLeast(0.dp)
-    Box(
+    val percent = (fraction.coerceIn(0f, 1f) * 100f)
+    val bitmap = WidgetProgressStrip.render(percent, isDaytime)
+    androidx.glance.Image(
+        provider = androidx.glance.ImageProvider(bitmap),
+        contentDescription = null,
+        contentScale = androidx.glance.layout.ContentScale.FillBounds,
         modifier = GlanceModifier
             .fillMaxWidth()
             .height(height)
-            .background(Color(0x66000000))
-            .cornerRadius(50.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        if (fillWidth > 0.dp) {
-            Box(
-                modifier = GlanceModifier
-                    .width(fillWidth)
-                    .fillMaxHeight()
-                    .background(if (isDaytime) DayGradient else NightGradient)
-                    .cornerRadius(50.dp)
-            ) {}
-        }
-    }
+    )
 }
 
 @Composable
