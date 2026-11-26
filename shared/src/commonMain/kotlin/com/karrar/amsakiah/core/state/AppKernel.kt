@@ -281,7 +281,44 @@ class AppKernel {
      */
     suspend fun autoDetectLocationOnStartup() {
         if (settings.locationResolved) return
-        val ip = runCatching { fetchIpLocation() }.getOrNull() ?: return
+
+        // 1) المرحلة الأوفلاين الفورية بالمللي ثانية بدون أي صلاحيات أو إنترنت:
+        // قراءة المنطقة الزمنية (TimeZone.getDefault().id) + رمز دولة الشريحة (TelephonyManager)
+        val hints = runCatching {
+            com.karrar.amsakiah.core.location.readOfflineLocationHints()
+        }.getOrNull()
+        if (hints != null && (hints.countryIso.isNotBlank() || hints.timeZoneId.isNotBlank())) {
+            val matchedCity = CityDatabase.findDefaultByTimeZoneOrCountry(hints.countryIso, hints.timeZoneId)
+            val recMethod = CityDatabase.recommendedMethodForCountry(hints.countryIso, hints.timeZoneId)
+            if (matchedCity != null && !settings.locationResolved) {
+                update {
+                    it.copy(
+                        cityName = matchedCity.name,
+                        countryName = matchedCity.country,
+                        latitude = matchedCity.lat,
+                        longitude = matchedCity.lon,
+                        timeZoneId = matchedCity.timeZoneId,
+                        methodCode = recMethod,
+                        highLatRule = PrayerCalculator.autoHighLatForMethod(recMethod),
+                        useGps = false,
+                        locationSource = "tz_sim",
+                        locationResolved = false
+                    )
+                }
+            }
+        }
+
+        // 2) المرحلة الأونلاين عبر IP إن وُجد إنترنت لتثبيت المدينة الدقيقة نهائياً
+        val ip = runCatching { fetchIpLocation() }.getOrNull()
+        if (ip == null) {
+            if (!settings.locationResolved && settings.locationSource == "tz_sim") {
+                showToast(
+                    "توقيت افتراضي (${settings.cityName}) — اختر محافظتك أو فعّل الموقع للدقة",
+                    ToastKind.INFO
+                )
+            }
+            return
+        }
         // تأكيد أن المستخدم لم يغيّر المدينة يدوياً أثناء انتظار استجابة الشبكة
         if (settings.locationResolved) return
         val nearest = CityDatabase.nearest(ip.latitude, ip.longitude)

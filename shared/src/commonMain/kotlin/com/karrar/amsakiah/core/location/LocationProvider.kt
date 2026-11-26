@@ -2,6 +2,11 @@ package com.karrar.amsakiah.core.location
 
 data class GeoPoint(val lat: Double, val lon: Double, val accuracyMeters: Float = 0f)
 
+/** تلميحات الموقع الأوفلاين بالمللي ثانية بدون أي صلاحيات (المنطقة الزمنية + رمز شريحة الاتصال). */
+data class OfflineLocationHints(val countryIso: String, val timeZoneId: String)
+
+expect fun readOfflineLocationHints(): OfflineLocationHints
+
 /**
  * مزوّد الموقع الأوفلاين — يقرأ إحداثيات الجهاز فقط، ولا يرسلها لأي خادم.
  */

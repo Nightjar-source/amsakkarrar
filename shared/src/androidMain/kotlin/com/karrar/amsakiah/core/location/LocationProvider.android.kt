@@ -13,11 +13,28 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.telephony.TelephonyManager
 import com.karrar.amsakiah.core.AndroidAppContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.TimeZone
 import java.util.concurrent.Executor
 import kotlin.coroutines.resume
+
+/**
+ * قراءة المنطقة الزمنية ورمز دولة الشريحة بدون أي صلاحيات بالمللي ثانية.
+ */
+actual fun readOfflineLocationHints(): OfflineLocationHints {
+    val tzId = runCatching { TimeZone.getDefault().id }.getOrDefault("")
+    val ctx = AndroidAppContext.optional()
+    val countryIso = runCatching {
+        val tm = ctx?.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+        val net = tm?.networkCountryIso?.trim()?.lowercase().orEmpty()
+        val sim = tm?.simCountryIso?.trim()?.lowercase().orEmpty()
+        net.ifEmpty { sim }
+    }.getOrDefault("")
+    return OfflineLocationHints(countryIso = countryIso, timeZoneId = tzId)
+}
 
 /**
  * مزوّد الموقع الأوفلاين على أندرويد.

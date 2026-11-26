@@ -6,6 +6,17 @@ import kotlinx.coroutines.delay
 import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
+import platform.Foundation.NSLocale
+import platform.Foundation.NSTimeZone
+import platform.Foundation.countryCode
+import platform.Foundation.currentLocale
+import platform.Foundation.localTimeZone
+
+actual fun readOfflineLocationHints(): OfflineLocationHints {
+    val tzId = runCatching { NSTimeZone.localTimeZone.name }.getOrDefault("")
+    val iso = runCatching { NSLocale.currentLocale.countryCode?.lowercase().orEmpty() }.getOrDefault("")
+    return OfflineLocationHints(countryIso = iso, timeZoneId = tzId)
+}
 
 @OptIn(ExperimentalForeignApi::class)
 actual class LocationProvider {

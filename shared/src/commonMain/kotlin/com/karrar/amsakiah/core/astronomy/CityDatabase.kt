@@ -566,4 +566,78 @@ object CityDatabase {
         val distance = if (km < 1.0) "أقل من كم" else "${km.toInt()} كم"
         return "بالقرب من ${c.name}، ${c.country} ($distance)"
     }
+
+    private val ISO_TO_COUNTRY_AR: Map<String, String> = mapOf(
+        "iq" to "العراق",
+        "sa" to "السعودية",
+        "ir" to "إيران",
+        "kw" to "الكويت",
+        "bh" to "البحرين",
+        "ae" to "الإمارات",
+        "qa" to "قطر",
+        "om" to "عمان",
+        "ye" to "اليمن",
+        "lb" to "لبنان",
+        "sy" to "سوريا",
+        "jo" to "الأردن",
+        "ps" to "فلسطين",
+        "eg" to "مصر",
+        "ly" to "ليبيا",
+        "tn" to "تونس",
+        "dz" to "الجزائر",
+        "ma" to "المغرب",
+        "sd" to "السودان",
+        "tr" to "تركيا",
+        "gb" to "بريطانيا",
+        "de" to "ألمانيا",
+        "fr" to "فرنسا",
+        "nl" to "هولندا",
+        "se" to "السويد",
+        "dk" to "الدنمارك",
+        "us" to "الولايات المتحدة",
+        "ca" to "كندا",
+        "au" to "أستراليا",
+        "pk" to "باكستان",
+        "in" to "الهند",
+        "af" to "أفغانستان",
+        "az" to "أذربيجان"
+    )
+
+    /**
+     * مطابقة المدينة الافتراضية/العاصمة من قاعدة البيانات المحلية بالمللي ثانية
+     * اعتماداً على رمز دولة الشريحة (ISO) والمنطقة الزمنية للهاتف بدون أي صلاحيات أو إنترنت.
+     */
+    suspend fun findDefaultByTimeZoneOrCountry(
+        countryIso: String,
+        timeZoneId: String
+    ): OfflineCity? = withContext(Dispatchers.Default) {
+        load()
+        val byPop = sortedByPop.orEmpty()
+        val countryAr = ISO_TO_COUNTRY_AR[countryIso.lowercase()]
+        if (countryAr != null) {
+            byPop.firstOrNull { it.country == countryAr && it.timeZoneId.equals(timeZoneId, ignoreCase = true) }
+                ?: byPop.firstOrNull { it.country == countryAr }
+        } else if (timeZoneId.isNotBlank()) {
+            byPop.firstOrNull { it.timeZoneId.equals(timeZoneId, ignoreCase = true) }
+        } else {
+            null
+        }
+    }
+
+    /** اختيار معيار الحساب الأنسب تلقائياً حسب رمز الدولة والمنطقة الزمنية. */
+    fun recommendedMethodForCountry(countryIso: String, timeZoneId: String): String {
+        val iso = countryIso.lowercase()
+        return when {
+            iso == "iq" || timeZoneId == "Asia/Baghdad" -> "alkafeel"
+            iso == "ir" || timeZoneId == "Asia/Tehran" -> "tehran"
+            iso == "sa" || timeZoneId == "Asia/Riyadh" -> "ummalqura"
+            iso == "gb" || timeZoneId == "Europe/London" -> "london_shia"
+            iso == "eg" || timeZoneId == "Africa/Cairo" -> "egypt"
+            iso == "pk" || timeZoneId == "Asia/Karachi" -> "karachi"
+            iso == "fr" || timeZoneId == "Europe/Paris" -> "france_12"
+            iso in setOf("de", "se", "nl", "dk", "at", "be", "ch", "no") || timeZoneId.startsWith("Europe/") -> "european_council"
+            iso in setOf("us", "ca") || timeZoneId.startsWith("America/") -> "isna"
+            else -> "alkafeel"
+        }
+    }
 }
