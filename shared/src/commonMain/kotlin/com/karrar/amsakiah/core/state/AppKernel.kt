@@ -284,13 +284,39 @@ class AppKernel {
 
         // 1) المرحلة الأوفلاين الفورية بالمللي ثانية بدون أي صلاحيات أو إنترنت:
         // قراءة المنطقة الزمنية (TimeZone.getDefault().id) + رمز دولة الشريحة (TelephonyManager)
+        // وتثبيت locationResolved = true عند أول تثبيت حتى لا تتغير المدينة تلقائياً لاحقاً
+        // إلا إذا غيّرها المستخدم بنفسه (GPS / IP / اختيار يدوي).
+        val ip = runCatching { fetchIpLocation() }.getOrNull()
+        if (ip != null && !settings.locationResolved) {
+            val nearest = CityDatabase.nearest(ip.latitude, ip.longitude)
+            nearby = nearest
+            val close = nearest?.takeIf { it.distanceKm <= 80.0 }
+            val cityName = close?.city?.name ?: ip.city.ifBlank { settings.cityName }
+            val countryName = close?.city?.country ?: ip.country.ifBlank { settings.countryName }
+            val zone = ip.timeZoneId ?: close?.city?.timeZoneId ?: settings.timeZoneId
+            update {
+                it.copy(
+                    cityName = cityName,
+                    countryName = countryName,
+                    latitude = ip.latitude,
+                    longitude = ip.longitude,
+                    timeZoneId = zone,
+                    useGps = false,
+                    locationSource = "ip",
+                    locationResolved = true
+                )
+            }
+            showToast("تم تحديد مدينتك تلقائياً: $cityName، $countryName", ToastKind.LOCATION)
+            return
+        }
+
         val hints = runCatching {
             com.karrar.amsakiah.core.location.readOfflineLocationHints()
         }.getOrNull()
-        if (hints != null && (hints.countryIso.isNotBlank() || hints.timeZoneId.isNotBlank())) {
+        if (hints != null && (hints.countryIso.isNotBlank() || hints.timeZoneId.isNotBlank()) && !settings.locationResolved) {
             val matchedCity = CityDatabase.findDefaultByTimeZoneOrCountry(hints.countryIso, hints.timeZoneId)
             val recMethod = CityDatabase.recommendedMethodForCountry(hints.countryIso, hints.timeZoneId)
-            if (matchedCity != null && !settings.locationResolved) {
+            if (matchedCity != null) {
                 update {
                     it.copy(
                         cityName = matchedCity.name,
@@ -302,44 +328,18 @@ class AppKernel {
                         highLatRule = PrayerCalculator.autoHighLatForMethod(recMethod),
                         useGps = false,
                         locationSource = "tz_sim",
-                        locationResolved = false
+                        locationResolved = true
                     )
                 }
-            }
-        }
-
-        // 2) المرحلة الأونلاين عبر IP إن وُجد إنترنت لتثبيت المدينة الدقيقة نهائياً
-        val ip = runCatching { fetchIpLocation() }.getOrNull()
-        if (ip == null) {
-            if (!settings.locationResolved && settings.locationSource == "tz_sim") {
                 showToast(
-                    "توقيت افتراضي (${settings.cityName}) — اختر محافظتك أو فعّل الموقع للدقة",
+                    "توقيت افتراضي (${matchedCity.name}، ${matchedCity.country}) — يمكنك اختيار محافظتك لاحقاً",
                     ToastKind.INFO
                 )
+                return
             }
-            return
         }
-        // تأكيد أن المستخدم لم يغيّر المدينة يدوياً أثناء انتظار استجابة الشبكة
-        if (settings.locationResolved) return
-        val nearest = CityDatabase.nearest(ip.latitude, ip.longitude)
-        nearby = nearest
-        val close = nearest?.takeIf { it.distanceKm <= 80.0 }
-        val cityName = close?.city?.name ?: ip.city.ifBlank { settings.cityName }
-        val countryName = close?.city?.country ?: ip.country.ifBlank { settings.countryName }
-        val zone = ip.timeZoneId ?: close?.city?.timeZoneId ?: settings.timeZoneId
-        update {
-            it.copy(
-                cityName = cityName,
-                countryName = countryName,
-                latitude = ip.latitude,
-                longitude = ip.longitude,
-                timeZoneId = zone,
-                useGps = false,
-                locationSource = "ip",
-                locationResolved = true
-            )
-        }
-        showToast("تم تحديد مدينتك تلقائياً: $cityName", ToastKind.LOCATION)
+        // إن تعذّر كلاهما: يثبّت القيمة الافتراضية ولا يعيد المحاولة تلقائياً
+        update { it.copy(locationResolved = true) }
     }
 
     /** يُسجّل الخطأ في الحالة ويُظهره ككبسولة عائمة — لا إغلاق للتطبيق أبدًا. */

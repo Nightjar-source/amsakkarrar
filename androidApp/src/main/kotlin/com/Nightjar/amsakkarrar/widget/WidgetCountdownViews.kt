@@ -198,7 +198,7 @@ fun todayHeroRemoteViews(
     views.setTextViewText(R.id.widget_kashida_pre, pre)
     views.setTextViewText(R.id.widget_kashida_day, snapshot.hijriDay.toString())
     views.setTextViewText(R.id.widget_kashida_post, post)
-    views.setTextViewText(R.id.widget_hero_date, "${snapshot.gregorianText} • ${snapshot.city}")
+    views.setTextViewText(R.id.widget_hero_date, "${snapshot.gregorianText} • ${snapshot.city}، ${snapshot.settings.countryName}")
     if (snapshot.weatherText.isNotBlank()) {
         views.setTextViewText(R.id.widget_hero_weather, snapshot.weatherText)
         views.setViewVisibility(R.id.widget_hero_weather, android.view.View.VISIBLE)

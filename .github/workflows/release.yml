@@ -1,107 +1,178 @@
-name: Release APK
+name: Release Multiplatform (Android + Windows + Web PWA)
 
 on:
-   push:
-     tags:
-       - 'v*'
-   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-   build-release:
-     name: Build & Release Signed APK
-     runs-on: ubuntu-latest
-     env:
-       ANDROID_HOME: /usr/local/lib/android/sdk
-       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+  build-release:
+    name: Build & Release Signed APK
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-     steps:
-       - name: Checkout
-         uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-       - name: Set up JDK 21
-         uses: actions/setup-java@v4
-         with:
-           java-version: '21'
-           distribution: 'zulu'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
 
-       - name: Setup Gradle
-         uses: gradle/actions/setup-gradle@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-       - name: Make gradlew executable
-         run: chmod +x gradlew
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
-       - name: Restore signing credentials
-         env:
-           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-         run: |
-           mkdir -p androidApp
-           if [ -n "$KEYSTORE_BASE64" ]; then
-             echo "$KEYSTORE_BASE64" | base64 -d > androidApp/Nightjar.keystore
-           elif [ -f "keystore_base64.txt" ]; then
-             cat keystore_base64.txt | base64 -d > androidApp/Nightjar.keystore
-           fi
-           echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-19941994}" >> local.properties
-           echo "KEY_PASSWORD=${KEY_PASSWORD:-19941994}" >> local.properties
+      - name: Restore signing credentials
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p androidApp
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > androidApp/Nightjar.keystore
+          elif [ -f "keystore_base64.txt" ]; then
+            cat keystore_base64.txt | base64 -d > androidApp/Nightjar.keystore
+          fi
+          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-19941994}" >> local.properties
+          echo "KEY_PASSWORD=${KEY_PASSWORD:-19941994}" >> local.properties
 
-       - name: Build release APK (R8 full mode + resource shrinking)
-         run: ./gradlew :androidApp:assembleRelease --no-daemon --stacktrace
+      - name: Build release APK (R8 full mode + resource shrinking)
+        run: ./gradlew :androidApp:assembleRelease --no-daemon --stacktrace
 
-       - name: Locate APK
-         id: find_apk
-         run: |
-           APK_PATH=$(find androidApp/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-           NAMED_APK="androidApp/build/outputs/apk/release/amsakkarrar-release.apk"
-           if [ -n "$APK_PATH" ]; then
-             cp "$APK_PATH" "$NAMED_APK"
-           fi
-           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
-           echo "named_apk=$NAMED_APK" >> $GITHUB_OUTPUT
+      - name: Locate APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find androidApp/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          NAMED_APK="androidApp/build/outputs/apk/release/amsakkarrar-release.apk"
+          if [ -n "$APK_PATH" ]; then
+            cp "$APK_PATH" "$NAMED_APK"
+          fi
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "named_apk=$NAMED_APK" >> $GITHUB_OUTPUT
 
-       - name: Verify 16 KB zip alignment
-         run: |
-           set -e
-           ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign -type f | sort -V | tail -n 1)
-           if [ -z "$ZIPALIGN" ]; then
-             echo "::warning::zipalign not on runner SDK — skipping 16 KB alignment check"
-             exit 0
-           fi
-           APK_PATH="${{ steps.find_apk.outputs.apk_path }}"
-           if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
-             echo "::warning::No APK found to verify — skipping"
-             exit 0
-           fi
-           echo "Using: $ZIPALIGN"
-           "$ZIPALIGN" -c -P 16 -v 4 "$APK_PATH"
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: amsakkarrar-signed-apk
+          path: |
+            ${{ steps.find_apk.outputs.apk_path }}
+            ${{ steps.find_apk.outputs.named_apk }}
+          if-no-files-found: error
 
-       - name: Upload APK artifact
-         uses: actions/upload-artifact@v4
-         with:
-           name: amsakkarrar-signed-apk
-           path: |
-             ${{ steps.find_apk.outputs.apk_path }}
-             ${{ steps.find_apk.outputs.named_apk }}
-           if-no-files-found: error
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ steps.find_apk.outputs.apk_path }}
+            ${{ steps.find_apk.outputs.named_apk }}
+          name: إمساكية كرار 2026 ${{ github.ref_name }}
+          body: |
+            # إمساكية كرار 2026 — ${{ github.ref_name }}
+            - **Android APK:** `amsakkarrar-release.apk`
+            - **Windows Desktop:** `amsakkarrar-windows-x64.zip` / `.msi`
+            - **Web PWA:** `amsakkarrar-web-pwa.zip` — ورابط التصفح المباشر عبر GitHub Pages: https://nightjar-source.github.io/amsakkarrar/
 
-       - name: Create GitHub Release
-         uses: softprops/action-gh-release@v2
-         if: startsWith(github.ref, 'refs/tags/')
-         with:
-           files: |
-             ${{ steps.find_apk.outputs.apk_path }}
-             ${{ steps.find_apk.outputs.named_apk }}
-           name: إمساكية كرار 2026 ${{ github.ref_name }}
-           body: |
-             # إمساكية كرار 2026 — ${{ github.ref_name }}
+  build-windows:
+    name: Build Windows Desktop (MSI & Portable)
+    runs-on: windows-latest
+    needs: build-release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-             بناء Release موقع؛ أمان 16 KB جاهز؛ targetSdk 37؛ جوانب Play Quality وVita تمّ متابعتها؛ تنازلات الودجت/الإشعارات (android 12+ صالحة وملائمة).
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
 
-             ## التوافق
-             - `targetSdk 37 / compileSdk 37 / minSdk 24` — target API ≥ 36 المطلوب.
-             - **16 KB page size**: لا كود Native خاص بالتطبيق؛ المكتبات الوحيدة (`androidx.graphics.path`, `androidx.datastore`) جاهزة (LOAD 2**14).
-             - **R8 full mode** نشط مع `isShrinkResources`: قواعد الحفظ طفيفة — no broad `*` keep.
-             - **16 KB zip alignment**: تُتحقق في CI على كل بناء (`zipalign -c -P 16`).
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Windows Distributable & MSI
+        run: |
+          .\gradlew.bat :desktopApp:createDistributable :desktopApp:packageMsi --no-daemon --stacktrace
+
+      - name: Package Windows Zip
+        shell: pwsh
+        run: |
+          $distDir = "desktopApp/build/compose/binaries/main/app/AmsakiahKarar"
+          if (Test-Path $distDir) {
+            Compress-Archive -Path "$distDir/*" -DestinationPath "amsakkarrar-windows-x64.zip" -Force
+          }
+          $msi = Get-ChildItem -Path "desktopApp/build/compose/binaries/main/msi" -Filter "*.msi" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($msi) {
+            Copy-Item $msi.FullName -Destination "amsakkarrar-windows-x64.msi"
+          }
+
+      - name: Upload Windows artifacts to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            amsakkarrar-windows-x64.zip
+            amsakkarrar-windows-x64.msi
+
+  build-web-pwa:
+    name: Build & Deploy Web PWA
+    runs-on: ubuntu-latest
+    needs: build-release
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build WasmJs Web PWA Distribution
+        run: ./gradlew :webApp:wasmJsBrowserDistribution --no-daemon --stacktrace
+
+      - name: Zip Web PWA
+        run: |
+          DIST_DIR="webApp/build/dist/wasmJs/productionExecutable"
+          zip -r amsakkarrar-web-pwa.zip "$DIST_DIR"
+
+      - name: Upload Web PWA zip to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: amsakkarrar-web-pwa.zip
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: webApp/build/dist/wasmJs/productionExecutable
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

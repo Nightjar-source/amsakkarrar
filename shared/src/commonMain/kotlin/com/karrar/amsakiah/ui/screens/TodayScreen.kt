@@ -537,7 +537,7 @@ private fun TodayHeader(
                         modifier = Modifier.size(if (tiny) 10.dp else 12.dp)
                     )
                     Text(
-                        text = settings.cityName.substringBefore(" ("),
+                        text = "${settings.cityName.substringBefore(" (")}، ${settings.countryName}",
                         color = OnSky.text,
                         fontSize = chipTextSize,
                         fontWeight = FontWeight.Bold,

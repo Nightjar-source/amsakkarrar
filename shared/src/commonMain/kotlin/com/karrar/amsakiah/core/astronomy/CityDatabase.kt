@@ -367,10 +367,35 @@ object CityDatabase {
         }
     }.replace(Regex("\\s+"), " ").trim()
 
-    /** عواصم غائبة تمامًا من ملف GeoNames — تُضاف عند التحميل (أوفلاين) مرة واحدة. */
+    /** عواصم وأقضية عراقية مهمة غائبة من ملف GeoNames — تُضاف عند التحميل (أوفلاين) مرة واحدة. */
     private val INJECTED: List<OfflineCity> = listOf(
         OfflineCity("الكويت", "الكويت", 29.3759, 47.9774, "Asia/Kuwait", 2400000),
-        OfflineCity("مسقط", "سلطنة عمان", 23.5880, 58.3829, "Asia/Muscat", 1600000)
+        OfflineCity("مسقط", "سلطنة عمان", 23.5880, 58.3829, "Asia/Muscat", 1600000),
+        // أقضية ونواحٍ عراقية (تُعرض بصيغة: القضاء، المحافظة)
+        OfflineCity("عين التمر", "كربلاء", 32.5675, 43.4897, "Asia/Baghdad", 45000),
+        OfflineCity("الهندية", "كربلاء", 32.5467, 44.2225, "Asia/Baghdad", 120000),
+        OfflineCity("الغراف", "ذي قار", 31.3411, 46.2383, "Asia/Baghdad", 110000),
+        OfflineCity("الشطرة", "ذي قار", 31.4089, 46.1725, "Asia/Baghdad", 250000),
+        OfflineCity("سوق الشيوخ", "ذي قار", 30.8897, 46.4631, "Asia/Baghdad", 180000),
+        OfflineCity("الدورة", "بغداد", 33.2494, 44.3983, "Asia/Baghdad", 400000),
+        OfflineCity("الكاظمية", "بغداد", 33.3797, 44.3375, "Asia/Baghdad", 450000),
+        OfflineCity("أبو غريب", "بغداد", 33.3056, 44.1844, "Asia/Baghdad", 290000),
+        OfflineCity("المدائن", "بغداد", 33.1000, 44.5833, "Asia/Baghdad", 140000),
+        OfflineCity("الطارمية", "بغداد", 33.6714, 44.3842, "Asia/Baghdad", 95000),
+        OfflineCity("الكوفة", "النجف", 32.0306, 44.4036, "Asia/Baghdad", 230000),
+        OfflineCity("المشخاب", "النجف", 31.8058, 44.4922, "Asia/Baghdad", 90000),
+        OfflineCity("الزبير", "البصرة", 30.3917, 47.7017, "Asia/Baghdad", 320000),
+        OfflineCity("الفاو", "البصرة", 29.9742, 48.4728, "Asia/Baghdad", 55000),
+        OfflineCity("سامراء", "صلاح الدين", 34.1983, 43.8742, "Asia/Baghdad", 200000),
+        OfflineCity("بلد", "صلاح الدين", 34.0147, 44.1453, "Asia/Baghdad", 130000),
+        OfflineCity("تلعفر", "نينوى", 36.3742, 42.4489, "Asia/Baghdad", 220000),
+        OfflineCity("عفك", "الديوانية", 32.0631, 45.2492, "Asia/Baghdad", 85000),
+        OfflineCity("المسيب", "بابل", 32.7789, 44.2897, "Asia/Baghdad", 140000),
+        OfflineCity("المحاويل", "بابل", 32.6589, 44.4106, "Asia/Baghdad", 135000),
+        OfflineCity("خانقين", "ديالى", 34.3489, 45.3908, "Asia/Baghdad", 160000),
+        OfflineCity("المقدادية", "ديالى", 33.9789, 44.9369, "Asia/Baghdad", 150000),
+        OfflineCity("علي الغربي", "ميسان", 32.4614, 46.6872, "Asia/Baghdad", 70000),
+        OfflineCity("الرميثة", "المثنى", 31.5289, 45.2036, "Asia/Baghdad", 115000)
     )
 
     private fun fixDisplayName(city: OfflineCity): OfflineCity {

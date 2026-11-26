@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 rootProject.name = "amsakkarrar"
 include(":shared")
 include(":androidApp")
+include(":desktopApp")
+include(":webApp")
