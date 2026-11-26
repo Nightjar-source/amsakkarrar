@@ -95,6 +95,15 @@ fun LiquidFloatingBottomBar(
             .height(62.dp)
             .clip(shape)
             .background(containerColor)
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0x16FF7043),
+                        Color(0x14FFB300),
+                        Color(0x168B5CF6)
+                    )
+                )
+            )
             .border(BorderStroke(1.dp, containerBorder), shape)
             .padding(6.dp)
             .pointerInput(entries) {

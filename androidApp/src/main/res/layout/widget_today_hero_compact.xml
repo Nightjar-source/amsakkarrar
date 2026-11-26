@@ -70,13 +70,29 @@
             android:layout_weight="1"
             android:gravity="end"
             android:maxLines="1"
+            android:ellipsize="end"
             android:fontFamily="@font/reem_kufi"
             android:includeFontPadding="false"
-            android:text="السبت 7-3-2026"
-            android:textColor="#99B9C0D4"
-            android:textSize="7.5sp"
+            android:text="السبت 7-3-2026 • كربلاء"
+            android:textColor="#E2E8F0"
+            android:textSize="8sp"
             android:textStyle="bold" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_hero_weather"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="1dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:text="25° • صافٍ"
+        android:textColor="#F8FAFC"
+        android:textSize="7.5sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -117,18 +133,6 @@
             android:textSize="22sp"
             android:textStyle="bold" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_hero_target"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="1dp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:text="موعد 5:18 ص • كربلاء"
-        android:textColor="#99B9C0D4"
-        android:textSize="7.5sp"
-        android:textStyle="bold" />
 
     <!-- شريط تقدم بيضوي سميك (14dp) — صورة مرسومة بتدرج المرجع (WidgetProgressStrip) -->
     <ImageView

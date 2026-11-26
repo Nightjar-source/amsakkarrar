@@ -71,9 +71,9 @@ private val WidgetCard = Color(0x33000000)
 private val WidgetActive = Color(0x26FFB432)
 private val Gold = Color(0xFFFFD700)
 private val GoldSoft = Color(0xFFFAFAD2)
-private val TextPrimary = Color(0xFFF5F5F7)
-private val TextSecondary = Color(0xB3B9C0D4)
-private val TextMuted = Color(0x99B9C0D4)
+private val TextPrimary = Color(0xFFFFFFFF)
+private val TextSecondary = Color(0xFFE2E8F0)
+private val TextMuted = Color(0xFFCBD5E1)
 private val DayGradient = Color(0xFFFF9F1C)
 private val NightGradient = Color(0xFF80A1D4)
 
@@ -715,19 +715,35 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
-                text = "مسار اليوم",
+                text = "مسار الصلوات",
                 style = TextStyle(
-                    color = color(Color(0xFFF472B6)),
-                    fontSize = if (tier == WidgetTier.COMPACT) 9.sp else 11.sp,
+                    color = color(Color(0xFFFDE047)),
+                    fontSize = if (tier == WidgetTier.COMPACT) 9.5.sp else 11.5.sp,
                     fontWeight = FontWeight.Bold
                 )
             )
             Spacer(GlanceModifier.defaultWeight())
             Text(
                 text = "باقي على ${snapshot.nextLabel}",
-                style = TextStyle(color = color(Gold), fontSize = if (tier == WidgetTier.COMPACT) 8.sp else 10.sp, fontWeight = FontWeight.Bold)
+                style = TextStyle(color = color(Gold), fontSize = if (tier == WidgetTier.COMPACT) 8.5.sp else 10.sp, fontWeight = FontWeight.Bold)
             )
         }
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
+        // مسار الشمس الجيبي فوق القمر الواقعي (مثل الصورة الأولى)
+        val arcBmp = ArcBackground.sunMoonArcBitmap(
+            nowSeconds = snapshot.nowSeconds,
+            sunriseHour = snapshot.sunriseHour,
+            sunsetHour = snapshot.sunsetHour,
+            hijriDay = snapshot.hijriDay
+        )
+        androidx.glance.Image(
+            provider = androidx.glance.ImageProvider(arcBmp),
+            contentDescription = null,
+            contentScale = androidx.glance.layout.ContentScale.FillBounds,
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(if (tier == WidgetTier.COMPACT) 38.dp else 56.dp)
+        )
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
         visible.forEach { entry ->
             val active = entry.isNext

@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
@@ -305,16 +306,186 @@ object ArcBackground {
 
     /**
      * كتلة شرائح (gradient) تُحقَن كـ RemoteViews خلف طبقة المحتوى.
-     * صورة كاملة الحجم بخلفية vertical gradient مطابقة للقوس في الثواني الحالية.
+     * تضيف لمسة الشفق ومنحنى المسار اللطيف من المرجع (الصورة الثانية) خلف العدّاد بشكل خفيف وأنيق.
      */
     fun backgroundRemoteViews(
         context: Context,
         nowSeconds: Int
     ): android.widget.RemoteViews {
         val views = android.widget.RemoteViews(context.packageName, com.Nightjar.amsakkarrar.R.layout.widget_background_arc)
-        // الشريط العمودي 4×256 (≈4KB عبر المعاملة) — لا يُسقط الودجت على سامسونغ كما يفعل 480×480.
-        val bitmap = renderStrip(nowSeconds)
+        val bitmap = renderHeroBackdrop(nowSeconds)
         views.setImageViewBitmap(com.Nightjar.amsakkarrar.R.id.arc_bg_image, bitmap)
         return views
+    }
+
+    /**
+     * خلفية الودجت مع لمسة المنحنى والغروب الشفقي الخفيف من الصورة الثانية خلف العدّاد.
+     */
+    fun renderHeroBackdrop(nowSeconds: Int, widthPx: Int = 360, heightPx: Int = 260): Bitmap {
+        val (top, bottom, glow) = SkyTheme.getSkyColorsForSecond(nowSeconds.toFloat())
+        val out = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        val wF = widthPx.toFloat()
+        val hF = heightPx.toFloat()
+
+        // الخلفية العمودية الأساسية للقوس
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = LinearGradient(
+                0f, 0f, 0f, hF,
+                intArrayOf(top.toArgb(), bottom.toArgb()),
+                null,
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRect(0f, 0f, wF, hF, bgPaint)
+
+        // توهج شفقي خفيف خلف منطقة العدّاد (مستلهم من الصورة الثانية)
+        val horizonY = hF * 0.44f
+        val sunsetGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = RadialGradient(
+                wF * 0.5f, horizonY, wF * 0.65f,
+                intArrayOf(0x38FF7043.toInt(), 0x1AE85D75.toInt(), 0x00000000),
+                floatArrayOf(0f, 0.45f, 1f),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRect(0f, 0f, wF, hF, sunsetGlowPaint)
+
+        // خط أفق رفيع شفاف + منحنى موجة الشمس اللطيف خلف العدّاد
+        val horizonLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x28FFFFFF
+            strokeWidth = 1.5f
+        }
+        canvas.drawLine(wF * 0.06f, horizonY, wF * 0.94f, horizonY, horizonLinePaint)
+
+        val wavePath = Path()
+        val steps = 48
+        for (i in 0..steps) {
+            val t = i / steps.toFloat()
+            val x = wF * (0.06f + t * 0.88f)
+            val y = horizonY - kotlin.math.sin((t * 2f - 0.5f) * kotlin.math.PI).toFloat() * (hF * 0.08f)
+            if (i == 0) wavePath.moveTo(x, y) else wavePath.lineTo(x, y)
+        }
+        val wavePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+            strokeCap = Paint.Cap.ROUND
+            shader = LinearGradient(
+                wF * 0.06f, 0f, wF * 0.94f, 0f,
+                intArrayOf(0x18F43F5E, 0x55FFB300, 0x55FFE066, 0x18F43F5E),
+                floatArrayOf(0f, 0.35f, 0.65f, 1f),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawPath(wavePath, wavePaint)
+        return out
+    }
+
+    /**
+     * رسم مسار الشمس الجيبي مع خط الأفق والقمر الواقعي المضيء (مثل الصورة الأولى).
+     */
+    fun sunMoonArcBitmap(
+        nowSeconds: Int,
+        sunriseHour: Double,
+        sunsetHour: Double,
+        hijriDay: Int,
+        widthPx: Int = 420,
+        heightPx: Int = 110
+    ): Bitmap {
+        val out = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        val wF = widthPx.toFloat()
+        val hF = heightPx.toFloat()
+        val horizonY = hF * 0.58f
+
+        // 1) خط الأفق وظل الليل تحته
+        val nightBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x22000000
+        }
+        canvas.drawRect(0f, horizonY, wF, hF, nightBg)
+        val horizonPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x33FFFFFF
+            strokeWidth = 1.5f
+        }
+        canvas.drawLine(0f, horizonY, wF, horizonY, horizonPaint)
+
+        // 2) المنحنى الجيبي لمسار الشمس
+        val nowHour = nowSeconds / 3600.0
+        val dayLen = (sunsetHour - sunriseHour).coerceAtLeast(1.0)
+        val dayFrac = ((nowHour - sunriseHour) / dayLen).coerceIn(0.0, 1.0).toFloat()
+
+        val inactivePath = Path()
+        val activePath = Path()
+        val steps = 60
+        for (i in 0..steps) {
+            val t = i / steps.toFloat()
+            val x = wF * 0.05f + t * wF * 0.90f
+            // موجة جيبية ترتفع في الوسط (النهار) وتنزل على الطرفين (الليل)
+            val wave = kotlin.math.cos((t - 0.5f) * 1.45f * kotlin.math.PI).toFloat()
+            val y = horizonY - wave * (hF * 0.42f)
+            if (i == 0) inactivePath.moveTo(x, y) else inactivePath.lineTo(x, y)
+            if (t >= 0.16f && t <= 0.84f) {
+                if (activePath.isEmpty) activePath.moveTo(x, y) else activePath.lineTo(x, y)
+            }
+        }
+        canvas.drawPath(
+            inactivePath,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 3f
+                color = 0x44FFFFFF
+            }
+        )
+        canvas.drawPath(
+            activePath,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 4.5f
+                strokeCap = Paint.Cap.ROUND
+                color = 0xFFFFC107.toInt()
+            }
+        )
+
+        // نقطة الشمس المتوهجة على المسار
+        val sunT = 0.16f + dayFrac * (0.84f - 0.16f)
+        val sunX = wF * 0.05f + sunT * wF * 0.90f
+        val sunWave = kotlin.math.cos((sunT - 0.5f) * 1.45f * kotlin.math.PI).toFloat()
+        val sunY = horizonY - sunWave * (hF * 0.42f)
+        canvas.drawCircle(sunX, sunY, 13f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x44FFD54F })
+        canvas.drawCircle(sunX, sunY, 7.5f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFCA28.toInt() })
+
+        // 3) القمر الواقعي بملمس السطح وظل الهلال حسب اليوم الهجري (على اليسار/النهاية)
+        val moonR = hF * 0.24f
+        val moonCx = wF - moonR - 14f
+        val moonCy = hF * 0.36f
+        val moonPhase = ((hijriDay.coerceIn(1, 30) - 1) / 29.5f)
+        // قرص القمر المظلم
+        canvas.drawCircle(moonCx, moonCy, moonR, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF334155.toInt() })
+        // الجزء المضاء حسب الطور
+        val moonPath = Path().apply { addCircle(moonCx, moonCy, moonR, Path.Direction.CW) }
+        canvas.save()
+        canvas.clipPath(moonPath)
+        val litOffset = (0.5f - moonPhase) * moonR * 2.2f
+        canvas.drawCircle(
+            moonCx + litOffset,
+            moonCy,
+            moonR * 1.05f,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = RadialGradient(
+                    moonCx + moonR * 0.2f, moonCy - moonR * 0.2f, moonR * 1.5f,
+                    intArrayOf(0xFFF8FAFC.toInt(), 0xFFCBD5E1.toInt(), 0xFF94A3B8.toInt()),
+                    null,
+                    Shader.TileMode.CLAMP
+                )
+            }
+        )
+        // فوهات خفيفة للواقعية
+        val craterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x1F475569 }
+        canvas.drawCircle(moonCx + moonR * 0.28f, moonCy - moonR * 0.18f, moonR * 0.18f, craterPaint)
+        canvas.drawCircle(moonCx - moonR * 0.12f, moonCy + moonR * 0.32f, moonR * 0.14f, craterPaint)
+        canvas.drawCircle(moonCx + moonR * 0.10f, moonCy + moonR * 0.10f, moonR * 0.10f, craterPaint)
+        canvas.restore()
+
+        return out
     }
 }

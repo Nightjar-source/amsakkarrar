@@ -65,7 +65,12 @@ data class PrayerSnapshot(
      */
     val generatedAtElapsed: Long = 0L,
     /** الثواني داخل اليوم المحلي (timezone المدينة) — لتلوين القوس الديناميكي. */
-    val nowSeconds: Int = 0
+    val nowSeconds: Int = 0,
+    /** ملخص حالة الطقس للعرض في الودجت الرئيسي (مثلاً: 25° • غائم جزئياً). */
+    val weatherText: String = "",
+    /** ساعة الشروق والمغرب لرسم قوس الشمس والقمر في ويدجت المسار. */
+    val sunriseHour: Double = 6.0,
+    val sunsetHour: Double = 18.0
 )
 
 object PrayerSnapshotLoader {
@@ -159,7 +164,12 @@ object PrayerSnapshotLoader {
             afterLabel = PrayerMeta.label(afterId),
             afterTime = "$afterH $afterM",
             generatedAtElapsed = android.os.SystemClock.elapsedRealtime(),
-            nowSeconds = nowSeconds
+            nowSeconds = nowSeconds,
+            weatherText = runCatching {
+                com.karrar.amsakiah.core.settings.AppDataStore.readWidgetStyle("__weather_summary") ?: ""
+            }.getOrDefault(""),
+            sunriseHour = times["sunrise"] ?: 6.0,
+            sunsetHour = times["sunset"] ?: maghrib
         )
     }
 

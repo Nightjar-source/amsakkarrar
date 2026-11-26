@@ -198,9 +198,14 @@ fun todayHeroRemoteViews(
     views.setTextViewText(R.id.widget_kashida_pre, pre)
     views.setTextViewText(R.id.widget_kashida_day, snapshot.hijriDay.toString())
     views.setTextViewText(R.id.widget_kashida_post, post)
-    views.setTextViewText(R.id.widget_hero_date, snapshot.gregorianText)
+    views.setTextViewText(R.id.widget_hero_date, "${snapshot.gregorianText} • ${snapshot.city}")
+    if (snapshot.weatherText.isNotBlank()) {
+        views.setTextViewText(R.id.widget_hero_weather, snapshot.weatherText)
+        views.setViewVisibility(R.id.widget_hero_weather, android.view.View.VISIBLE)
+    } else {
+        views.setViewVisibility(R.id.widget_hero_weather, android.view.View.GONE)
+    }
     views.setTextViewText(R.id.widget_hero_label, "باقي على ${snapshot.nextLabel}")
-    views.setTextViewText(R.id.widget_hero_target, "موعد ${snapshot.nextTime} • ${snapshot.city}")
 
     val driftMs = if (snapshot.generatedAtElapsed > 0L) {
         (SystemClock.elapsedRealtime() - snapshot.generatedAtElapsed).coerceAtLeast(0L)
