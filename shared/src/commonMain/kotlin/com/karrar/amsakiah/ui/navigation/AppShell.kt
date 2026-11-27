@@ -894,7 +894,7 @@ private fun UnifiedTopBar(
                 modifier = Modifier.size(KararTokens.Size.circleButton),
                 contentAlignment = Alignment.Center
             ) {
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = canGoBack,
                     enter = scaleIn(initialScale = 0.82f, animationSpec = motionSpatialFluid()) +
                         fadeIn(animationSpec = motionEffects()),

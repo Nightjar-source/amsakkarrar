@@ -1,6 +1,7 @@
 ﻿package com.karrar.amsakiah.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -19,9 +20,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalFlexBoxApi
-import androidx.compose.foundation.layout.FlexBox
-import androidx.compose.foundation.layout.FlexWrap
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -100,6 +100,7 @@ import com.karrar.amsakiah.ui.components.SpringDialog
 import com.karrar.amsakiah.ui.components.MergedAccordion
 import com.karrar.amsakiah.ui.components.CityPickerSheet
 import com.karrar.amsakiah.ui.motion.motionEffects
+import com.karrar.amsakiah.ui.motion.motionSpatialFluid
 import com.karrar.amsakiah.ui.motion.motionSpatial
 import com.karrar.amsakiah.ui.theme.KararColors
 import com.karrar.amsakiah.ui.theme.KararTokens
@@ -808,22 +809,18 @@ private fun SettingsHero(
                 "none" to "بدون تعديل"
             )
         }
-        @OptIn(ExperimentalFlexBoxApi::class)
-        FlexBox(
-            config = {
-                wrap(FlexWrap.Wrap)
-                gap(6.dp)
-            },
-            modifier = Modifier.fillMaxWidth()
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            maxItemsInEachRow = 2
         ) {
             subRules.forEach { (ruleCode, ruleLabel) ->
                 val isRuleSelected = settings.highLatRule == ruleCode
                 Box(
                     modifier = Modifier
-                        .flex {
-                            basis(128.dp)
-                            grow(1f)
-                        }
+                        .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
                             if (isRuleSelected) KararColors.Amber.copy(alpha = 0.20f) else KararColors.CardSoft
@@ -1407,22 +1404,18 @@ private fun PrayerSelectionCard(
             }
         }
         Spacer(Modifier.height(8.dp))
-        @OptIn(ExperimentalFlexBoxApi::class)
-        FlexBox(
-            config = {
-                wrap(FlexWrap.Wrap)
-                gap(6.dp)
-            },
-            modifier = Modifier.fillMaxWidth()
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            maxItemsInEachRow = 3
         ) {
             PrayerMeta.order.forEach { id ->
                 val on = id in selected
                 Box(
                     Modifier
-                        .flex {
-                            basis(88.dp)
-                            grow(1f)
-                        }
+                        .weight(1f)
                         .background(
                             if (on) accent.copy(alpha = 0.18f) else KararColors.CardSoft,
                             RoundedCornerShape(10.dp)

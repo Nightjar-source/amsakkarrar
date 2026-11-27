@@ -59,7 +59,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.geometry.Offset
+import com.karrar.amsakiah.ui.motion.motionSpatialFluid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -352,6 +352,7 @@ fun TodayScreen(
                         visibleIds = visibleIds,
                         todayTimes = todayTimes,
                         tomorrowTimes = tomorrowTimes,
+                        nowSeconds = nowSeconds,
                         targetId = targetId,
                         targetIsTomorrow = targetIsTomorrow,
                         isNightTime = isNightTime,
@@ -455,6 +456,7 @@ fun TodayScreen(
                     visibleIds = visibleIds,
                     todayTimes = todayTimes,
                     tomorrowTimes = tomorrowTimes,
+                    nowSeconds = nowSeconds,
                     targetId = targetId,
                     targetIsTomorrow = targetIsTomorrow,
                     isNightTime = isNightTime,
@@ -876,6 +878,7 @@ private fun BottomArea(
     visibleIds: List<String>,
     todayTimes: Map<String, Double>,
     tomorrowTimes: Map<String, Double>,
+    nowSeconds: Int,
     targetId: String?,
     targetIsTomorrow: Boolean,
     isNightTime: Boolean,
@@ -915,6 +918,7 @@ private fun BottomArea(
             visibleIds = visibleIds,
             todayTimes = todayTimes,
             tomorrowTimes = tomorrowTimes,
+            nowSeconds = nowSeconds,
             targetId = targetId,
             targetIsTomorrow = targetIsTomorrow,
             isNightTime = isNightTime,
@@ -930,6 +934,7 @@ private fun PrayerStrip(
     visibleIds: List<String>,
     todayTimes: Map<String, Double>,
     tomorrowTimes: Map<String, Double>,
+    nowSeconds: Int,
     targetId: String?,
     targetIsTomorrow: Boolean,
     isNightTime: Boolean,

@@ -8,9 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.ExperimentalFlexBoxApi
-import androidx.compose.foundation.layout.FlexBox
-import androidx.compose.foundation.layout.FlexWrap
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -272,7 +271,7 @@ fun ArcCalendarScreen(
             ) {
                 Text(
                     text = "$monthTitle لعام $year هـ",
-                    color = KararColors.Gold,
+                    color = palette.gold,
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -298,12 +297,12 @@ fun ArcCalendarScreen(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(palette.surface)
-                            .border(1.dp, KararColors.Gold.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .border(1.dp, palette.gold.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
                             .padding(horizontal = 7.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = "متبقية: $remaining",
-                            color = KararColors.Gold,
+                            color = palette.gold,
                             fontSize = 8.5.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -392,14 +391,13 @@ private fun DayCard(
 
         Spacer(Modifier.height(10.dp))
 
-        // ---- خلايا الأوقات بـ FlexBox الرسمي المرن المتكيف مع عرض البطاقة ----
-        @OptIn(ExperimentalFlexBoxApi::class)
-        FlexBox(
-            config = {
-                wrap(FlexWrap.Wrap)
-                gap(6.dp)
-            },
-            modifier = Modifier.fillMaxWidth()
+        // ---- خلايا الأوقات بـ FlowRow المرن المتكيف مع عرض البطاقة ----
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            maxItemsInEachRow = 3
         ) {
             visibleIds.forEach { id ->
                 val raw = day.times[id] ?: 0.0
@@ -409,10 +407,7 @@ private fun DayCard(
                     label = PrayerMeta.label(id),
                     time = formatted.first,
                     amPm = formatted.second,
-                    modifier = Modifier.flex {
-                        basis(86.dp)
-                        grow(1f)
-                    }
+                    modifier = Modifier.weight(1f)
                 )
             }
         }

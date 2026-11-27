@@ -146,14 +146,7 @@ fun App() {
                     fetchWeather(state.settings.latitude, state.settings.longitude)
                 }.getOrNull()
                 // لا نمسح القيمة القديمة عند فشل التحديث: يمنع وميض اختفاء الطقس.
-                if (fresh != null) {
-                    weather = fresh
-                    // مزامنة ملخص الطقس للودجت الرئيسي عبر التطبيق أوفلاين
-                    runCatching {
-                        val wText = "${fresh.temperatureC}° • ${fresh.labelAr}"
-                        com.karrar.amsakiah.core.settings.AppDataStore.writeWidgetStyle("__weather_summary", wText)
-                    }
-                }
+                if (fresh != null) weather = fresh
                 delay(20 * 60 * 1000L)
             }
         }
