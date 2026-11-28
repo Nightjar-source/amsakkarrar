@@ -175,14 +175,18 @@ fun PrayerHorizonArc(
                 center = Offset(sunX, sunY)
             )
 
-            // القمر الواقعي بملمس السطح وطور الهلال على الطرف
+            // القمر الواقعي بملمس السطح وطور الهلال على الطرف (Earthshine + Terminator + Lunar Maria)
             val moonR = (h * 0.27f).coerceAtMost(24.dp.toPx())
             val moonCx = w - moonR - 10.dp.toPx()
             val moonCy = h * 0.48f
-            val moonPhase = (hijriDay.coerceIn(1, 30) - 1) / 29.5f
+            val moonGeom = com.karrar.amsakiah.core.astronomy.moonGeometry(hijriDay, 1f)
 
             drawCircle(
-                color = Color(0xFF334155),
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A), Color(0xFF020617)),
+                    center = Offset(moonCx - moonR * 0.2f, moonCy - moonR * 0.2f),
+                    radius = moonR * 1.15f
+                ),
                 radius = moonR,
                 center = Offset(moonCx, moonCy)
             )
@@ -197,25 +201,63 @@ fun PrayerHorizonArc(
                 )
             }
             clipPath(moonClip) {
-                val litOffset = (0.5f - moonPhase) * moonR * 2.2f
+                if (!moonGeom.isNewMoon) {
+                    val litPath = Path().apply {
+                        moveTo(moonCx, moonCy - moonR)
+                        if (moonGeom.isFullMoon) {
+                            addOval(
+                                androidx.compose.ui.geometry.Rect(
+                                    moonCx - moonR,
+                                    moonCy - moonR,
+                                    moonCx + moonR,
+                                    moonCy + moonR
+                                )
+                            )
+                        } else {
+                            val rx = moonGeom.rx * moonR
+                            addArc(
+                                androidx.compose.ui.geometry.Rect(
+                                    moonCx - moonR,
+                                    moonCy - moonR,
+                                    moonCx + moonR,
+                                    moonCy + moonR
+                                ),
+                                270f,
+                                if (moonGeom.isWaxing) 180f else -180f
+                            )
+                            val waxingCrescent = moonGeom.isWaxing == (moonGeom.illuminationRatio < 0.5f)
+                            addArc(
+                                androidx.compose.ui.geometry.Rect(
+                                    moonCx - rx,
+                                    moonCy - moonR,
+                                    moonCx + rx,
+                                    moonCy + moonR
+                                ),
+                                90f,
+                                if (waxingCrescent) -180f else 180f
+                            )
+                            close()
+                        }
+                    }
+                    drawPath(
+                        path = litPath,
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFFF8FAFC), Color(0xFFE2E8F0), Color(0xFF94A3B8)),
+                            center = Offset(moonCx + moonR * 0.25f, moonCy - moonR * 0.2f),
+                            radius = moonR * 1.4f
+                        )
+                    )
+                }
+                // البحار والفوهات القمرية الواقعية
                 drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFF8FAFC), Color(0xFFCBD5E1), Color(0xFF94A3B8)),
-                        center = Offset(moonCx + moonR * 0.2f, moonCy - moonR * 0.2f),
-                        radius = moonR * 1.5f
-                    ),
-                    radius = moonR * 1.05f,
-                    center = Offset(moonCx + litOffset, moonCy)
+                    color = Color(0x28475569),
+                    radius = moonR * 0.26f,
+                    center = Offset(moonCx + moonR * 0.24f, moonCy - moonR * 0.18f)
                 )
                 drawCircle(
-                    color = Color(0x24475569),
+                    color = Color(0x22475569),
                     radius = moonR * 0.18f,
-                    center = Offset(moonCx + moonR * 0.28f, moonCy - moonR * 0.18f)
-                )
-                drawCircle(
-                    color = Color(0x24475569),
-                    radius = moonR * 0.14f,
-                    center = Offset(moonCx - moonR * 0.12f, moonCy + moonR * 0.32f)
+                    center = Offset(moonCx - moonR * 0.18f, moonCy + moonR * 0.28f)
                 )
             }
         }

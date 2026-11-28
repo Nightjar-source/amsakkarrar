@@ -55,9 +55,11 @@ data class AppSettings(
     val adhanEnabled: Boolean = true,
     /** الأوقات التي يُرفع عندها الأذان (اختيار محدّد أو الكل) */
     val adhanPrayers: List<String> = listOf("fajr", "dhuhr", "asr", "maghrib", "isha"),
-    /** الإشعار الحي للعدّاد التنازلي بشريط التقدم — اختياري. */
+    /** الإشعار الحي للعدّاد التنازلي بشريط التقدم */
     val liveNotification: Boolean = true,
-    /** الأوقات التي يدور حولها العدّاد والإشعار الحي (اختيار محدّد أو الكل) */
+    /** التذكير قبل دخول وقت الصلاة بالدقائق في الإشعار الحي (0 = يعمل دائماً، 15 / 30 / 60 = يظهر قبل الوقت المحدد فقط). */
+    val liveLeadMinutes: Int = 15,
+    /** الصلوات التي يدور حولها العدّاد والإشعار الحي (اختيار محدّد أو الكل) */
     val livePrayers: List<String> = listOf("imsak", "fajr", "dhuhr", "asr", "maghrib", "isha", "midnight"),
     val vibration: Boolean = true,
 

@@ -43,10 +43,12 @@
                 android:fontFamily="@font/reem_kufi"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:minWidth="28dp"
+                android:minWidth="32dp"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
                 android:text="16"
                 android:textColor="#FFFFFFFF"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -64,7 +66,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
-            android:fontFamily="@font/reem_kufi"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:text="السبت 7-3-2026"

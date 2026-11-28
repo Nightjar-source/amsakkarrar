@@ -66,6 +66,13 @@ object LiveNotificationManager {
         if (!force && AppDataStore.readDismissedUntil() > System.currentTimeMillis()) return
 
         val snapshot = PrayerSnapshotLoader.load(appContext)
+        // الالتزام بوقت انطلاق الإشعار الحي قبل الصلاة (مثل 15 د أو ساعة؛ 0 = يعمل دائماً)
+        val leadSec = settings.liveLeadMinutes.coerceAtLeast(0) * 60
+        if (!force && leadSec > 0 && snapshot.remainingSeconds > leadSec) {
+            lastSignature = null
+            cancelInternal(appContext)
+            return
+        }
         val percent = (snapshot.periodProgress * 100f).toInt()
         val remaining = snapshot.remainingSeconds
         // بصمة المحتوى: لا نُعيد النشر إذا لم يتغيّر شيء يُرى في البطاقة.

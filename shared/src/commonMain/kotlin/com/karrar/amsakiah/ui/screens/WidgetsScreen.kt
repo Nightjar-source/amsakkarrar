@@ -501,17 +501,17 @@ private fun TimesPreview(
     nextLabel: String,
     countdown: Triple<String, String, String>
 ) {
-    Text(city, color = KararColors.Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-    Text(date, color = KararColors.TextMuted, fontSize = 8.sp)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("مسار الصلوات", color = KararColors.Gold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text("باقي على $nextLabel", color = Color(0xFF38BDF8), fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+    }
+    Text("$city • $date", color = KararColors.TextMuted, fontSize = 8.sp)
     Spacer(Modifier.height(6.dp))
     PreviewPrayerGrid(entries, nextLabel)
-    Spacer(Modifier.height(6.dp))
-    Text(
-        "باقي على $nextLabel • ${countdown.first}:${countdown.second}:${countdown.third}",
-        color = Color(0xFF38BDF8),
-        fontSize = 9.sp,
-        fontWeight = FontWeight.Bold
-    )
 }
 
 @Composable

@@ -283,6 +283,46 @@ fun SettingsScreen(
                         state.update { it.copy(liveNotification = c) }
                     }
                 )
+                GlassCard(modifier = Modifier.fillMaxWidth(), corner = 16.dp, contentPadding = PaddingValues(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "تذكير قبل الوقت (دقيقة)",
+                            color = KararColors.TextPrimary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "متى ينطلق الإشعار الحي قبل الصلاة المختارة (أو «دائماً» للبقاء مستمراً):",
+                            color = KararColors.TextMuted,
+                            fontSize = 10.sp
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf(0 to "دائماً", 15 to "15 د", 30 to "30 د", 60 to "ساعة").forEach { (mins, label) ->
+                                val selected = settings.liveLeadMinutes == mins
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (selected) KararColors.Teal.copy(alpha = 0.25f) else KararColors.CardSoft)
+                                        .border(1.dp, if (selected) KararColors.Teal else KararColors.Border, RoundedCornerShape(10.dp))
+                                        .clickable { state.update { it.copy(liveLeadMinutes = mins) } }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = if (selected) KararColors.Teal else KararColors.TextPrimary,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 PrayerSelectionCard(
                     title = "أوقات العدّاد",
                     subtitle = "يدور العدّاد والإشعار الحي حول هذه الأوقات — إلغاء الكل يفرغ العدّاد.",
