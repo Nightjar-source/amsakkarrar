@@ -356,6 +356,7 @@ fun TodayScreen(
                         targetId = targetId,
                         targetIsTomorrow = targetIsTomorrow,
                         isNightTime = isNightTime,
+                        hijriDay = hijri.day,
                         compact = true,
                         use24Hour = state.settings.use24Hour,
                         onOpenCalendar = onOpenArcCalendar,
@@ -460,6 +461,7 @@ fun TodayScreen(
                     targetId = targetId,
                     targetIsTomorrow = targetIsTomorrow,
                     isNightTime = isNightTime,
+                    hijriDay = hijri.day,
                     compact = compact,
                     use24Hour = state.settings.use24Hour,
                     onOpenCalendar = onOpenArcCalendar,
@@ -882,6 +884,7 @@ private fun BottomArea(
     targetId: String?,
     targetIsTomorrow: Boolean,
     isNightTime: Boolean,
+    hijriDay: Int,
     compact: Boolean,
     use24Hour: Boolean,
     onOpenCalendar: () -> Unit,
@@ -911,6 +914,18 @@ private fun BottomArea(
                 )
             }
         }
+
+        Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+
+        com.karrar.amsakiah.ui.components.PrayerHorizonArc(
+            visibleIds = visibleIds,
+            todayTimes = todayTimes,
+            nowSeconds = nowSeconds,
+            targetId = targetId,
+            hijriDay = hijriDay,
+            use24Hour = use24Hour,
+            compact = compact
+        )
 
         Spacer(Modifier.height(if (compact) 2.dp else 4.dp))
 

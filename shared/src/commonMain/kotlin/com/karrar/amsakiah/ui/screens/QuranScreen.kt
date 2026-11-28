@@ -235,7 +235,7 @@ private fun QuranReader(state: AppState, surah: SurahInfo, onClose: () -> Unit) 
 
     LaunchedEffect(surah.number) {
         // تحميل مرة واحدة لكل عملية (≈750KB) — على خيط خلفي.
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             if (!com.karrar.amsakiah.core.quran.QuranTexts.isLoaded) {
                 runCatching {
                     com.karrar.amsakiah.resources.Res.readBytes("files/quran_texts.json")

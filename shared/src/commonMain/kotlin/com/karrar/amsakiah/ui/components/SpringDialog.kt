@@ -110,9 +110,7 @@ fun SpringDialog(
 
     Dialog(
         onDismissRequest = { if (dismissible) onDismissRequest() },
-        properties = DialogProperties(
-            decorFitsSystemWindows = false,
-            usePlatformDefaultWidth = false,
+        properties = platformDialogProperties(
             dismissOnBackPress = dismissible,
             dismissOnClickOutside = false
         )

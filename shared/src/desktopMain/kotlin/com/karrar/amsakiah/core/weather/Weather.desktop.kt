@@ -18,6 +18,7 @@ actual suspend fun fetchWeather(lat: Double, lon: Double): WeatherInfo? {
         val current = root["current"]?.jsonObject ?: return null
         val temp = current["temperature_2m"]?.jsonPrimitive?.doubleOrNull?.roundToInt() ?: return null
         val code = current["weather_code"]?.jsonPrimitive?.intOrNull ?: 0
-        WeatherInfo(temperatureC = temp, code = code, labelAr = wmoLabelAr(code))
+        val (desc, icon) = weatherDescription(code)
+        WeatherInfo(temperatureC = temp, code = code, description = desc, icon = icon)
     }.getOrNull()
 }

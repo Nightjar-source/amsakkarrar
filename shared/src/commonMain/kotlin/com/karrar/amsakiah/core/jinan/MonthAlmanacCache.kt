@@ -11,6 +11,8 @@ package com.karrar.amsakiah.core.jinan
  *
  * سقف 36 شهرًا (٣ سنوات) — ذاكرة صغيرة، ويمسح عند امتلائه ويُعاد من الصفر.
  */
+import com.karrar.amsakiah.ui.components.platformSync
+
 object MonthAlmanacCache {
 
     private const val MAX_ENTRIES = 36
@@ -19,12 +21,12 @@ object MonthAlmanacCache {
 
     private fun key(year: Int, month: Int, hijriOffset: Int) = "$year-$month-$hijriOffset"
 
-    fun get(year: Int, month: Int, hijriOffset: Int): MonthAlmanac? = synchronized(lock) {
+    fun get(year: Int, month: Int, hijriOffset: Int): MonthAlmanac? = platformSync(lock) {
         cache[key(year, month, hijriOffset)]
     }
 
     fun put(almanac: MonthAlmanac, hijriOffset: Int) {
-        synchronized(lock) {
+        platformSync(lock) {
             if (cache.size >= MAX_ENTRIES) cache.clear()
             cache[key(almanac.year, almanac.month, hijriOffset)] = almanac
         }
@@ -32,6 +34,6 @@ object MonthAlmanacCache {
 
     /** يُستدعى عند تغيير إزاحة الهجري — نتخلص من كل المدخلات القديمة. */
     fun clear() {
-        synchronized(lock) { cache.clear() }
+        platformSync(lock) { cache.clear() }
     }
 }

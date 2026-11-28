@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.imeNestedScroll
+import com.karrar.amsakiah.ui.components.platformImeNestedScroll
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -201,7 +201,7 @@ private fun DuaList(
         columns = GridCells.Adaptive(minSize = KararTokens.Size.duaCardMinWidth),
         modifier = Modifier
             .fillMaxWidth()
-            .imeNestedScroll(),
+            .platformImeNestedScroll(),
         // الحواف من الجهاز إلى الحافة للتمرير؛ المحتوى يحمل حشوته داخل كل عنصر،
         // مع احترام المسافة الآمنة للنظام (ثقب/شريط جانبي) على مستوى الشبكة.
         contentPadding = PaddingValues(

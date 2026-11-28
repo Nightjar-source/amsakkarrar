@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.imeNestedScroll
+import com.karrar.amsakiah.ui.components.platformImeNestedScroll
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -82,7 +82,7 @@ fun TasksScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .imeNestedScroll(),
+            .platformImeNestedScroll(),
         contentPadding = PaddingValues(
             start = 16.dp + contentPadding.calculateStartPadding(layoutDirection),
             end = 16.dp + contentPadding.calculateEndPadding(layoutDirection),

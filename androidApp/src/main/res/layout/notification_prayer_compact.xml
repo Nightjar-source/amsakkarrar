@@ -46,12 +46,16 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_weight="1"
+            android:autoSizeMaxTextSize="15sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeTextType="uniform"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="حان الآن موعد الصلاة"
             android:textColor="#FFF5F5F7"
             android:textSize="15sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            tools:targetApi="o" />
 
         <TextView
             android:id="@+id/prayer_compact_time"

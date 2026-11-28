@@ -135,13 +135,17 @@
                     android:id="@+id/prayer_next_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:autoSizeMaxTextSize="11sp"
+                    android:autoSizeMinTextSize="8.5sp"
+                    android:autoSizeTextType="uniform"
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="2"
                     android:text="الصلاة القادمة (العصر)"
                     android:textColor="#B3B9C0D4"
                     android:textSize="10.5sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:targetApi="o" />
 
                 <TextView
                     android:id="@+id/prayer_next_time"

@@ -318,7 +318,7 @@ fun SkyArc(
                 )
                 // 16 شعاعًا شمسيًا متبادلة الأطوال لتعطي تأثير لمعان حي وانكسار ضوئي واقعي
                 for (deg in 0 until 360 step 22) {
-                    val rad = Math.toRadians(deg.toDouble())
+                    val rad = deg * kotlin.math.PI / 180.0
                     val isLongRay = deg % 45 == 0
                     val dx = sin(rad).toFloat() * sr
                     val dy = cos(rad).toFloat() * sr
