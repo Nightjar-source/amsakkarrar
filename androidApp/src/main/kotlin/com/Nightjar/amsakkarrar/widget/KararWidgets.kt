@@ -729,7 +729,7 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
             )
         }
         Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
-        // مسار الشمس الجيبي فوق القمر الواقعي (مثل الصورة الأولى)
+        // مسار الشمس الجيبي فوق القمر الواقعي — بنسبة عرض/ارتفاع صحيحة حتى لا ينضغط القمر
         val arcBmp = ArcBackground.sunMoonArcBitmap(
             nowSeconds = snapshot.nowSeconds,
             sunriseHour = snapshot.sunriseHour,
@@ -740,47 +740,53 @@ private fun JourneyWidgetContent(context: Context, snapshot: PrayerSnapshot, app
         androidx.glance.Image(
             provider = androidx.glance.ImageProvider(arcBmp),
             contentDescription = null,
-            contentScale = androidx.glance.layout.ContentScale.FillBounds,
+            contentScale = androidx.glance.layout.ContentScale.Fit,
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .height(if (tier == WidgetTier.COMPACT) 38.dp else 56.dp)
+                .height(if (tier == WidgetTier.COMPACT) 54.dp else 74.dp)
         )
-        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 3.dp else 6.dp))
-        visible.forEach { entry ->
-            val active = entry.isNext
+        Spacer(GlanceModifier.height(if (tier == WidgetTier.COMPACT) 4.dp else 8.dp))
+        // مربعات أوقات الصلاة (صفوف متناسقة حسب الصلوات المحددة في الضبط)
+        val chunkSize = if (tier == WidgetTier.COMPACT) 2 else 3
+        visible.chunked(chunkSize).forEach { rowEntries ->
             Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(vertical = if (tier == WidgetTier.COMPACT) 1.dp else 2.dp),
+                modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
                 verticalAlignment = Alignment.Vertical.CenterVertically
             ) {
-                Box(
-                    modifier = GlanceModifier
-                        .width(if (tier == WidgetTier.COMPACT) 5.dp else 7.dp)
-                        .height(if (tier == WidgetTier.COMPACT) 5.dp else 7.dp)
-                        .background(if (active) Color(0xFFF472B6) else Color(0x33FFFFFF))
-                        .cornerRadius(50.dp)
-                ) {}
-                Spacer(GlanceModifier.width(6.dp))
-                Text(
-                    text = entry.label,
-                    modifier = GlanceModifier.defaultWeight(),
-                    style = TextStyle(
-                        color = color(if (active) Color(0xFFF472B6) else Color(0xFFE2E8F0)),
-                        fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
-                    )
-                )
-                Text(
-                    text = entry.time,
-                    style = TextStyle(
-                        color = color(if (active) Gold else TextMuted),
-                        fontSize = if (tier == WidgetTier.COMPACT) 7.sp else 9.sp
-                    )
-                )
+                rowEntries.forEachIndexed { idx, entry ->
+                    val active = entry.isNext
+                    Column(
+                        modifier = GlanceModifier
+                            .defaultWeight()
+                            .background(if (active) Color(0x40F59E0B) else Color(0x1EFFFFFF))
+                            .cornerRadius(10.dp)
+                            .padding(horizontal = 4.dp, vertical = if (tier == WidgetTier.COMPACT) 3.dp else 5.dp),
+                        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
+                    ) {
+                        Text(
+                            text = entry.label,
+                            style = TextStyle(
+                                color = color(if (active) Color(0xFFFDE047) else Color(0xFFE2E8F0)),
+                                fontSize = if (tier == WidgetTier.COMPACT) 7.5.sp else 9.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            maxLines = 1
+                        )
+                        Text(
+                            text = entry.time,
+                            style = TextStyle(
+                                color = color(if (active) Color(0xFFFFFFFF) else TextMuted),
+                                fontSize = if (tier == WidgetTier.COMPACT) 8.sp else 9.5.sp,
+                                fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
+                            ),
+                            maxLines = 1
+                        )
+                    }
+                    if (idx < rowEntries.lastIndex) {
+                        Spacer(GlanceModifier.width(4.dp))
+                    }
+                }
             }
-        }
-        if (tier == WidgetTier.LARGE) {
-            Spacer(GlanceModifier.height(4.dp))
-            PillProgress(snapshot.periodProgress, snapshot.isDaytime, inset = tierPadding(tier) + 1.dp)
         }
     }
 }

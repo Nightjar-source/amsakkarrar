@@ -25,7 +25,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "AmsakiahKarar"
-            packageVersion = "1.3.9"
+            packageVersion = "1.3.10"
             description = "إمساكية كرار 2026 — المواقيت الفلكية ومفاتيح الجنان"
             vendor = "Karrar"
         }

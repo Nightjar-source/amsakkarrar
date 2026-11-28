@@ -24,7 +24,7 @@ import com.Nightjar.amsakkarrar.R
 object NotificationChannels {
 
     const val ADHAN = "adhan_channel"
-    const val LIVE = "live_countdown"
+    const val LIVE = "live_countdown_v2"
 
     /** قناة احتياطية تحمل صوت adhan.mp3 نفسه إن تعذّر تشغيل AdhanService. */
     const val ADHAN_FALLBACK = "adhan_fallback_sound"
@@ -32,6 +32,7 @@ object NotificationChannels {
     /** قنوات ومعرّفات الإصدارات السابقة — تُنظَّف مرة واحدة عند الإقلاع. */
     private const val LEGACY_REMINDER_CHANNEL = "prayer_reminder"
     private const val LEGACY_PLAYBACK_CHANNEL = "adhan_playback"
+    private const val LEGACY_LIVE_CHANNEL = "live_countdown"
     private val LEGACY_IDS = intArrayOf(3001, 3002, 3102, 4001)
 
     /** يُنشأ مرة واحدة لكل عملية؛ إعادة الإنشاء كل تحديث كانت تستهلك Binder بلا داعٍ. */
@@ -54,9 +55,16 @@ object NotificationChannels {
             lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
         }
 
+        val defaultNotifSound = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
         val live = NotificationChannel(LIVE, "العدّاد الحي", NotificationManager.IMPORTANCE_DEFAULT).apply {
-            description = "إشعار مستمر يعرض العدّاد التنازلي للصلاة القادمة وشريط التقدم (اختياري)"
-            setSound(null, null)
+            description = "إشعار مستمر يعرض العدّاد التنازلي للصلاة القادمة وشريط التقدم"
+            setSound(
+                defaultNotifSound,
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
             enableVibration(false)
             setShowBadge(false)
             lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
@@ -98,6 +106,7 @@ object NotificationChannels {
     private fun cleanupLegacy(context: Context, manager: NotificationManager) {
         LEGACY_IDS.forEach { id -> runCatching { manager.cancel(id) } }
         runCatching { manager.deleteNotificationChannel(LEGACY_REMINDER_CHANNEL) }
+        runCatching { manager.deleteNotificationChannel(LEGACY_LIVE_CHANNEL) }
         runCatching { manager.deleteNotificationChannel(LEGACY_PLAYBACK_CHANNEL) }
     }
 }

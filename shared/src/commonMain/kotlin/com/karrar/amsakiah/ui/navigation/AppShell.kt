@@ -203,11 +203,11 @@ fun AppShell(
         }
     }
 
-    // استشعار ذكي لعودة المستخدم للتطبيق (بعد فتح الإعدادات أو تشغيل GPS من النظام)
+    // استشعار ذكي لعودة المستخدم للتطبيق (بعد منح الإذن فقط — لا يعيد الفحص والتنبيه في كل دخول)
     LifecycleResumeEffect(Unit) {
         permissions.refresh()
         state.syncLocationSystemState()
-        if (permissions.status.location && (gpsAfterGrant || state.settings.useGps)) {
+        if (permissions.status.location && gpsAfterGrant) {
             gpsAfterGrant = false
             scope.launch { state.detectLocation() }
         }
@@ -463,6 +463,7 @@ fun AppShell(
                     sizeTransform = null,
                     transitionSpec = { sceneTransition(navDirection, reduceMotion) },
                     popTransitionSpec = { sceneTransition(-navDirection, reduceMotion) },
+                    predictivePopTransitionSpec = { sceneTransition(-1, reduceMotion) },
                     entryProvider = entryProvider {
                         entry(AppRoute.Today) {
                             // شريحة المدينة في «اليوم» تفتح ورقة اختيار المدينة
@@ -752,9 +753,10 @@ private fun sceneTransition(direction: Int, reduceMotion: Boolean): ContentTrans
     }
     val sign = if (direction >= 0) 1 else -1
     return (
-        slideInHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { sign * it }
+        slideInHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { sign * it } +
+            fadeIn(animationSpec = effectsSpec(reduceMotion))
         ).togetherWith(
-        slideOutHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { -sign * it / 3 } +
+        slideOutHorizontally(animationSpec = spatialFluidSpec(reduceMotion)) { -sign * it / 2 } +
             fadeOut(animationSpec = effectsSpec(reduceMotion))
     )
 }

@@ -52,7 +52,7 @@ fun PrayerHorizonArc(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val targetHeight = if (compact) 74.dp else 92.dp
+    val targetHeight = if (compact) 64.dp else 76.dp
     val animatedHeight by animateDpAsState(
         targetValue = targetHeight,
         animationSpec = motionSpatialFluid(),
@@ -71,16 +71,12 @@ fun PrayerHorizonArc(
     )
 
     val textMeasurer = rememberTextMeasurer()
-    val shape = RoundedCornerShape(if (compact) 18.dp else 22.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = if (compact) 12.dp else 24.dp)
+            .padding(horizontal = if (compact) 8.dp else 16.dp)
             .height(animatedHeight)
-            .clip(shape)
-            .background(OnSky.glass.copy(alpha = 0.55f))
-            .border(1.dp, OnSky.borderStrong.copy(alpha = 0.45f), shape)
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
@@ -89,17 +85,12 @@ fun PrayerHorizonArc(
 
             val horizonY = h * 0.56f
 
-            // ظل الليل أسفل خط الأفق + خط الأفق
-            drawRect(
-                color = Color(0x22000000),
-                topLeft = Offset(0f, horizonY),
-                size = androidx.compose.ui.geometry.Size(w, h - horizonY)
-            )
+            // خط أفق خفيف جداً بدون خلفية أو صندوق
             drawLine(
-                color = Color.White.copy(alpha = 0.22f),
+                color = Color.White.copy(alpha = 0.14f),
                 start = Offset(0f, horizonY),
                 end = Offset(w, horizonY),
-                strokeWidth = 1.2.dp.toPx()
+                strokeWidth = 1.dp.toPx()
             )
 
             // المنحنى الجيبي لمسار الصلوات

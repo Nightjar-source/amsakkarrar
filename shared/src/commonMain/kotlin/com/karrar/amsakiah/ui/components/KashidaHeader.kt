@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +36,7 @@ fun KashidaHeader(
     val ink = OnSky.text
     val (pre, post) = SkyTheme.getKashidaMonthParts(monthName)
     val unit = fontSize.value
-    val daySize = (unit * (38.4f / 44.8f)).sp
+    val daySize = (unit * 0.72f).sp
 
     Row(
         modifier = modifier,
@@ -50,7 +51,9 @@ fun KashidaHeader(
             fontFamily = reem
         )
         Box(
-            modifier = Modifier.widthIn(min = (unit * (45f / 44.8f)).dp),
+            modifier = Modifier
+                .widthIn(min = (unit * 1.28f).dp)
+                .padding(horizontal = 2.dp),
             contentAlignment = Alignment.Center
         ) {
             // الكشيدة المتصلة في الخلفية (بيضاء)
@@ -61,14 +64,14 @@ fun KashidaHeader(
                 fontWeight = FontWeight.Bold,
                 fontFamily = reem
             )
-            // رقم اليوم فوقها بالذهبي مع ظل خفيف
+            // رقم اليوم فوقها بالذهبي
             Text(
                 text = hijriDay.toString(),
                 color = OnSky.gold,
                 fontSize = daySize,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = reem,
-                modifier = Modifier.offset(y = (-(unit * (6f / 44.8f))).dp)
+                modifier = Modifier.offset(y = (-(unit * (7f / 44.8f))).dp)
             )
         }
         Text(

@@ -414,14 +414,9 @@ object ArcBackground {
         val hF = heightPx.toFloat()
         val horizonY = hF * 0.56f
 
-        // 1) خط الأفق وظل الليل تحته
-        val nightBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x22000000 }
+        // 1) مسار نظيف بدون خط مستقيم أفقي (حسب طلب المستخدم)
+        val nightBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x16000000 }
         canvas.drawRect(0f, horizonY, wF, hF, nightBg)
-        val horizonPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0x38FFFFFF
-            strokeWidth = 1.5f
-        }
-        canvas.drawLine(0f, horizonY, wF, horizonY, horizonPaint)
 
         // 2) المنحنى الجيبي لمسار الشمس والصلوات
         val nowHour = nowSeconds / 3600.0

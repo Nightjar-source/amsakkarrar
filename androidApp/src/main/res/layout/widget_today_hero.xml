@@ -41,11 +41,13 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/reem_kufi"
             android:includeFontPadding="false"
-            android:minWidth="26dp"
+            android:minWidth="32dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:gravity="center"
             android:text="16"
             android:textColor="#FFFFFFFF"
-            android:textSize="21sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
@@ -67,7 +69,6 @@
         android:layout_marginTop="2dp"
         android:maxLines="1"
         android:ellipsize="end"
-        android:fontFamily="@font/reem_kufi"
         android:includeFontPadding="false"
         android:text="السبت 7-3-2026 • كربلاء"
         android:textColor="#E2E8F0"
@@ -125,7 +126,7 @@
     <ImageView
         android:id="@+id/widget_hero_progress"
         android:layout_width="match_parent"
-        android:layout_height="32dp"
+        android:layout_height="18dp"
         android:layout_marginTop="6dp"
         android:contentDescription="@null"
         android:scaleType="fitXY" />

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import kotlinx.datetime.toLocalDateTime
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
@@ -150,6 +152,19 @@ fun ArcCalendarScreen(
         val endInset = contentPadding.calculateEndPadding(layoutDirection)
 
         // ---------- بطاقات الأيام المتكيفة: عمود في الهاتف وأعمدة متعددة في الشاشات الكبيرة ----------
+        val zone = remember(settings.timeZoneId) { PrayerCalculator.zoneOf(settings) }
+        val nowLdt = remember(state.now, zone) { state.now.toLocalDateTime(zone) }
+        val nowSeconds = PrayerCalculator.secondsOfDay(nowLdt)
+        val todayTimes = remember(settings, today) {
+            PrayerCalculator.adjustedTimes(PrayerCalculator.timesFor(settings, today), settings)
+        }
+        val visibleTodayIds = remember(settings, today) { PrayerCalculator.visibleIds(settings, today) }
+        val nextPrayerId = remember(visibleTodayIds, todayTimes, nowSeconds) {
+            visibleTodayIds.firstOrNull { id ->
+                ((todayTimes[id] ?: 0.0) * 3600).toInt() > nowSeconds
+            } ?: visibleTodayIds.firstOrNull()
+        }
+
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 340.dp),
             state = gridState,
@@ -157,12 +172,74 @@ fun ArcCalendarScreen(
             contentPadding = PaddingValues(
                 start = 14.dp + startInset,
                 end = 14.dp + endInset,
-                top = topInset + 108.dp,
+                top = topInset + 78.dp,
                 bottom = bottomInset + 24.dp
             ),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // شريط مسار الصلوات الخفيف + الشارتان العائمتان (منقضية / متبقية) أعلى القائمة بدون تداخل
+            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    com.karrar.amsakiah.ui.components.PrayerHorizonArc(
+                        visibleIds = visibleTodayIds,
+                        todayTimes = todayTimes,
+                        nowSeconds = nowSeconds,
+                        targetId = nextPrayerId,
+                        hijriDay = todayHijri.day,
+                        use24Hour = settings.use24Hour,
+                        compact = true
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "$monthTitle $year هـ",
+                            color = palette.gold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(palette.surfaceHigh.copy(alpha = 0.85f))
+                                    .border(1.dp, palette.border, CircleShape)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "منقضية: $passed",
+                                    color = palette.textMuted,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(palette.surfaceHigh.copy(alpha = 0.85f))
+                                    .border(1.dp, palette.gold.copy(alpha = 0.45f), CircleShape)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "متبقية: $remaining",
+                                    color = palette.gold,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             items(days, key = { it.date.toString() }) { day ->
                 DayCard(
                     day = day,
@@ -214,7 +291,7 @@ fun ArcCalendarScreen(
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "مواقيت الصلاة",
+                        text = "تقويم مواقيت الصلاة",
                         color = palette.textPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
@@ -258,55 +335,6 @@ fun ArcCalendarScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text("‹", color = palette.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            // سطر أنيق عائم: اسم الشهر الهجري على اليمين، والمربعين العائمين (منقضية ومتبقية) على اليسار
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "$monthTitle لعام $year هـ",
-                    color = palette.gold,
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(palette.surface)
-                            .border(1.dp, palette.border, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 7.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "منقضية: $passed",
-                            color = palette.textMuted,
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(palette.surface)
-                            .border(1.dp, palette.gold.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 7.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "متبقية: $remaining",
-                            color = palette.gold,
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }
@@ -423,50 +451,63 @@ private fun PrayerCell(
     modifier: Modifier = Modifier
 ) {
     val palette = LocalKararPalette.current
-    Column(
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(palette.highlight)
             .border(1.dp, palette.border, RoundedCornerShape(12.dp))
-            .padding(vertical = 6.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(vertical = 6.dp, horizontal = 4.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        Icon(
+            imageVector = KararIcons.prayer(id),
+            contentDescription = null,
+            tint = palette.gold.copy(alpha = 0.10f),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 6.dp, y = 6.dp)
+                .size(28.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = KararIcons.prayer(id),
-                contentDescription = null,
-                tint = palette.gold.copy(alpha = 0.85f),
-                modifier = Modifier.size(9.dp)
-            )
-            Text(
-                label,
-                color = palette.textMuted,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-        }
-        Spacer(Modifier.height(2.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                time,
-                color = palette.textPrimary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                style = androidx.compose.ui.text.TextStyle(textDirection = TextDirection.Ltr)
-            )
-            if (amPm.isNotBlank()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Icon(
+                    imageVector = KararIcons.prayer(id),
+                    contentDescription = null,
+                    tint = palette.gold.copy(alpha = 0.85f),
+                    modifier = Modifier.size(9.dp)
+                )
                 Text(
-                    " $amPm",
+                    label,
                     color = palette.textMuted,
-                    fontSize = 7.sp,
+                    fontSize = 8.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
                 )
+            }
+            Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    time,
+                    color = palette.textPrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    style = androidx.compose.ui.text.TextStyle(textDirection = TextDirection.Ltr)
+                )
+                if (amPm.isNotBlank()) {
+                    Text(
+                        " $amPm",
+                        color = palette.textMuted,
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

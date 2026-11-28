@@ -382,27 +382,6 @@ fun WidgetsScreen(state: AppState, contentPadding: PaddingValues) {
             }
         }
 
-        item {
-            GlassCard(modifier = Modifier.fillMaxWidth(), corner = 20.dp) {
-                Text(
-                    "كيف يعمل العدّاد وشريط التقدم؟",
-                    color = KararColors.Gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "العدّاد داخل الودجت Chronometer أصلي محسوب من SystemClock.elapsedRealtime — " +
-                        "يعدّ بنفسه كل ثانية دون أي خدمة أو بث، ويصحّح نفسه عند تغيير الوقت أو إعادة التشغيل. " +
-                        "شريط التقدم ProgressBar أصلي يتحدّث عند تغيّر الصلاة وكل 15 دقيقة عبر WorkManager. " +
-                        "أي تغيير في المدينة أو الطريقة أو الأذكار يُحدّث الودجتات والإشعار الحي فورًا، " +
-                        "وودجت المسبحة يزيد العداد مباشرة ويحفظه في الإعدادات.",
-                    color = KararColors.TextMuted,
-                    fontSize = 10.sp,
-                    lineHeight = 16.sp
-                )
-            }
-        }
     }
 }
 

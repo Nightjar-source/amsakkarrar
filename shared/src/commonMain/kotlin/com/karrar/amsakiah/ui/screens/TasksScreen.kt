@@ -208,14 +208,12 @@ fun TasksScreen(
                     onValueChange = { noteText = it },
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("اكتب ملاحظة سريعة…", fontSize = 12.sp) },
-                    shape = RoundedCornerShape(14.dp),
-                    minLines = 1,
-                    maxLines = 3,
-                    singleLine = false
+                    shape = RoundedCornerShape(22.dp),
+                    singleLine = true
                 )
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .background(KararColors.Gold)
                         .clickable {

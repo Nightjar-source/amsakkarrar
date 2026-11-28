@@ -271,10 +271,10 @@ fun SettingsScreen(
 
         // ==================== العدّاد ====================
         item {
-            SettingsAccordion(title = "الإشعار الحي للعدّاد (اختياري)", icon = Icons.Filled.Notifications) {
+            SettingsAccordion(title = "الإشعار الحي للعدّاد", icon = Icons.Filled.Notifications) {
                 ToggleRow(
                     title = "الإشعار الحي (العدّاد)",
-                    subtitle = "اختياري — عدّاد حي بشريط تقدم في شريط الإشعارات، يتحدّث تلقائيًا",
+                    subtitle = "عدّاد حي بشريط تقدم في شريط الإشعارات، يتحدّث تلقائيًا",
                     checked = settings.liveNotification,
                     onChange = { c ->
                         if (c && !permissions.status.notifications) {
@@ -381,6 +381,7 @@ fun SettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
                             .background(Color(0x2E38BDF8), RoundedCornerShape(14.dp))
                             .clickable(onClick = onOpenWidgets)
                             .padding(vertical = 12.dp),
@@ -1592,6 +1593,7 @@ private fun StepChip(label: String, onClick: () -> Unit) {
 private fun SmallAction(label: String, icon: Boolean = false, onClick: () -> Unit) {
     Row(
         modifier = Modifier
+            .clip(CircleShape)
             .background(Color(0x1AFFD700), RoundedCornerShape(50))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),

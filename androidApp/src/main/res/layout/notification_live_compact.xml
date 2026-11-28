@@ -26,11 +26,10 @@
         android:layout_gravity="center_vertical"
         android:layoutDirection="rtl"
         android:orientation="vertical"
-        android:minHeight="60dp"
-        android:paddingStart="18dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="18dp"
-        android:paddingBottom="12dp">
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="6dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -39,27 +38,27 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:background="@drawable/notif_icon_circle"
                 android:contentDescription="@null"
-                android:padding="5dp"
+                android:padding="4dp"
                 android:src="@drawable/ic_notif_moon" />
 
             <TextView
                 android:id="@+id/live_label"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
+                android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:autoSizeMaxTextSize="15sp"
+                android:autoSizeMaxTextSize="14sp"
                 android:autoSizeMinTextSize="10sp"
                 android:autoSizeTextType="uniform"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="باقي على الإمساك"
                 android:textColor="#FFF5F5F7"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 tools:targetApi="o" />
 
@@ -69,16 +68,16 @@
                 android:layout_height="wrap_content"
                 android:layoutDirection="ltr"
                 android:textColor="#FFFFD700"
-                android:textSize="20sp"
+                android:textSize="17sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- شريط التقدم المكثّف — نفس تقنية الصورة (بدل ProgressBar) -->
+        <!-- شريط التقدم المكثّف — مضبوط الارتفاع حتى لا ينقص في الإشعار المطوي (~64dp) -->
         <ImageView
             android:id="@+id/live_progress"
             android:layout_width="match_parent"
-            android:layout_height="16dp"
-            android:layout_marginTop="10dp"
+            android:layout_height="10dp"
+            android:layout_marginTop="5dp"
             android:contentDescription="@null"
             android:scaleType="fitXY" />
     </LinearLayout>

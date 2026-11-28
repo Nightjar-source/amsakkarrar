@@ -175,11 +175,11 @@ fun UnifiedReaderScreen(
                 .fillMaxSize()
                 .padding(
                     start = safeStart + 14.dp,
-                    end = safeEnd + 14.dp,
-                    top = statusTop + (if (chromeVisible) 60.dp else 18.dp),
-                    bottom = if (chromeVisible) 64.dp else 24.dp
+                    end = safeEnd + 14.dp
                 )
         ) {
+            val topContentPad = statusTop + (if (chromeVisible) 62.dp else 18.dp)
+            val bottomContentPad = if (chromeVisible) 68.dp else 24.dp
             // التكيّف الرسمي (WindowSizeClass & Material 3 Adaptive):
             // Compact (< 600dp): ورقة واحدة لملء شاشة الهاتف العمودية.
             // Medium/Expanded (>= 600dp) أو أفقي (Landscape): ورقتان متقابلتان كالكتاب الحقيقي.
@@ -201,6 +201,8 @@ fun UnifiedReaderScreen(
                 }
             }
             val pagerState = rememberPagerState(initialPage = initialSpread) { spreadCount }
+            val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+            var jumpDialogVisible by remember { mutableStateOf(false) }
 
             LaunchedEffect(initialSpread) {
                 if (initialSpread > 0 && initialSpread < spreadCount) {
@@ -210,13 +212,18 @@ fun UnifiedReaderScreen(
 
             Box(modifier = Modifier.fillMaxSize()) {
                 if (readingLayoutMode == 1) {
-                    // وضع التمرير العمودي المستمر لجميع الصفحات
+                    // وضع التمرير العمودي المستمر لجميع الصفحات (Edge-to-Edge) بدون تمرير متداخل
                     val scrollState = rememberScrollState()
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(scrollState)
-                            .padding(horizontal = 8.dp),
+                            .padding(
+                                start = 8.dp,
+                                end = 8.dp,
+                                top = topContentPad,
+                                bottom = bottomContentPad
+                            ),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         pages.forEachIndexed { pageIdx, pageContent ->
@@ -227,6 +234,7 @@ fun UnifiedReaderScreen(
                                 theme = theme,
                                 activeFont = activeFont.first,
                                 fontSize = fontSize,
+                                scrollable = false,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             if (pageIdx < pages.size - 1) {
@@ -242,7 +250,9 @@ fun UnifiedReaderScreen(
                 } else if (showTwoPages) {
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPad, bottom = bottomContentPad)
                     ) { spreadIndex ->
                         val rightIdx = spreadIndex * 2
                         val leftIdx = spreadIndex * 2 + 1
@@ -295,7 +305,9 @@ fun UnifiedReaderScreen(
                 } else {
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPad, bottom = bottomContentPad)
                     ) { pageIdx ->
                         val pageOffset = ((pagerState.currentPage - pageIdx) + pagerState.currentPageOffsetFraction)
                         ReaderBookPage(
@@ -315,6 +327,73 @@ fun UnifiedReaderScreen(
                                     alpha = 1f - (absOffset * 0.25f)
                                 }
                         )
+                    }
+                }
+
+                if (chromeVisible && spreadCount > 1 && readingLayoutMode == 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 14.dp)
+                            .clip(CircleShape)
+                            .background(theme.bar.copy(alpha = 0.90f))
+                            .border(1.dp, theme.barBorder, CircleShape)
+                            .clickable { jumpDialogVisible = true }
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "صفحة ${pagerState.currentPage + 1} / $spreadCount · انتقال",
+                            color = theme.icon,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                if (jumpDialogVisible) {
+                    var pageInput by remember { mutableStateOf("${pagerState.currentPage + 1}") }
+                    com.karrar.amsakiah.ui.components.SpringDialog(
+                        visible = true,
+                        onDismissRequest = { jumpDialogVisible = false },
+                        dismissible = true
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(0.82f)
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(com.karrar.amsakiah.ui.theme.LocalKararPalette.current.surfaceHigh)
+                                .border(1.dp, com.karrar.amsakiah.ui.theme.LocalKararPalette.current.borderStrong, RoundedCornerShape(22.dp))
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = "الانتقال إلى صفحة (1 – $spreadCount)",
+                                color = com.karrar.amsakiah.ui.theme.LocalKararPalette.current.gold,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            androidx.compose.material3.OutlinedTextField(
+                                value = pageInput,
+                                onValueChange = { s -> pageInput = s.filter { it.isDigit() } },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                androidx.compose.material3.TextButton(onClick = { jumpDialogVisible = false }) {
+                                    Text("إلغاء")
+                                }
+                                androidx.compose.material3.TextButton(onClick = {
+                                    val target = (pageInput.toIntOrNull() ?: 1).coerceIn(1, spreadCount) - 1
+                                    jumpDialogVisible = false
+                                    coroutineScope.launch { pagerState.animateScrollToPage(target) }
+                                }) {
+                                    Text("انتقال")
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -937,13 +1016,19 @@ private fun ReaderBookPage(
     theme: ReaderThemeResolved,
     activeFont: androidx.compose.ui.text.font.FontFamily,
     fontSize: Float,
+    scrollable: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val annotatedContent = formatReaderAnnotatedString(content, theme, fontSize)
-    Column(
-        modifier = modifier
+    val baseModifier = if (scrollable) {
+        modifier
             .fillMaxHeight()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+    } else {
+        modifier
+    }
+    Column(
+        modifier = baseModifier,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Text(

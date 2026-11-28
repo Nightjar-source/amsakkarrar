@@ -496,7 +496,7 @@ private fun TodayHeader(
         val tiny = maxWidth < 360.dp
         // الكشيدة عنوان تصميمي ثابت: لا يتضخم مع حجم خط المستخدم حتى يبقى في سطر واحد.
         val userFontScale = LocalDensity.current.fontScale.coerceAtLeast(0.1f)
-        val kashidaSize = (maxWidth.value * 0.054f / userFontScale).coerceIn(18.4f, 45.6f).sp
+        val kashidaSize = (maxWidth.value * 0.052f / userFontScale).coerceIn(18.4f, 28f).sp
         val dateSize = if (maxWidth < 420.dp) 8.5.sp else 10.5.sp
         val chipTextSize = when {
             maxWidth < 360.dp -> 9.5.sp
@@ -623,7 +623,6 @@ private fun TodayHeader(
                         color = OnSky.text,
                         fontSize = dateSize,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = KararFonts.ReemKufi,
                         maxLines = 1,
                         softWrap = false
                     )
@@ -632,7 +631,6 @@ private fun TodayHeader(
                         color = OnSky.text.copy(alpha = 0.65f),
                         fontSize = dateSize,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = KararFonts.ReemKufi,
                         maxLines = 1,
                         softWrap = false
                     )
@@ -914,18 +912,6 @@ private fun BottomArea(
                 )
             }
         }
-
-        Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
-
-        com.karrar.amsakiah.ui.components.PrayerHorizonArc(
-            visibleIds = visibleIds,
-            todayTimes = todayTimes,
-            nowSeconds = nowSeconds,
-            targetId = targetId,
-            hijriDay = hijriDay,
-            use24Hour = use24Hour,
-            compact = compact
-        )
 
         Spacer(Modifier.height(if (compact) 2.dp else 4.dp))
 
